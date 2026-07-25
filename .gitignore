@@ -1,0 +1,77 @@
+# CMake / out-of-source builds
+/build/
+/build-*/
+/cmake-build-*/
+/out/
+/CMakeUserPresets.json
+
+# Compiled objects and libraries
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+
+# CMake artifacts if configured in-tree
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Makefile
+compile_commands.json
+Testing/
+_deps/
+install_manifest.txt
+*.cmake
+!CMakeLists.txt
+!cmake/**/*.cmake
+
+# Qt / moc / uic / rcc
+moc_*.cpp
+moc_*.h
+ui_*.h
+qrc_*.cpp
+*.qmlc
+*.jsc
+*.moc
+
+# IDE / editor
+.idea/
+.vscode/
+*.user
+*.user.*
+*.suo
+*.sln.docstates
+*.autosave
+.qtcreator/
+CMakeLists.txt.user*
+
+# clangd / ccls / cache
+.cache/
+.clangd/
+.ccls-cache/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python (local helpers / pyanp cross-checks)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Test / coverage
+*.gcda
+*.gcno
+*.gcov
+coverage/
+*.profraw
+*.profdata

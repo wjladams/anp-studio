@@ -1,0 +1,112 @@
+{
+  "format": "cppanp",
+  "network": {
+    "alternatives_cluster": "Alternatives",
+    "clusters": [
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Alternatives",
+            "C"
+          ],
+          "matrix": [
+            [
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Alternatives",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "a1",
+            "node_pairwise": {
+              "Alternatives": {
+                "alternatives": [
+                  "a2"
+                ],
+                "matrix": [
+                  [
+                    1.0
+                  ]
+                ]
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "a2",
+            "node_pairwise": {
+              "C": {
+                "alternatives": [
+                  "C1"
+                ],
+                "matrix": [
+                  [
+                    1.0
+                  ]
+                ]
+              }
+            }
+          }
+        ],
+        "x": -365.0,
+        "y": -45.0
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Alternatives"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "C",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "C1",
+            "node_pairwise": {
+              "Alternatives": {
+                "alternatives": [
+                  "a1"
+                ],
+                "matrix": [
+                  [
+                    1.0
+                  ]
+                ]
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "C2",
+            "node_pairwise": {}
+          }
+        ],
+        "x": 40.0,
+        "y": 80.0
+      }
+    ],
+    "synthesis": {
+      "custom_expr": "",
+      "kind": "additive"
+    }
+  },
+  "version": 1
+}
