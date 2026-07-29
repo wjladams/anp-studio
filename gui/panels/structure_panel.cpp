@@ -28,6 +28,7 @@ StructurePanel::StructurePanel(Document* doc, QWidget* parent)
   connect(tree_, &QTreeWidget::itemClicked, this,
           [this](QTreeWidgetItem* item, int) {
             const QString kind = item->text(1);
+            // Drive pairwise panel parent selection from tree clicks.
             if (kind == QStringLiteral("Node")) {
               emit nodeSelected(item->text(0));
             } else if (kind == QStringLiteral("Cluster")) {
@@ -43,6 +44,7 @@ StructurePanel::StructurePanel(Document* doc, QWidget* parent)
 void StructurePanel::refresh() {
   crumb_->setText(doc_->breadcrumb().join(QStringLiteral(" / ")));
   tree_->clear();
+  // Mirror cluster/node hierarchy of the *current* network view (root or subnet).
   for (cppanp::AnpCluster* c : doc_->network().clusters()) {
     auto* ci = new QTreeWidgetItem(
         tree_, {QString::fromStdString(c->name()), QStringLiteral("Cluster")});

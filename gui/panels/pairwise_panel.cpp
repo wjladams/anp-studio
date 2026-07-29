@@ -80,6 +80,7 @@ void PairwisePanel::onDestClusterChanged(int) {
 }
 
 void PairwisePanel::refresh() {
+  // Guard table/cell handlers while repopulating combo boxes.
   updating_ = true;
   const QString curParent = parentBox_->currentText();
   const QString curDest = destClusterBox_->currentText();
@@ -88,6 +89,7 @@ void PairwisePanel::refresh() {
 
   auto& net = doc_->network();
   if (nodeMode()) {
+    // Node parent: compare nodes in a chosen destination cluster.
     for (const auto& n : net.node_names()) {
       parentBox_->addItem(QString::fromStdString(n));
     }
@@ -96,6 +98,7 @@ void PairwisePanel::refresh() {
     }
     destClusterBox_->setEnabled(true);
   } else {
+    // Cluster parent: compare clusters (no destination selector).
     for (const auto& c : net.cluster_names()) {
       parentBox_->addItem(QString::fromStdString(c));
     }
@@ -125,6 +128,7 @@ void PairwisePanel::rebuildTable() {
   auto& net = doc_->network();
   const cppanp::PairwiseJudgments* pw = nullptr;
 
+  // Resolve the pairwise table for the current parent + mode selection.
   if (nodeMode()) {
     if (destClusterBox_->currentText().isEmpty()) {
       updating_ = false;
@@ -159,6 +163,7 @@ void PairwisePanel::rebuildTable() {
           QString::number(pw->comparison(static_cast<std::size_t>(i),
                                          static_cast<std::size_t>(j)),
                           'g', 6));
+      // Diagonal is always 1 and not user-editable.
       if (i == j) item->setFlags(item->flags() & ~Qt::ItemIsEditable);
       table_->setItem(i, j, item);
     }
@@ -180,6 +185,7 @@ void PairwisePanel::rebuildTable() {
 }
 
 void PairwisePanel::onCellChanged(int row, int col) {
+  // Ignore programmatic fills and reciprocal diagonal updates.
   if (updating_ || row == col) return;
   bool ok = false;
   const double value = table_->item(row, col)->text().toDouble(&ok);
@@ -196,6 +202,7 @@ void PairwisePanel::onCellChanged(int row, int col) {
     const double old =
         pw->comparison(static_cast<std::size_t>(row),
                        static_cast<std::size_t>(col));
+    // Route edits through undo so the table refresh stays in sync with the model.
     doc_->undoStack()->push(new SetNodeComparisonCmd(
         doc_, parentBox_->currentText(),
         QString::fromStdString(names[static_cast<std::size_t>(row)]),

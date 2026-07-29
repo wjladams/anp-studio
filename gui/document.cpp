@@ -82,6 +82,7 @@ void Document::pushSubnet(const QString& nodeName) {
   cppanp::AnpNode* node = cur.find_node(nodeName.toStdString());
   if (node == nullptr) return;
   cppanp::AnpNetwork& sub = node->ensure_subnetwork();
+  // Stack frame records the host node for breadcrumbs when editing nested nets.
   stack_.push_back(Frame{&sub, nodeName});
   emit viewNetworkChanged();
   notifyChanged();

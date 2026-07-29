@@ -86,6 +86,7 @@ void ResultsPanel::onSynthesisKindChanged(int) {
   neu.custom_expr = customExpr_->text().toStdString();
   const auto old = doc_->network().synthesis_options();
   if (neu.kind == old.kind && neu.custom_expr == old.custom_expr) return;
+  // Synthesis options affect subnet aggregation; store on the current network.
   doc_->undoStack()->push(new SetSynthesisOptionsCmd(doc_, neu, old));
   customExpr_->setEnabled(neu.kind == cppanp::SynthesisKind::Custom);
 }
@@ -139,6 +140,7 @@ void ResultsPanel::calculate() {
     auto& net = doc_->network();
     const auto nodes = net.node_names();
     const auto clusters = net.cluster_names();
+    // Tab order follows the ANP pipeline: raw → cluster-weighted → scaled → limit → priorities.
     fillMatrix(unscaled_, net.unscaled_supermatrix(), nodes, nodes);
     fillMatrix(clusterW_, net.cluster_weight_matrix(), clusters, clusters);
     fillMatrix(scaled_, net.scaled_supermatrix(), nodes, nodes);

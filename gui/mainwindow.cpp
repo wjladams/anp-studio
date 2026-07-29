@@ -25,6 +25,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   pairwise_ = new PairwisePanel(doc_, this);
   results_ = new ResultsPanel(doc_, this);
 
+  // Dock layout: structure left, pairwise right, results bottom.
   auto* structDock = new QDockWidget(QStringLiteral("Structure"), this);
   structDock->setWidget(structure_);
   addDockWidget(Qt::LeftDockWidgetArea, structDock);
@@ -37,6 +38,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   resultsDock->setWidget(results_);
   addDockWidget(Qt::BottomDockWidgetArea, resultsDock);
 
+  // Keep pairwise panel parent in sync with structure tree and canvas selection.
   connect(structure_, &StructurePanel::nodeSelected, pairwise_,
           &PairwisePanel::selectNodeParent);
   connect(structure_, &StructurePanel::clusterSelected, pairwise_,
@@ -46,6 +48,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
             if (!node.isEmpty()) pairwise_->selectNodeParent(node);
             else if (!cluster.isEmpty()) pairwise_->selectClusterParent(cluster);
           });
+  // Double-click a node on the canvas to edit its subnetwork.
   connect(canvas_, &NetworkCanvas::nodeActivated, doc_, &Document::pushSubnet);
 
   auto* fileMenu = menuBar()->addMenu(QStringLiteral("&File"));
