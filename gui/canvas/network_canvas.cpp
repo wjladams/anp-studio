@@ -7,15 +7,42 @@
 #include "document.hpp"
 
 #include <QContextMenuEvent>
+#include <QEvent>
+#include <QGraphicsProxyWidget>
 #include <QGraphicsScene>
 #include <QInputDialog>
+#include <QKeyEvent>
 #include <QLineEdit>
 #include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPointer>
 #include <QResizeEvent>
 #include <QTimer>
 #include <QToolButton>
+
+namespace {
+
+/** QLineEdit that reports Escape explicitly (proxy widgets often swallow filters). */
+class InlineRenameEdit : public QLineEdit {
+public:
+  using QLineEdit::QLineEdit;
+  std::function<void()> onEscape;
+
+protected:
+  void keyPressEvent(QKeyEvent* event) override {
+    if (event->key() == Qt::Key_Escape) {
+      // Copy before invoke: finish() may clear onEscape while it runs.
+      const std::function<void()> cb = onEscape;
+      if (cb) cb();
+      event->accept();
+      return;
+    }
+    QLineEdit::keyPressEvent(event);
+  }
+};
+
+}  // namespace
 
 NetworkCanvas::NetworkCanvas(Document* doc, QWidget* parent)
     : QGraphicsView(parent), doc_(doc) {
@@ -75,7 +102,105 @@ void NetworkCanvas::select(const QString& cluster, const QString& node) {
   scene_->blockSignals(blocked);
 }
 
+void NetworkCanvas::cancelInlineRename() {
+  if (renameProxy_ == nullptr) return;
+  QGraphicsProxyWidget* proxy = renameProxy_;
+  renameProxy_ = nullptr;
+  renameClosing_ = false;
+
+  auto hideCb = std::move(renameHideCb_);
+  renameHideCb_ = {};
+
+  if (QWidget* w = proxy->widget()) {
+    w->disconnect();
+    w->clearFocus();
+  }
+  // Detach before deleteLater so a parent NodeItem/ClusterItem rebuild
+  // cannot double-delete the proxy.
+  proxy->setParentItem(nullptr);
+  if (scene_ != nullptr && proxy->scene() == scene_) {
+    scene_->removeItem(proxy);
+  }
+  proxy->deleteLater();
+
+  if (hideCb) hideCb();
+}
+
+void NetworkCanvas::beginInlineRename(
+    QGraphicsItem* parentItem,
+    const QRectF& localRect,
+    const QString& oldName,
+    std::function<void()> onShow,
+    std::function<void()> onHide,
+    std::function<void(const QString&)> onCommit) {
+  cancelInlineRename();
+  if (parentItem == nullptr) return;
+
+  auto* edit = new InlineRenameEdit(oldName);
+  edit->setFrame(true);
+  edit->selectAll();
+
+  renameProxy_ = new QGraphicsProxyWidget(parentItem);
+  renameProxy_->setWidget(edit);
+  renameProxy_->setPos(localRect.topLeft());
+  renameProxy_->resize(localRect.size());
+  renameProxy_->setZValue(100);
+  renameProxy_->setFlag(QGraphicsItem::ItemIsFocusable, true);
+  renameHideCb_ = std::move(onHide);
+  if (onShow) onShow();
+
+  // Never destroy the editor from inside its own key/signal handlers.
+  const auto finish = [this, edit, oldName, onCommit](bool accept) {
+    if (renameProxy_ == nullptr || renameClosing_) return;
+    renameClosing_ = true;
+    const QString neu = edit->text().trimmed();
+    edit->disconnect();
+    const QPointer<NetworkCanvas> self(this);
+    QTimer::singleShot(0, this, [self, accept, neu, oldName, onCommit]() {
+      if (!self) return;
+      self->cancelInlineRename();
+      if (accept && !neu.isEmpty() && neu != oldName && onCommit) {
+        onCommit(neu);
+      }
+    });
+  };
+
+  edit->onEscape = [finish]() { finish(false); };
+  connect(edit, &QLineEdit::returnPressed, this, [finish]() { finish(true); });
+  connect(edit, &QLineEdit::editingFinished, this, [this, finish]() {
+    if (renameProxy_ == nullptr || renameClosing_) return;
+    finish(true);
+  });
+
+  renameProxy_->setFocus(Qt::MouseFocusReason);
+  edit->setFocus(Qt::MouseFocusReason);
+}
+
+void NetworkCanvas::keyPressEvent(QKeyEvent* event) {
+  // Fallback: graphics view may receive Escape before the proxy widget.
+  if (renameProxy_ != nullptr && !renameClosing_ &&
+      event->key() == Qt::Key_Escape) {
+    if (auto* edit = static_cast<InlineRenameEdit*>(renameProxy_->widget())) {
+      // Copy before invoke: finish() must not destroy a running std::function.
+      const std::function<void()> cb = edit->onEscape;
+      if (cb) {
+        cb();
+      } else {
+        renameClosing_ = true;
+        const QPointer<NetworkCanvas> self(this);
+        QTimer::singleShot(0, this, [self]() {
+          if (self) self->cancelInlineRename();
+        });
+      }
+    }
+    event->accept();
+    return;
+  }
+  QGraphicsView::keyPressEvent(event);
+}
+
 void NetworkCanvas::rebuild() {
+  cancelInlineRename();
   persistLayout();
   scene_->clear();
   clusters_.clear();
@@ -100,6 +225,17 @@ void NetworkCanvas::rebuild() {
     item->setAddNodeCallback([this, name = QString::fromStdString(c->name())]() {
       promptAddNode(name);
     });
+    item->setRenameCallback([this](const QString& cluster) {
+      ClusterItem* ci = clusters_.value(cluster);
+      if (ci == nullptr) return;
+      beginInlineRename(
+          ci, ci->titleEditRect(), cluster,
+          [ci]() { ci->setTitleVisible(false); },
+          [ci]() { ci->setTitleVisible(true); },
+          [this, cluster](const QString& neu) {
+            doc_->undoStack()->push(new RenameClusterCmd(doc_, cluster, neu));
+          });
+    });
 
     for (anpcpp::AnpNode* n : c->nodes()) {
       auto* ni = new NodeItem(QString::fromStdString(n->name()), item);
@@ -110,12 +246,16 @@ void NetworkCanvas::rebuild() {
           [this](const QString& node, int from, int to) {
             doc_->undoStack()->push(new ReorderNodeCmd(doc_, node, from, to));
           });
-      ni->setActivateCallback([this](const QString& node) {
-        // Defer: EnsureSubnet/pushSubnet rebuilds the scene and would delete
-        // this NodeItem while mouseDoubleClickEvent is still on the stack.
-        QTimer::singleShot(0, this, [this, node]() {
-          emit nodeActivated(node);
-        });
+      ni->setRenameCallback([this](const QString& node) {
+        NodeItem* item = nodes_.value(node);
+        if (item == nullptr) return;
+        beginInlineRename(
+            item, item->rect().adjusted(4, 2, -4, -2), node,
+            [item]() { item->setLabelVisible(false); },
+            [item]() { item->setLabelVisible(true); },
+            [this, node](const QString& neu) {
+              doc_->undoStack()->push(new RenameNodeCmd(doc_, node, neu));
+            });
       });
       nodes_.insert(QString::fromStdString(n->name()), ni);
     }
@@ -254,9 +394,7 @@ void NetworkCanvas::contextMenuEvent(QContextMenuEvent* event) {
   if (node != nullptr) {
     menu.addAction(QStringLiteral("Open / Create Subnetwork"), this,
                    [this, node]() {
-                     doc_->undoStack()->push(
-                         new EnsureSubnetCmd(doc_, node->nodeName()));
-                     doc_->pushSubnet(node->nodeName());
+                     emit nodeActivated(node->nodeName());
                    });
     menu.addAction(QStringLiteral("Toggle Invert"), this, [this, node]() {
       const bool cur =

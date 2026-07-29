@@ -257,6 +257,51 @@ void RemoveClusterCmd::undo() {
   doc_->notifyChanged();
 }
 
+RenameNodeCmd::RenameNodeCmd(Document* doc, QString oldName, QString newName)
+    : QUndoCommand(QStringLiteral("Rename node %1 → %2").arg(oldName, newName)),
+      doc_(doc),
+      oldName_(std::move(oldName)),
+      newName_(std::move(newName)) {}
+
+void RenameNodeCmd::redo() {
+  doc_->network().rename_node(oldName_.toStdString(), newName_.toStdString());
+  if (doc_->selectedNode() == oldName_) {
+    doc_->setSelection(doc_->selectedCluster(), newName_);
+  }
+  doc_->notifyChanged();
+}
+
+void RenameNodeCmd::undo() {
+  doc_->network().rename_node(newName_.toStdString(), oldName_.toStdString());
+  if (doc_->selectedNode() == newName_) {
+    doc_->setSelection(doc_->selectedCluster(), oldName_);
+  }
+  doc_->notifyChanged();
+}
+
+RenameClusterCmd::RenameClusterCmd(Document* doc, QString oldName, QString newName)
+    : QUndoCommand(
+          QStringLiteral("Rename cluster %1 → %2").arg(oldName, newName)),
+      doc_(doc),
+      oldName_(std::move(oldName)),
+      newName_(std::move(newName)) {}
+
+void RenameClusterCmd::redo() {
+  doc_->network().rename_cluster(oldName_.toStdString(), newName_.toStdString());
+  if (doc_->selectedCluster() == oldName_) {
+    doc_->setSelection(newName_, doc_->selectedNode());
+  }
+  doc_->notifyChanged();
+}
+
+void RenameClusterCmd::undo() {
+  doc_->network().rename_cluster(newName_.toStdString(), oldName_.toStdString());
+  if (doc_->selectedCluster() == newName_) {
+    doc_->setSelection(oldName_, doc_->selectedNode());
+  }
+  doc_->notifyChanged();
+}
+
 SetPrioritizerKindCmd::SetPrioritizerKindCmd(Document* doc,
                                              QString wrt,
                                              QString destCluster,

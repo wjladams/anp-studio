@@ -9,11 +9,16 @@
 #include <QHash>
 #include <QString>
 
+#include <functional>
+
 class Document;
 class ClusterItem;
 class NodeItem;
 class LinkItem;
 class QToolButton;
+class QGraphicsProxyWidget;
+class QGraphicsItem;
+class QKeyEvent;
 
 /**
  * @brief Visual editor for clusters, nodes, and connections.
@@ -40,7 +45,7 @@ public:
   void select(const QString& cluster, const QString& node);
 
 signals:
-  /** @brief Emitted when a node is double-clicked (e.g. to open subnetwork). */
+  /** @brief Emitted to open a node's subnetwork (e.g. from context menu). */
   void nodeActivated(const QString& name);
   /** @brief Emitted when the user selects a cluster or node on the canvas. */
   void selectionChanged(const QString& cluster, const QString& node);
@@ -50,6 +55,7 @@ protected:
   void contextMenuEvent(QContextMenuEvent* event) override;
   /** @brief Handles node selection and connect-mode clicks. */
   void mousePressEvent(QMouseEvent* event) override;
+  void keyPressEvent(QKeyEvent* event) override;
   void resizeEvent(QResizeEvent* event) override;
 
 private:
@@ -58,6 +64,13 @@ private:
   void positionAddClusterButton();
   void promptAddCluster();
   void promptAddNode(const QString& clusterName);
+  void beginInlineRename(QGraphicsItem* parentItem,
+                         const QRectF& localRect,
+                         const QString& oldName,
+                         std::function<void()> onShow,
+                         std::function<void()> onHide,
+                         std::function<void(const QString&)> onCommit);
+  void cancelInlineRename();
   NodeItem* nodeItemAt(const QPoint& viewPos) const;
 
   Document* doc_ = nullptr;
@@ -68,4 +81,7 @@ private:
   QList<LinkItem*> links_;
   bool connectMode_ = false;
   QString connectSrc_;
+  QGraphicsProxyWidget* renameProxy_ = nullptr;
+  std::function<void()> renameHideCb_;
+  bool renameClosing_ = false;
 };

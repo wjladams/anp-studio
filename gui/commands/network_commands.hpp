@@ -179,6 +179,30 @@ private:
   bool hadCluster_ = false;
 };
 
+class RenameNodeCmd : public QUndoCommand {
+public:
+  RenameNodeCmd(Document* doc, QString oldName, QString newName);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString oldName_;
+  QString newName_;
+};
+
+class RenameClusterCmd : public QUndoCommand {
+public:
+  RenameClusterCmd(Document* doc, QString oldName, QString newName);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString oldName_;
+  QString newName_;
+};
+
 class SetPrioritizerKindCmd : public QUndoCommand {
 public:
   SetPrioritizerKindCmd(Document* doc,

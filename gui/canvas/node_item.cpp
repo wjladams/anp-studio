@@ -38,6 +38,10 @@ void NodeItem::setInvert(bool invert) {
   refreshLook();
 }
 
+void NodeItem::setLabelVisible(bool visible) {
+  if (label_) label_->setVisible(visible);
+}
+
 void NodeItem::setRowGeometry(qreal width, qreal height) {
   setRect(0, 0, width, height);
   label_->setPos(10, (height - label_->boundingRect().height()) * 0.5);
@@ -141,7 +145,7 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
 
 void NodeItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) {
   event->accept();
-  if (activateCb_) {
-    activateCb_(name_);
+  if (renameCb_) {
+    renameCb_(name_);
   }
 }

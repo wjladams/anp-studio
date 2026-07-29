@@ -32,10 +32,13 @@ public:
     reorderCb_ = std::move(cb);
   }
 
-  /** @brief Invoked on double-click (e.g. open subnetwork). */
-  void setActivateCallback(std::function<void(const QString& node)> cb) {
-    activateCb_ = std::move(cb);
+  /** @brief Invoked on double-click to rename inline. */
+  void setRenameCallback(std::function<void(const QString& node)> cb) {
+    renameCb_ = std::move(cb);
   }
+
+  /** @brief Shows or hides the painted label (e.g. while editing). */
+  void setLabelVisible(bool visible);
 
 protected:
   void paint(QPainter* painter,
@@ -58,7 +61,7 @@ private:
   bool invert_ = false;
   std::function<void()> linkUpdate_;
   std::function<void(const QString&, int, int)> reorderCb_;
-  std::function<void(const QString&)> activateCb_;
+  std::function<void(const QString&)> renameCb_;
 
   bool reordering_ = false;
   int fromIndex_ = -1;

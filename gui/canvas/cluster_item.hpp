@@ -44,10 +44,22 @@ public:
     addNodeCb_ = std::move(cb);
   }
 
+  /** @brief Invoked on title double-click to rename inline. */
+  void setRenameCallback(std::function<void(const QString& cluster)> cb) {
+    renameCb_ = std::move(cb);
+  }
+
+  /** @brief Shows or hides the title text (e.g. while editing). */
+  void setTitleVisible(bool visible);
+
+  /** @return Title text area excluding the "+" button. */
+  [[nodiscard]] QRectF titleEditRect() const;
+
 protected:
   void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
   void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
   void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+  void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
   void paint(QPainter* painter,
              const QStyleOptionGraphicsItem* option,
              QWidget* widget = nullptr) override;
@@ -61,6 +73,7 @@ private:
   QGraphicsSimpleTextItem* title_ = nullptr;
   std::function<void()> linkUpdate_;
   std::function<void()> addNodeCb_;
+  std::function<void(const QString&)> renameCb_;
   bool draggingTitle_ = false;
   QPointF dragGrabOffset_;
 };

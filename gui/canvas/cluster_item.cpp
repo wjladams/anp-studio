@@ -35,9 +35,18 @@ QRectF ClusterItem::addNodeButtonRect() const {
                 kAddBtn);
 }
 
+QRectF ClusterItem::titleEditRect() const {
+  const QRectF add = addNodeButtonRect();
+  return QRectF(8.0, 4.0, add.left() - 12.0, kTitleH - 8.0);
+}
+
 void ClusterItem::setClusterName(const QString& name) {
   name_ = name;
   title_->setText(name_);
+}
+
+void ClusterItem::setTitleVisible(bool visible) {
+  if (title_) title_->setVisible(visible);
 }
 
 std::vector<NodeItem*> ClusterItem::nodeItems() const {
@@ -214,6 +223,20 @@ void ClusterItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
     return;
   }
   QGraphicsRectItem::mouseReleaseEvent(event);
+}
+
+void ClusterItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) {
+  if (addNodeButtonRect().contains(event->pos())) {
+    QGraphicsRectItem::mouseDoubleClickEvent(event);
+    return;
+  }
+  if (event->pos().y() <= kTitleH && renameCb_) {
+    draggingTitle_ = false;
+    event->accept();
+    renameCb_(name_);
+    return;
+  }
+  QGraphicsRectItem::mouseDoubleClickEvent(event);
 }
 
 QVariant ClusterItem::itemChange(GraphicsItemChange change,
