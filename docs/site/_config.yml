@@ -1,0 +1,15 @@
+title: cppanp
+description: Qt 6 desktop application for Analytic Network Process (ANP) modeling
+baseurl: "/cppanp"
+url: "https://bamath.org"
+
+markdown: kramdown
+theme: minima
+
+plugins:
+  - jekyll-feed
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor

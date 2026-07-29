@@ -1,4 +1,6 @@
-# cppanp GUI Reference
+# cppanp GUI Reference {#mainpage}
+
+[Project home](https://bamath.org/cppanp/)
 
 Desktop application for modeling, editing, and calculating **Analytic Network
 Process (ANP)** networks. Built with **Qt 6 Widgets**.

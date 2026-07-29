@@ -83,7 +83,9 @@ See that repository’s README for FetchContent / `find_package` consumer docs.
 
 ### Library API (libanpcpp)
 
-**Online:** [https://bamath.org/libanpcpp/](https://bamath.org/libanpcpp/)
+**Site:** [https://bamath.org/libanpcpp/](https://bamath.org/libanpcpp/)
+
+**API reference:** [https://bamath.org/libanpcpp/api/](https://bamath.org/libanpcpp/api/)
 
 For a local sibling checkout:
 
@@ -97,16 +99,28 @@ Open **[../libanpcpp/build/docs/html/index.html](../libanpcpp/build/docs/html/in
 
 ### GUI reference (this repo)
 
-**Online:** [https://bamath.org/cppanp/](https://bamath.org/cppanp/)
+**Site:** [https://bamath.org/cppanp/](https://bamath.org/cppanp/) (README landing page, built from `main` via GitHub Actions)
 
-**Local build** requires Doxygen (`sudo apt install doxygen` on Ubuntu):
+**API reference:** [https://bamath.org/cppanp/api/](https://bamath.org/cppanp/api/)
+
+**Local Doxygen** requires Doxygen (`sudo apt install doxygen` on Ubuntu):
 
 ```bash
-cmake -S . -B build -DCPPANP_BUILD_DOCS=ON
+cmake -S . -B build -DCPPANP_BUILD_DOCS=ON -DCPPANP_BUILD_GUI=OFF
 cmake --build build --target cppanp_docs
 ```
 
 Open **[build/docs/html/index.html](build/docs/html/index.html)**.
+
+**Local full site preview** (README landing + API under `/api/`):
+
+```bash
+cmake -S . -B build -DCPPANP_BUILD_DOCS=ON -DCPPANP_BUILD_GUI=OFF
+cmake --build build --target cppanp_docs
+cp -a build/docs/html docs/site/api
+cp README.md docs/site/README.content.md
+cd docs/site && bundle install && bundle exec jekyll serve --baseurl /cppanp
+```
 
 Enable Pages with **Settings → Pages → Source: GitHub Actions**; see
 `.github/workflows/docs.yml`.

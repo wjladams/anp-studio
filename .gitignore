@@ -1,9 +1,21 @@
 # CMake / out-of-source builds
 /build/
 /build-*/
+/build-docs/
 /cmake-build-*/
 /out/
 /CMakeUserPresets.json
+
+# Jekyll / GitHub Pages site artifacts
+/docs/site/api/
+/docs/site/README.content.md
+/docs/site/vendor/
+/docs/site/.sass-cache/
+/docs/site/_site/
+/docs/site/.bundle/
+/_site/
+/.sass-cache/
+.sass-cache/
 
 # Compiled objects and libraries
 *.o

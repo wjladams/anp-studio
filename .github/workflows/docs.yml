@@ -1,4 +1,4 @@
-name: Publish GUI docs
+name: Publish site
 
 on:
   push:
@@ -16,16 +16,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Install tools
-        run: sudo apt-get update && sudo apt-get install -y doxygen cmake g++
+        run: sudo apt-get update && sudo apt-get install -y doxygen cmake g++ ruby-full ruby-bundler
 
       - name: Build Doxygen
         run: |
@@ -34,11 +31,37 @@ jobs:
             -DCPPANP_BUILD_GUI=OFF
           cmake --build build --target cppanp_docs
 
+      - name: Stage API docs for Jekyll
+        run: |
+          rm -rf docs/site/api
+          mkdir -p docs/site/api
+          cp -a build/docs/html/. docs/site/api/
+
+      - name: Stage README for Jekyll
+        run: cp README.md docs/site/README.content.md
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build Jekyll site
+        run: |
+          cd docs/site
+          bundle config set --local path vendor/bundle
+          bundle install
+          bundle exec jekyll build -d ../../_site
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: build/docs/html
+          path: _site
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
