@@ -13,6 +13,7 @@ class Document;
 class ClusterItem;
 class NodeItem;
 class LinkItem;
+class QToolButton;
 
 /**
  * @brief Visual editor for clusters, nodes, and connections.
@@ -49,14 +50,19 @@ protected:
   void contextMenuEvent(QContextMenuEvent* event) override;
   /** @brief Handles node selection and connect-mode clicks. */
   void mousePressEvent(QMouseEvent* event) override;
+  void resizeEvent(QResizeEvent* event) override;
 
 private:
   void persistLayout();
   void updateLinks();
+  void positionAddClusterButton();
+  void promptAddCluster();
+  void promptAddNode(const QString& clusterName);
   NodeItem* nodeItemAt(const QPoint& viewPos) const;
 
   Document* doc_ = nullptr;
   QGraphicsScene* scene_ = nullptr;
+  QToolButton* addClusterBtn_ = nullptr;
   QHash<QString, ClusterItem*> clusters_;
   QHash<QString, NodeItem*> nodes_;
   QList<LinkItem*> links_;

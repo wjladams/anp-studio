@@ -39,6 +39,11 @@ public:
     linkUpdate_ = std::move(cb);
   }
 
+  /** @brief Invoked when the title-bar "+" is clicked (add node). */
+  void setAddNodeCallback(std::function<void()> cb) {
+    addNodeCb_ = std::move(cb);
+  }
+
 protected:
   void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
   void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
@@ -50,9 +55,12 @@ protected:
                       const QVariant& value) override;
 
 private:
+  [[nodiscard]] QRectF addNodeButtonRect() const;
+
   QString name_;
   QGraphicsSimpleTextItem* title_ = nullptr;
   std::function<void()> linkUpdate_;
+  std::function<void()> addNodeCb_;
   bool draggingTitle_ = false;
   QPointF dragGrabOffset_;
 };

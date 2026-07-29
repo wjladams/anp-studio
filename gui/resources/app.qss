@@ -233,6 +233,23 @@ QPushButton#saatyScaleBtn {
   max-height: 28px;
 }
 
+QToolButton#canvasAddClusterBtn {
+  background-color: #1a73e8;
+  color: #ffffff;
+  border: none;
+  border-radius: 18px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+QToolButton#canvasAddClusterBtn:hover {
+  background-color: #1765cc;
+}
+
+QToolButton#canvasAddClusterBtn:pressed {
+  background-color: #1557b0;
+}
+
 /* —— Buttons —— */
 QPushButton {
   background-color: #ffffff;

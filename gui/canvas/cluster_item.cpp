@@ -3,12 +3,17 @@
 #include "canvas/node_item.hpp"
 
 #include <QBrush>
+#include <QFont>
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
 #include <QPen>
 #include <QStyle>
 #include <QStyleOptionGraphicsItem>
 #include <algorithm>
+
+namespace {
+constexpr qreal kAddBtn = 20.0;
+}  // namespace
 
 ClusterItem::ClusterItem(const QString& name, QGraphicsItem* parent)
     : QGraphicsRectItem(parent), name_(name) {
@@ -23,6 +28,11 @@ ClusterItem::ClusterItem(const QString& name, QGraphicsItem* parent)
   title_->setZValue(2);
   title_->setAcceptedMouseButtons(Qt::NoButton);
   layoutNodes();
+}
+
+QRectF ClusterItem::addNodeButtonRect() const {
+  return QRectF(kWidth - kPad - kAddBtn, (kTitleH - kAddBtn) * 0.5, kAddBtn,
+                kAddBtn);
 }
 
 void ClusterItem::setClusterName(const QString& name) {
@@ -149,12 +159,34 @@ void ClusterItem::paint(QPainter* painter,
                     titleFill);
   painter->restore();
 
+  // Title-bar "+" to add a node (right-justified).
+  const QRectF addRect = addNodeButtonRect();
+  painter->save();
+  painter->setPen(QPen(QColor(255, 255, 255, 220), 1.2));
+  painter->setBrush(QColor(255, 255, 255, 35));
+  painter->drawRoundedRect(addRect, 4, 4);
+  QFont plusFont = painter->font();
+  plusFont.setBold(true);
+  plusFont.setPointSizeF(12);
+  painter->setFont(plusFont);
+  painter->setPen(QColor(255, 255, 255));
+  painter->drawText(addRect, Qt::AlignCenter, QStringLiteral("+"));
+  painter->restore();
+
   painter->setBrush(Qt::NoBrush);
   painter->setPen(pen());
   painter->drawRoundedRect(r, 4, 4);
 }
 
 void ClusterItem::mousePressEvent(QGraphicsSceneMouseEvent* event) {
+  if (event->button() == Qt::LeftButton &&
+      addNodeButtonRect().contains(event->pos())) {
+    if (addNodeCb_) {
+      addNodeCb_();
+    }
+    event->accept();
+    return;
+  }
   if (event->button() == Qt::LeftButton && event->pos().y() <= kTitleH) {
     draggingTitle_ = true;
     dragGrabOffset_ = event->pos();

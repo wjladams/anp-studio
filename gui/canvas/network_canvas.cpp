@@ -13,7 +13,9 @@
 #include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QResizeEvent>
 #include <QTimer>
+#include <QToolButton>
 
 NetworkCanvas::NetworkCanvas(Document* doc, QWidget* parent)
     : QGraphicsView(parent), doc_(doc) {
@@ -22,6 +24,16 @@ NetworkCanvas::NetworkCanvas(Document* doc, QWidget* parent)
   setRenderHint(QPainter::Antialiasing, true);
   setDragMode(QGraphicsView::RubberBandDrag);
   setMinimumSize(400, 300);
+
+  addClusterBtn_ = new QToolButton(this);
+  addClusterBtn_->setObjectName(QStringLiteral("canvasAddClusterBtn"));
+  addClusterBtn_->setText(QStringLiteral("+"));
+  addClusterBtn_->setToolTip(QStringLiteral("Add cluster"));
+  addClusterBtn_->setCursor(Qt::PointingHandCursor);
+  addClusterBtn_->setFixedSize(36, 36);
+  addClusterBtn_->setAutoRaise(true);
+  connect(addClusterBtn_, &QToolButton::clicked, this,
+          &NetworkCanvas::promptAddCluster);
 
   connect(doc_, &Document::modelChanged, this, &NetworkCanvas::rebuild);
   connect(doc_, &Document::viewNetworkChanged, this, &NetworkCanvas::rebuild);
@@ -39,6 +51,7 @@ NetworkCanvas::NetworkCanvas(Document* doc, QWidget* parent)
   });
 
   rebuild();
+  positionAddClusterButton();
 }
 
 void NetworkCanvas::setConnectMode(bool on) {
@@ -84,6 +97,9 @@ void NetworkCanvas::rebuild() {
     scene_->addItem(item);
     clusters_.insert(QString::fromStdString(c->name()), item);
     item->setLinkUpdateCallback([this]() { updateLinks(); });
+    item->setAddNodeCallback([this, name = QString::fromStdString(c->name())]() {
+      promptAddNode(name);
+    });
 
     for (anpcpp::AnpNode* n : c->nodes()) {
       auto* ni = new NodeItem(QString::fromStdString(n->name()), item);
@@ -147,6 +163,39 @@ void NetworkCanvas::updateLinks() {
   for (LinkItem* link : links_) link->updatePath();
 }
 
+void NetworkCanvas::positionAddClusterButton() {
+  if (addClusterBtn_ == nullptr) return;
+  const int margin = 12;
+  addClusterBtn_->move(width() - addClusterBtn_->width() - margin, margin);
+  addClusterBtn_->raise();
+}
+
+void NetworkCanvas::resizeEvent(QResizeEvent* event) {
+  QGraphicsView::resizeEvent(event);
+  positionAddClusterButton();
+}
+
+void NetworkCanvas::promptAddCluster() {
+  bool ok = false;
+  const QString name = QInputDialog::getText(
+      this, QStringLiteral("Add Cluster"), QStringLiteral("Name:"),
+      QLineEdit::Normal, {}, &ok);
+  if (ok && !name.trimmed().isEmpty()) {
+    doc_->undoStack()->push(new AddClusterCmd(doc_, name.trimmed()));
+  }
+}
+
+void NetworkCanvas::promptAddNode(const QString& clusterName) {
+  bool ok = false;
+  const QString name = QInputDialog::getText(
+      this, QStringLiteral("Add Node"), QStringLiteral("Name:"),
+      QLineEdit::Normal, {}, &ok);
+  if (ok && !name.trimmed().isEmpty()) {
+    doc_->undoStack()->push(
+        new AddNodeCmd(doc_, clusterName, name.trimmed()));
+  }
+}
+
 NodeItem* NetworkCanvas::nodeItemAt(const QPoint& viewPos) const {
   for (QGraphicsItem* it : items(viewPos)) {
     if (auto* n = qgraphicsitem_cast<NodeItem*>(it)) return n;
@@ -174,15 +223,8 @@ void NetworkCanvas::mousePressEvent(QMouseEvent* event) {
 
 void NetworkCanvas::contextMenuEvent(QContextMenuEvent* event) {
   QMenu menu(this);
-  menu.addAction(QStringLiteral("Add Cluster…"), this, [this]() {
-    bool ok = false;
-    const QString name = QInputDialog::getText(
-        this, QStringLiteral("Add Cluster"), QStringLiteral("Name:"),
-        QLineEdit::Normal, {}, &ok);
-    if (ok && !name.isEmpty()) {
-      doc_->undoStack()->push(new AddClusterCmd(doc_, name));
-    }
-  });
+  menu.addAction(QStringLiteral("Add Cluster…"), this,
+                 &NetworkCanvas::promptAddCluster);
 
   NodeItem* node = nodeItemAt(event->pos());
   ClusterItem* cluster = nullptr;
@@ -194,24 +236,18 @@ void NetworkCanvas::contextMenuEvent(QContextMenuEvent* event) {
   }
 
   if (cluster != nullptr) {
-    menu.addAction(QStringLiteral("Add Node…"), this, [this, cluster]() {
-      bool ok = false;
-      const QString name = QInputDialog::getText(
-          this, QStringLiteral("Add Node"), QStringLiteral("Name:"),
-          QLineEdit::Normal, {}, &ok);
-      if (ok && !name.isEmpty()) {
-        doc_->undoStack()->push(
-            new AddNodeCmd(doc_, cluster->clusterName(), name));
-      }
+    const QString clusterName = cluster->clusterName();
+    menu.addAction(QStringLiteral("Add Node…"), this, [this, clusterName]() {
+      promptAddNode(clusterName);
     });
     menu.addAction(QStringLiteral("Set as Alternatives Cluster"), this,
-                   [this, cluster]() {
+                   [this, clusterName]() {
                      QString old;
                      if (auto* ac = doc_->network().alternatives_cluster()) {
                        old = QString::fromStdString(ac->name());
                      }
-                     doc_->undoStack()->push(new SetAlternativesClusterCmd(
-                         doc_, cluster->clusterName(), old));
+                     doc_->undoStack()->push(
+                         new SetAlternativesClusterCmd(doc_, clusterName, old));
                    });
   }
 
