@@ -91,15 +91,15 @@ private:
 class SetSynthesisOptionsCmd : public QUndoCommand {
 public:
   SetSynthesisOptionsCmd(Document* doc,
-                         cppanp::SynthesisOptions neu,
-                         cppanp::SynthesisOptions old);
+                         anpcpp::SynthesisOptions neu,
+                         anpcpp::SynthesisOptions old);
   void redo() override;
   void undo() override;
 
 private:
   Document* doc_;
-  cppanp::SynthesisOptions neu_;
-  cppanp::SynthesisOptions old_;
+  anpcpp::SynthesisOptions neu_;
+  anpcpp::SynthesisOptions old_;
 };
 
 class SetInvertCmd : public QUndoCommand {

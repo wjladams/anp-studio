@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "cppanp/matrix.hpp"
+#include "anpcpp/matrix.hpp"
 
 class Document;
 class QTabWidget;
@@ -41,11 +41,11 @@ private slots:
 
 private:
   void fillMatrix(QTableWidget* table,
-                  const cppanp::Matrix& m,
+                  const anpcpp::Matrix& m,
                   const std::vector<std::string>& rowLabels,
                   const std::vector<std::string>& colLabels);
   void fillVector(QTableWidget* table,
-                  const cppanp::Vector& v,
+                  const anpcpp::Vector& v,
                   const std::vector<std::string>& labels);
 
   Document* doc_ = nullptr;

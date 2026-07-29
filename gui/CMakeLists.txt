@@ -4,7 +4,7 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
-add_executable(cppanp_gui
+add_executable(anpstudio
   main.cpp
   mainwindow.cpp
   document.cpp
@@ -18,16 +18,16 @@ add_executable(cppanp_gui
   commands/network_commands.cpp
 )
 
-target_include_directories(cppanp_gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(anpstudio PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(cppanp_gui
+target_link_libraries(anpstudio
   PRIVATE
     anpcpp::anpcpp
     Qt6::Widgets
 )
 
 if(MSVC)
-  target_compile_options(cppanp_gui PRIVATE /W4)
+  target_compile_options(anpstudio PRIVATE /W4)
 else()
-  target_compile_options(cppanp_gui PRIVATE -Wall -Wextra -Wpedantic)
+  target_compile_options(anpstudio PRIVATE -Wall -Wextra -Wpedantic)
 endif()

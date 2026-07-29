@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(cppanp
+project(anpstudio
   VERSION 0.1.0
-  DESCRIPTION "Analytic Network Process desktop application"
+  DESCRIPTION "ANP Studio — Analytic Network Process desktop application"
   LANGUAGES CXX
 )
 
@@ -10,11 +10,11 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-option(CPPANP_BUILD_GUI "Build Qt 6 GUI application" ON)
-option(CPPANP_BUILD_DOCS "Build Doxygen GUI documentation" ON)
+option(ANPSTUDIO_BUILD_GUI "Build Qt 6 GUI application" ON)
+option(ANPSTUDIO_BUILD_DOCS "Build Doxygen GUI documentation" ON)
 
 # Docs-only configures do not need libanpcpp (Doxygen only reads gui/ headers).
-if(CPPANP_BUILD_GUI)
+if(ANPSTUDIO_BUILD_GUI)
   # Prefer a sibling ../libanpcpp checkout during development; otherwise fetch
   # from GitHub (pin GIT_TAG once libanpcpp publishes releases).
   if(NOT ANPCPP_SOURCE_DIR AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../libanpcpp/CMakeLists.txt")
@@ -41,10 +41,10 @@ if(CPPANP_BUILD_GUI)
   if(Qt6_FOUND)
     add_subdirectory(gui)
   else()
-    message(WARNING "CPPANP_BUILD_GUI=ON but Qt6 Widgets was not found; skipping gui/")
+    message(WARNING "ANPSTUDIO_BUILD_GUI=ON but Qt6 Widgets was not found; skipping gui/")
   endif()
 endif()
 
-if(CPPANP_BUILD_DOCS)
+if(ANPSTUDIO_BUILD_DOCS)
   include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Doxygen.cmake")
 endif()

@@ -68,11 +68,11 @@ returning a `Vector`/`Matrix` by value is normal and usually cheap enough
 ## File-level C++ details (before the functions)
 
 ```cpp
-#include "cppanp/matrix.hpp"
+#include "anpcpp/matrix.hpp"
 #include <cmath>
 #include <sstream>
 
-namespace cppanp {
+namespace anpcpp {
 namespace {
   // helpers...
 }  // namespace
@@ -82,7 +82,7 @@ namespace {
 | Detail                                   | C analogy / meaning                                                                                 |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `#include "..."` vs `<...>`              | Project header vs standard library.                                                                 |
-| `namespace cppanp { ... }`               | Like a package/module name; avoids global-name clashes. Qualifies symbols as `cppanp::Vector`.      |
+| `namespace anpcpp { ... }`               | Like a package/module name; avoids global-name clashes. Qualifies symbols as `anpcpp::Vector`.      |
 | Anonymous `namespace { }`                | Like `static` file-local linkage in C: helpers visible only in this `.cpp`.                         |
 | `[[nodiscard]]`                          | Attribute: compiler warns if you ignore the return value.                                           |
 | `std::size_t`                            | Unsigned size type (like C’s `size_t`, in namespace `std`).                                         |

@@ -56,7 +56,7 @@ void NetworkCanvas::rebuild() {
   auto& net = doc_->network();
   qreal x = 40;
   int i = 0;
-  for (cppanp::AnpCluster* c : net.clusters()) {
+  for (anpcpp::AnpCluster* c : net.clusters()) {
     auto* item = new ClusterItem(QString::fromStdString(c->name()));
     double cx = 0, cy = 0;
     if (net.cluster_position(c->name(), cx, cy)) {
@@ -69,7 +69,7 @@ void NetworkCanvas::rebuild() {
     clusters_.insert(QString::fromStdString(c->name()), item);
     item->setLinkUpdateCallback([this]() { updateLinks(); });
 
-    for (cppanp::AnpNode* n : c->nodes()) {
+    for (anpcpp::AnpNode* n : c->nodes()) {
       auto* ni = new NodeItem(QString::fromStdString(n->name()), item);
       ni->setHasSubnet(n->has_subnetwork());
       ni->setInvert(n->invert());
@@ -87,9 +87,9 @@ void NetworkCanvas::rebuild() {
   // Directed links from each node's pairwise destinations (src -> dest).
   // Intra-cluster links loop out the side; give each its own lane.
   QHash<QString, int> loopLanes;
-  for (cppanp::AnpNode* src : net.nodes()) {
-    for (cppanp::AnpCluster* destC : net.clusters()) {
-      const cppanp::PairwiseJudgments* pw =
+  for (anpcpp::AnpNode* src : net.nodes()) {
+    for (anpcpp::AnpCluster* destC : net.clusters()) {
+      const anpcpp::PairwiseJudgments* pw =
           src->node_pairwise(destC->name());
       if (pw == nullptr) continue;
       for (const auto& destName : pw->alternatives()) {

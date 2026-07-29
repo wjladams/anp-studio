@@ -105,7 +105,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 }
 
 void MainWindow::updateTitle() {
-  QString title = QStringLiteral("cppanp");
+  QString title = QStringLiteral("ANP Studio");
   if (!doc_->path().isEmpty()) title += QStringLiteral(" — ") + doc_->path();
   else title += QStringLiteral(" — untitled");
   if (doc_->isDirty()) title += QStringLiteral(" *");
@@ -122,7 +122,7 @@ void MainWindow::openFile() {
   if (!maybeSave()) return;
   const QString path = QFileDialog::getOpenFileName(
       this, QStringLiteral("Open Network"), {},
-      QStringLiteral("cppanp JSON (*.json);;All files (*)"));
+      QStringLiteral("ANP Studio JSON (*.json);;All files (*)"));
   if (path.isEmpty()) return;
   QString err;
   if (!doc_->loadFromFile(path, &err)) {
@@ -145,7 +145,7 @@ bool MainWindow::saveFile() {
 bool MainWindow::saveFileAs() {
   const QString path = QFileDialog::getSaveFileName(
       this, QStringLiteral("Save Network"), {},
-      QStringLiteral("cppanp JSON (*.json);;All files (*)"));
+      QStringLiteral("ANP Studio JSON (*.json);;All files (*)"));
   if (path.isEmpty()) return false;
   QString err;
   if (!doc_->saveToFile(path, &err)) {

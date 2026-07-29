@@ -23,11 +23,11 @@ ResultsPanel::ResultsPanel(Document* doc, QWidget* parent)
   synthRow->addWidget(new QLabel(QStringLiteral("Synthesis:"), this));
   synthKind_ = new QComboBox(this);
   synthKind_->addItem(QStringLiteral("Additive"),
-                      static_cast<int>(cppanp::SynthesisKind::Additive));
+                      static_cast<int>(anpcpp::SynthesisKind::Additive));
   synthKind_->addItem(QStringLiteral("Multiplicative"),
-                      static_cast<int>(cppanp::SynthesisKind::Multiplicative));
+                      static_cast<int>(anpcpp::SynthesisKind::Multiplicative));
   synthKind_->addItem(QStringLiteral("Custom"),
-                      static_cast<int>(cppanp::SynthesisKind::Custom));
+                      static_cast<int>(anpcpp::SynthesisKind::Custom));
   synthRow->addWidget(synthKind_);
   customExpr_ = new QLineEdit(this);
   customExpr_->setPlaceholderText(QStringLiteral("e.g. Benefits / Costs"));
@@ -76,23 +76,23 @@ void ResultsPanel::refreshSynthesisControls() {
   const int idx = synthKind_->findData(static_cast<int>(opt.kind));
   if (idx >= 0) synthKind_->setCurrentIndex(idx);
   customExpr_->setText(QString::fromStdString(opt.custom_expr));
-  customExpr_->setEnabled(opt.kind == cppanp::SynthesisKind::Custom);
+  customExpr_->setEnabled(opt.kind == anpcpp::SynthesisKind::Custom);
 }
 
 void ResultsPanel::onSynthesisKindChanged(int) {
-  cppanp::SynthesisOptions neu = doc_->network().synthesis_options();
-  neu.kind = static_cast<cppanp::SynthesisKind>(
+  anpcpp::SynthesisOptions neu = doc_->network().synthesis_options();
+  neu.kind = static_cast<anpcpp::SynthesisKind>(
       synthKind_->currentData().toInt());
   neu.custom_expr = customExpr_->text().toStdString();
   const auto old = doc_->network().synthesis_options();
   if (neu.kind == old.kind && neu.custom_expr == old.custom_expr) return;
   // Synthesis options affect subnet aggregation; store on the current network.
   doc_->undoStack()->push(new SetSynthesisOptionsCmd(doc_, neu, old));
-  customExpr_->setEnabled(neu.kind == cppanp::SynthesisKind::Custom);
+  customExpr_->setEnabled(neu.kind == anpcpp::SynthesisKind::Custom);
 }
 
 void ResultsPanel::onCustomExprEdited() {
-  cppanp::SynthesisOptions neu = doc_->network().synthesis_options();
+  anpcpp::SynthesisOptions neu = doc_->network().synthesis_options();
   neu.custom_expr = customExpr_->text().toStdString();
   const auto old = doc_->network().synthesis_options();
   if (neu.custom_expr == old.custom_expr) return;
@@ -100,7 +100,7 @@ void ResultsPanel::onCustomExprEdited() {
 }
 
 void ResultsPanel::fillMatrix(QTableWidget* table,
-                              const cppanp::Matrix& m,
+                              const anpcpp::Matrix& m,
                               const std::vector<std::string>& rowLabels,
                               const std::vector<std::string>& colLabels) {
   table->clear();
@@ -120,7 +120,7 @@ void ResultsPanel::fillMatrix(QTableWidget* table,
 }
 
 void ResultsPanel::fillVector(QTableWidget* table,
-                              const cppanp::Vector& v,
+                              const anpcpp::Vector& v,
                               const std::vector<std::string>& labels) {
   table->clear();
   table->setRowCount(static_cast<int>(v.size()));

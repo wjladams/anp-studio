@@ -1,6 +1,6 @@
 #include "document.hpp"
 
-#include "cppanp/json_io.hpp"
+#include "anpcpp/json_io.hpp"
 
 Document::Document(QObject* parent) : QObject(parent) {
   newNetwork(true);
@@ -10,19 +10,19 @@ Document::Document(QObject* parent) : QObject(parent) {
   });
 }
 
-cppanp::AnpNetwork& Document::network() {
+anpcpp::AnpNetwork& Document::network() {
   return *stack_.back().net;
 }
 
-const cppanp::AnpNetwork& Document::network() const {
+const anpcpp::AnpNetwork& Document::network() const {
   return *stack_.back().net;
 }
 
-cppanp::AnpNetwork& Document::root() {
+anpcpp::AnpNetwork& Document::root() {
   return *root_;
 }
 
-const cppanp::AnpNetwork& Document::root() const {
+const anpcpp::AnpNetwork& Document::root() const {
   return *root_;
 }
 
@@ -32,7 +32,7 @@ void Document::setDirty(bool dirty) {
   emit dirtyChanged(dirty_);
 }
 
-void Document::replaceRoot(std::unique_ptr<cppanp::AnpNetwork> net) {
+void Document::replaceRoot(std::unique_ptr<anpcpp::AnpNetwork> net) {
   const bool blocked = undo_.blockSignals(true);
   undo_.clear();
   undo_.blockSignals(blocked);
@@ -47,12 +47,12 @@ void Document::replaceRoot(std::unique_ptr<cppanp::AnpNetwork> net) {
 void Document::newNetwork(bool create_alts) {
   path_.clear();
   emit pathChanged(path_);
-  replaceRoot(std::make_unique<cppanp::AnpNetwork>(create_alts));
+  replaceRoot(std::make_unique<anpcpp::AnpNetwork>(create_alts));
 }
 
 bool Document::loadFromFile(const QString& path, QString* error) {
   try {
-    auto net = cppanp::load_network_file(path.toStdString());
+    auto net = anpcpp::load_network_file(path.toStdString());
     path_ = path;
     emit pathChanged(path_);
     replaceRoot(std::move(net));
@@ -66,7 +66,7 @@ bool Document::loadFromFile(const QString& path, QString* error) {
 bool Document::saveToFile(const QString& path, QString* error) {
   try {
     // Persist the root network (includes all nested subnets).
-    cppanp::save_network_file(*root_, path.toStdString());
+    anpcpp::save_network_file(*root_, path.toStdString());
     path_ = path;
     emit pathChanged(path_);
     setDirty(false);
@@ -78,10 +78,10 @@ bool Document::saveToFile(const QString& path, QString* error) {
 }
 
 void Document::pushSubnet(const QString& nodeName) {
-  cppanp::AnpNetwork& cur = network();
-  cppanp::AnpNode* node = cur.find_node(nodeName.toStdString());
+  anpcpp::AnpNetwork& cur = network();
+  anpcpp::AnpNode* node = cur.find_node(nodeName.toStdString());
   if (node == nullptr) return;
-  cppanp::AnpNetwork& sub = node->ensure_subnetwork();
+  anpcpp::AnpNetwork& sub = node->ensure_subnetwork();
   // Stack frame records the host node for breadcrumbs when editing nested nets.
   stack_.push_back(Frame{&sub, nodeName});
   emit viewNetworkChanged();

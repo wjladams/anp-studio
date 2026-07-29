@@ -126,7 +126,7 @@ void PairwisePanel::rebuildTable() {
   }
 
   auto& net = doc_->network();
-  const cppanp::PairwiseJudgments* pw = nullptr;
+  const anpcpp::PairwiseJudgments* pw = nullptr;
 
   // Resolve the pairwise table for the current parent + mode selection.
   if (nodeMode()) {
@@ -134,7 +134,7 @@ void PairwisePanel::rebuildTable() {
       updating_ = false;
       return;
     }
-    cppanp::AnpNode& node =
+    anpcpp::AnpNode& node =
         net.node(parentBox_->currentText().toStdString());
     pw = node.node_pairwise(destClusterBox_->currentText().toStdString());
   } else {
@@ -193,7 +193,7 @@ void PairwisePanel::onCellChanged(int row, int col) {
 
   auto& net = doc_->network();
   if (nodeMode()) {
-    cppanp::AnpNode& node =
+    anpcpp::AnpNode& node =
         net.node(parentBox_->currentText().toStdString());
     auto* pw =
         node.node_pairwise(destClusterBox_->currentText().toStdString());

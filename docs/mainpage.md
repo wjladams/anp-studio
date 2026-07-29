@@ -1,6 +1,6 @@
-# cppanp GUI Reference {#mainpage}
+# ANP Studio GUI Reference {#mainpage}
 
-[Project home](https://bamath.org/cppanp/)
+[Project home](https://bamath.org/anp-studio/)
 
 Desktop application for modeling, editing, and calculating **Analytic Network
 Process (ANP)** networks. Built with **Qt 6 Widgets**.
@@ -16,7 +16,7 @@ MainWindow
   └── ResultsPanel      (matrices and priorities)
 ```
 
-Computational types (`cppanp::AnpNetwork`, `Matrix`, etc.) come from
+Computational types (`anpcpp::AnpNetwork`, `Matrix`, etc.) come from
 **libanpcpp**. See the libanpcpp API documentation for the numerical library.
 
 ## Key classes

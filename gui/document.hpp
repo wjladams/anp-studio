@@ -12,10 +12,10 @@
 #include <memory>
 #include <vector>
 
-#include "cppanp/network.hpp"
+#include "anpcpp/network.hpp"
 
 /**
- * @brief Owns the root @c cppanp::AnpNetwork, undo stack, file path, and dirty flag.
+ * @brief Owns the root @c anpcpp::AnpNetwork, undo stack, file path, and dirty flag.
  *
  * Subnet navigation maintains a stack of @c AnpNetwork* frames pointing into
  * nodes' owned subnetworks.
@@ -29,13 +29,13 @@ public:
   explicit Document(QObject* parent = nullptr);
 
   /** @return The network currently being edited (may be a subnetwork). */
-  [[nodiscard]] cppanp::AnpNetwork& network();
+  [[nodiscard]] anpcpp::AnpNetwork& network();
   /** @brief Const overload of @ref network. */
-  [[nodiscard]] const cppanp::AnpNetwork& network() const;
+  [[nodiscard]] const anpcpp::AnpNetwork& network() const;
   /** @return The root (top-level) network. */
-  [[nodiscard]] cppanp::AnpNetwork& root();
+  [[nodiscard]] anpcpp::AnpNetwork& root();
   /** @brief Const overload of @ref root. */
-  [[nodiscard]] const cppanp::AnpNetwork& root() const;
+  [[nodiscard]] const anpcpp::AnpNetwork& root() const;
 
   /** @return Undo/redo command stack for model edits. */
   [[nodiscard]] QUndoStack* undoStack() { return &undo_; }
@@ -90,13 +90,13 @@ signals:
 
 private:
   struct Frame {
-    cppanp::AnpNetwork* net = nullptr;
+    anpcpp::AnpNetwork* net = nullptr;
     QString hostNode;
   };
 
-  void replaceRoot(std::unique_ptr<cppanp::AnpNetwork> net);
+  void replaceRoot(std::unique_ptr<anpcpp::AnpNetwork> net);
 
-  std::unique_ptr<cppanp::AnpNetwork> root_;
+  std::unique_ptr<anpcpp::AnpNetwork> root_;
   std::vector<Frame> stack_;
   QUndoStack undo_;
   QString path_;

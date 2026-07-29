@@ -119,8 +119,8 @@ void SetClusterComparisonCmd::undo() {
 }
 
 SetSynthesisOptionsCmd::SetSynthesisOptionsCmd(Document* doc,
-                                               cppanp::SynthesisOptions neu,
-                                               cppanp::SynthesisOptions old)
+                                               anpcpp::SynthesisOptions neu,
+                                               anpcpp::SynthesisOptions old)
     : QUndoCommand(QStringLiteral("Set synthesis options")),
       doc_(doc),
       neu_(std::move(neu)),

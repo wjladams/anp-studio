@@ -45,10 +45,10 @@ void StructurePanel::refresh() {
   crumb_->setText(doc_->breadcrumb().join(QStringLiteral(" / ")));
   tree_->clear();
   // Mirror cluster/node hierarchy of the *current* network view (root or subnet).
-  for (cppanp::AnpCluster* c : doc_->network().clusters()) {
+  for (anpcpp::AnpCluster* c : doc_->network().clusters()) {
     auto* ci = new QTreeWidgetItem(
         tree_, {QString::fromStdString(c->name()), QStringLiteral("Cluster")});
-    for (cppanp::AnpNode* n : c->nodes()) {
+    for (anpcpp::AnpNode* n : c->nodes()) {
       QString label = QString::fromStdString(n->name());
       if (n->has_subnetwork()) label += QStringLiteral(" [subnet]");
       if (n->invert()) label += QStringLiteral(" [inv]");

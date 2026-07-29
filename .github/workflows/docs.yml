@@ -27,9 +27,9 @@ jobs:
       - name: Build Doxygen
         run: |
           cmake -S . -B build \
-            -DCPPANP_BUILD_DOCS=ON \
-            -DCPPANP_BUILD_GUI=OFF
-          cmake --build build --target cppanp_docs
+            -DANPSTUDIO_BUILD_DOCS=ON \
+            -DANPSTUDIO_BUILD_GUI=OFF
+          cmake --build build --target anpstudio_docs
 
       - name: Stage API docs for Jekyll
         run: |

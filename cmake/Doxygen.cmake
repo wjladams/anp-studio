@@ -1,9 +1,9 @@
-# Doxygen documentation target for cppanp GUI.
+# Doxygen documentation target for ANP Studio GUI.
 
 find_package(Doxygen)
 
 if(NOT DOXYGEN_FOUND)
-  message(WARNING "Doxygen not found; CPPANP_BUILD_DOCS disabled")
+  message(WARNING "Doxygen not found; ANPSTUDIO_BUILD_DOCS disabled")
   return()
 endif()
 
@@ -14,9 +14,9 @@ configure_file(
   @ONLY
 )
 
-add_custom_target(cppanp_docs
+add_custom_target(anpstudio_docs
   COMMAND "${DOXYGEN_EXECUTABLE}" "${DOXYGEN_OUTPUT_DIR}/Doxyfile"
   WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-  COMMENT "Generating cppanp GUI documentation"
+  COMMENT "Generating ANP Studio GUI documentation"
   VERBATIM
 )

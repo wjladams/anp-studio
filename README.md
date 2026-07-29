@@ -1,12 +1,13 @@
-# cppanp
+# ANP Studio
 
-`cppanp` is a cross-platform **desktop application** for modeling, editing,
+**ANP Studio** is a cross-platform **desktop application** for modeling, editing,
 calculating, and studying Analytic Network Process (ANP) decision models.
 
 The computational library (matrices, networks, pairwise judgments, limit
 matrix, synthesis, JSON I/O) lives in a separate repository:
 **[libanpcpp](https://github.com/wjadams/libanpcpp)** (CMake target
-`anpcpp::anpcpp`, C++ namespace `cppanp`).
+`anpcpp::anpcpp`, C++ namespace `anpcpp`). Model files use JSON format
+`anpcpp` (v1).
 
 This application is inspired by the workflow of
 [SuperDecisions](https://www.superdecisions.com/). Numerical behavior is
@@ -17,7 +18,7 @@ only).
 
 ```text
 libanpcpp (anpcpp::anpcpp)   Toolkit-independent ANP library
-cppanp_gui                   Qt 6 Widgets desktop application (this repo)
+anpstudio                    Qt 6 Widgets desktop application (this repo)
 ```
 
 ## Dependencies
@@ -40,15 +41,15 @@ Place `libanpcpp` next to this repo:
 
 ```text
 Documents/github/libanpcpp/
-Documents/github/cppanp/
+Documents/github/anp-studio/
 ```
 
 Then:
 
 ```bash
-cmake -S . -B build -DCPPANP_BUILD_GUI=ON
-cmake --build build --target cppanp_gui
-./build/gui/cppanp_gui
+cmake -S . -B build -DANPSTUDIO_BUILD_GUI=ON
+cmake --build build --target anpstudio
+./build/gui/anpstudio
 ```
 
 CMake automatically uses `../libanpcpp` when that tree exists. Override with
@@ -99,15 +100,15 @@ Open **[../libanpcpp/build/docs/html/index.html](../libanpcpp/build/docs/html/in
 
 ### GUI reference (this repo)
 
-**Site:** [https://bamath.org/cppanp/](https://bamath.org/cppanp/) (README landing page, built from `main` via GitHub Actions)
+**Site:** [https://bamath.org/anp-studio/](https://bamath.org/anp-studio/) (README landing page, built from `main` via GitHub Actions)
 
-**API reference:** [https://bamath.org/cppanp/api/](https://bamath.org/cppanp/api/)
+**API reference:** [https://bamath.org/anp-studio/api/](https://bamath.org/anp-studio/api/)
 
 **Local Doxygen** requires Doxygen (`sudo apt install doxygen` on Ubuntu):
 
 ```bash
-cmake -S . -B build -DCPPANP_BUILD_DOCS=ON -DCPPANP_BUILD_GUI=OFF
-cmake --build build --target cppanp_docs
+cmake -S . -B build -DANPSTUDIO_BUILD_DOCS=ON -DANPSTUDIO_BUILD_GUI=OFF
+cmake --build build --target anpstudio_docs
 ```
 
 Open **[build/docs/html/index.html](build/docs/html/index.html)**.
@@ -115,11 +116,11 @@ Open **[build/docs/html/index.html](build/docs/html/index.html)**.
 **Local full site preview** (README landing + API under `/api/`):
 
 ```bash
-cmake -S . -B build -DCPPANP_BUILD_DOCS=ON -DCPPANP_BUILD_GUI=OFF
-cmake --build build --target cppanp_docs
+cmake -S . -B build -DANPSTUDIO_BUILD_DOCS=ON -DANPSTUDIO_BUILD_GUI=OFF
+cmake --build build --target anpstudio_docs
 cp -a build/docs/html docs/site/api
 cp README.md docs/site/README.content.md
-cd docs/site && bundle install && bundle exec jekyll serve --baseurl /cppanp
+cd docs/site && bundle install && bundle exec jekyll serve --baseurl /anp-studio
 ```
 
 Enable Pages with **Settings → Pages → Source: GitHub Actions**; see
