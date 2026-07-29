@@ -16,6 +16,7 @@ add_executable(anpstudio
   panels/pairwise_panel.cpp
   panels/results_panel.cpp
   commands/network_commands.cpp
+  resources.qrc
 )
 
 target_include_directories(anpstudio PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

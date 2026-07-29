@@ -4,7 +4,18 @@ title: ANP Studio
 permalink: /
 ---
 
-<p>
+<div class="brand-lockup">
+  <img class="brand-lockup__icon"
+       src="{{ "/assets/anpstudio.png" | relative_url }}"
+       width="64" height="64"
+       alt="ANP Studio">
+  <div class="brand-lockup__text">
+    <h1>ANP Studio</h1>
+    <p class="tagline">Analytic Network Process modeling for research and education</p>
+  </div>
+</div>
+
+<p class="docs-nav">
   <strong>Documentation:</strong>
   <a href="{{ '/api/' | relative_url }}">GUI API reference</a>
   &middot;

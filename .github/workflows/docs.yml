@@ -38,7 +38,22 @@ jobs:
           cp -a build/docs/html/. docs/site/api/
 
       - name: Stage README for Jekyll
-        run: cp README.md docs/site/README.content.md
+        run: |
+          # Drop the GitHub-only title/icon so the site lockup is the brand header.
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          src = Path("README.md").read_text(encoding="utf-8")
+          src = re.sub(r"^# ANP Studio\n+", "", src, count=1)
+          src = re.sub(
+              r"<p align=\"center\">\s*<img[^>]*>\s*</p>\n*",
+              "",
+              src,
+              count=1,
+              flags=re.IGNORECASE,
+          )
+          Path("docs/site/README.content.md").write_text(src.lstrip(), encoding="utf-8")
+          PY
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

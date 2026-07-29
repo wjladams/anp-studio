@@ -3,6 +3,9 @@ description: Qt 6 desktop application for Analytic Network Process (ANP) modelin
 baseurl: "/anp-studio"
 url: "https://bamath.org"
 
+# Keep the header brand-only; API lives under /api/ as static Doxygen output.
+header_pages: []
+
 markdown: kramdown
 theme: minima
 

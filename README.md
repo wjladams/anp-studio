@@ -3,6 +3,10 @@
 **ANP Studio** is a cross-platform **desktop application** for modeling, editing,
 calculating, and studying Analytic Network Process (ANP) decision models.
 
+<p align="center">
+  <img src="gui/resources/anpstudio-256.png" alt="ANP Studio icon" width="128" height="128">
+</p>
+
 The computational library (matrices, networks, pairwise judgments, limit
 matrix, synthesis, JSON I/O) lives in a separate repository:
 **[libanpcpp](https://github.com/wjadams/libanpcpp)** (CMake target
@@ -119,7 +123,20 @@ Open **[build/docs/html/index.html](build/docs/html/index.html)**.
 cmake -S . -B build -DANPSTUDIO_BUILD_DOCS=ON -DANPSTUDIO_BUILD_GUI=OFF
 cmake --build build --target anpstudio_docs
 cp -a build/docs/html docs/site/api
-cp README.md docs/site/README.content.md
+python3 - <<'PY'
+from pathlib import Path
+import re
+src = Path("README.md").read_text(encoding="utf-8")
+src = re.sub(r"^# ANP Studio\n+", "", src, count=1)
+src = re.sub(
+    r"<p align=\"center\">\s*<img[^>]*>\s*</p>\n*",
+    "",
+    src,
+    count=1,
+    flags=re.IGNORECASE,
+)
+Path("docs/site/README.content.md").write_text(src.lstrip(), encoding="utf-8")
+PY
 cd docs/site && bundle install && bundle exec jekyll serve --baseurl /anp-studio
 ```
 

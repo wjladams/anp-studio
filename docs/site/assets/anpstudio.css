@@ -1,0 +1,50 @@
+/* ANP Studio brand accents for the docs site (minima). */
+
+.site-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.site-title-icon {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.5rem 0 1.25rem;
+}
+
+.brand-lockup__icon {
+  display: block;
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  flex-shrink: 0;
+}
+
+.brand-lockup__text h1 {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+}
+
+.brand-lockup__text .tagline {
+  margin: 0.35rem 0 0;
+  color: #666;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.docs-nav {
+  margin: 0 0 1.5rem;
+}

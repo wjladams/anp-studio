@@ -1,0 +1,12 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+  <qresource prefix="/icons">
+    <file alias="anpstudio.png">resources/anpstudio.png</file>
+    <file alias="anpstudio-256.png">resources/anpstudio-256.png</file>
+    <file alias="anpstudio-128.png">resources/anpstudio-128.png</file>
+    <file alias="anpstudio-64.png">resources/anpstudio-64.png</file>
+    <file alias="anpstudio-48.png">resources/anpstudio-48.png</file>
+    <file alias="anpstudio-32.png">resources/anpstudio-32.png</file>
+    <file alias="anpstudio-16.png">resources/anpstudio-16.png</file>
+  </qresource>
+</RCC>
