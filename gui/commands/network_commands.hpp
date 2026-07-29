@@ -138,3 +138,16 @@ private:
   QString node_;
   bool created_ = false;
 };
+
+class ReorderNodeCmd : public QUndoCommand {
+public:
+  ReorderNodeCmd(Document* doc, QString node, int fromIndex, int toIndex);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString node_;
+  int fromIndex_;
+  int toIndex_;
+};

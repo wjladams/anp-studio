@@ -1,5 +1,8 @@
 #include "commands/network_commands.hpp"
 
+// Thin QUndoCommand wrappers: each command mutates doc_->network() and calls
+// notifyChanged() so panels/canvas refresh from modelChanged.
+
 AddClusterCmd::AddClusterCmd(Document* doc, QString name)
     : QUndoCommand(QStringLiteral("Add cluster %1").arg(name)),
       doc_(doc),
@@ -184,8 +187,31 @@ void EnsureSubnetCmd::redo() {
 }
 
 void EnsureSubnetCmd::undo() {
+  // Only remove the subnetwork if this command created it (not if it pre-existed).
   if (created_) {
     doc_->network().clear_subnetwork(node_.toStdString());
     doc_->notifyChanged();
   }
+}
+
+ReorderNodeCmd::ReorderNodeCmd(Document* doc,
+                               QString node,
+                               int fromIndex,
+                               int toIndex)
+    : QUndoCommand(QStringLiteral("Reorder node %1").arg(node)),
+      doc_(doc),
+      node_(std::move(node)),
+      fromIndex_(fromIndex),
+      toIndex_(toIndex) {}
+
+void ReorderNodeCmd::redo() {
+  doc_->network().move_node(node_.toStdString(),
+                            static_cast<std::size_t>(toIndex_));
+  doc_->notifyChanged();
+}
+
+void ReorderNodeCmd::undo() {
+  doc_->network().move_node(node_.toStdString(),
+                            static_cast<std::size_t>(fromIndex_));
+  doc_->notifyChanged();
 }

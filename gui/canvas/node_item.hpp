@@ -1,12 +1,14 @@
 #pragma once
 
-#include <QGraphicsEllipseItem>
+#include <QGraphicsRectItem>
 #include <QGraphicsSimpleTextItem>
 #include <QString>
 
 #include <functional>
 
-class NodeItem : public QGraphicsEllipseItem {
+class ClusterItem;
+
+class NodeItem : public QGraphicsRectItem {
 public:
   static constexpr int Type = UserType + 2;
   int type() const override { return Type; }
@@ -18,19 +20,41 @@ public:
   void setHasSubnet(bool has);
   void setInvert(bool invert);
 
+  void setRowGeometry(qreal width, qreal height);
+
   void setLinkUpdateCallback(std::function<void()> cb) {
     linkUpdate_ = std::move(cb);
   }
 
+  // Called when a vertical reorder completes (fromIndex -> toIndex).
+  void setReorderCallback(
+      std::function<void(const QString& node, int from, int to)> cb) {
+    reorderCb_ = std::move(cb);
+  }
+
 protected:
+  void paint(QPainter* painter,
+             const QStyleOptionGraphicsItem* option,
+             QWidget* widget = nullptr) override;
+  void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+  void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
+  void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+  void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
   QVariant itemChange(GraphicsItemChange change,
                       const QVariant& value) override;
 
 private:
+  [[nodiscard]] ClusterItem* parentCluster() const;
+  void refreshLook();
+
   QString name_;
   QGraphicsSimpleTextItem* label_ = nullptr;
   bool hasSubnet_ = false;
   bool invert_ = false;
   std::function<void()> linkUpdate_;
-  void refreshLook();
+  std::function<void(const QString&, int, int)> reorderCb_;
+
+  bool reordering_ = false;
+  int fromIndex_ = -1;
+  QPointF pressPos_;
 };

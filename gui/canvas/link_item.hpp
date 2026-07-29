@@ -16,7 +16,15 @@ public:
   [[nodiscard]] NodeItem* src() const { return src_; }
   [[nodiscard]] NodeItem* dest() const { return dest_; }
 
+  // Track index for intra-cluster loops so several loops don't overlap.
+  void setLoopLane(int lane);
+  [[nodiscard]] bool isIntraCluster() const { return sameCluster(); }
+
 private:
+  [[nodiscard]] bool sameCluster() const;
+  [[nodiscard]] QPainterPath loopPath() const;
+
   NodeItem* src_ = nullptr;
   NodeItem* dest_ = nullptr;
+  int loopLane_ = 0;
 };

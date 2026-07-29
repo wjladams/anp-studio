@@ -74,6 +74,10 @@ void NetworkCanvas::rebuild() {
       ni->setHasSubnet(n->has_subnetwork());
       ni->setInvert(n->invert());
       ni->setLinkUpdateCallback([this]() { updateLinks(); });
+      ni->setReorderCallback(
+          [this](const QString& node, int from, int to) {
+            doc_->undoStack()->push(new ReorderNodeCmd(doc_, node, from, to));
+          });
       nodes_.insert(QString::fromStdString(n->name()), ni);
     }
     item->layoutNodes();
@@ -81,6 +85,8 @@ void NetworkCanvas::rebuild() {
   }
 
   // Directed links from each node's pairwise destinations (src -> dest).
+  // Intra-cluster links loop out the side; give each its own lane.
+  QHash<QString, int> loopLanes;
   for (cppanp::AnpNode* src : net.nodes()) {
     for (cppanp::AnpCluster* destC : net.clusters()) {
       const cppanp::PairwiseJudgments* pw =
@@ -91,6 +97,10 @@ void NetworkCanvas::rebuild() {
         NodeItem* b = nodes_.value(QString::fromStdString(destName));
         if (a == nullptr || b == nullptr) continue;
         auto* link = new LinkItem(a, b);
+        if (link->isIntraCluster()) {
+          const QString key = QString::fromStdString(src->cluster()->name());
+          link->setLoopLane(loopLanes[key]++);
+        }
         scene_->addItem(link);
         links_.push_back(link);
       }
