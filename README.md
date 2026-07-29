@@ -115,7 +115,9 @@ Open **[../libanpcpp/build/docs/html/index.html](../libanpcpp/build/docs/html/in
 
 **API reference:** [https://bamath.org/anp-studio/api/](https://bamath.org/anp-studio/api/)
 
-**Local Doxygen** requires Doxygen (`sudo apt install doxygen` on Ubuntu):
+**Local Doxygen** requires Doxygen (`sudo apt install doxygen` on Ubuntu).
+With the default `ANPSTUDIO_BUILD_DOCS=ON`, `cmake --build build` runs the
+same Doxygen pass as CI (`WARN_AS_ERROR`). Docs-only:
 
 ```bash
 cmake -S . -B build -DANPSTUDIO_BUILD_DOCS=ON -DANPSTUDIO_BUILD_GUI=OFF
