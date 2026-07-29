@@ -10,7 +10,6 @@
 #include <QEvent>
 #include <QGraphicsProxyWidget>
 #include <QGraphicsScene>
-#include <QInputDialog>
 #include <QKeyEvent>
 #include <QLineEdit>
 #include <QMenu>
@@ -226,15 +225,7 @@ void NetworkCanvas::rebuild() {
       promptAddNode(name);
     });
     item->setRenameCallback([this](const QString& cluster) {
-      ClusterItem* ci = clusters_.value(cluster);
-      if (ci == nullptr) return;
-      beginInlineRename(
-          ci, ci->titleEditRect(), cluster,
-          [ci]() { ci->setTitleVisible(false); },
-          [ci]() { ci->setTitleVisible(true); },
-          [this, cluster](const QString& neu) {
-            doc_->undoStack()->push(new RenameClusterCmd(doc_, cluster, neu));
-          });
+      startInlineRenameCluster(cluster);
     });
 
     for (anpcpp::AnpNode* n : c->nodes()) {
@@ -247,15 +238,7 @@ void NetworkCanvas::rebuild() {
             doc_->undoStack()->push(new ReorderNodeCmd(doc_, node, from, to));
           });
       ni->setRenameCallback([this](const QString& node) {
-        NodeItem* item = nodes_.value(node);
-        if (item == nullptr) return;
-        beginInlineRename(
-            item, item->rect().adjusted(4, 2, -4, -2), node,
-            [item]() { item->setLabelVisible(false); },
-            [item]() { item->setLabelVisible(true); },
-            [this, node](const QString& neu) {
-              doc_->undoStack()->push(new RenameNodeCmd(doc_, node, neu));
-            });
+        startInlineRenameNode(node);
       });
       nodes_.insert(QString::fromStdString(n->name()), ni);
     }
@@ -316,24 +299,70 @@ void NetworkCanvas::resizeEvent(QResizeEvent* event) {
 }
 
 void NetworkCanvas::promptAddCluster() {
-  bool ok = false;
-  const QString name = QInputDialog::getText(
-      this, QStringLiteral("Add Cluster"), QStringLiteral("Name:"),
-      QLineEdit::Normal, {}, &ok);
-  if (ok && !name.trimmed().isEmpty()) {
-    doc_->undoStack()->push(new AddClusterCmd(doc_, name.trimmed()));
-  }
+  const QString name = uniqueClusterName();
+  doc_->undoStack()->push(new AddClusterCmd(doc_, name));
+  select(name, {});
+  // Defer past the add/rebuild stack so the new item exists and can take focus.
+  const QPointer<NetworkCanvas> self(this);
+  QTimer::singleShot(0, this, [self, name]() {
+    if (self) self->startInlineRenameCluster(name);
+  });
 }
 
 void NetworkCanvas::promptAddNode(const QString& clusterName) {
-  bool ok = false;
-  const QString name = QInputDialog::getText(
-      this, QStringLiteral("Add Node"), QStringLiteral("Name:"),
-      QLineEdit::Normal, {}, &ok);
-  if (ok && !name.trimmed().isEmpty()) {
-    doc_->undoStack()->push(
-        new AddNodeCmd(doc_, clusterName, name.trimmed()));
+  const QString name = uniqueNodeName();
+  doc_->undoStack()->push(new AddNodeCmd(doc_, clusterName, name));
+  select({}, name);
+  const QPointer<NetworkCanvas> self(this);
+  QTimer::singleShot(0, this, [self, name]() {
+    if (self) self->startInlineRenameNode(name);
+  });
+}
+
+QString NetworkCanvas::uniqueClusterName() const {
+  const auto& net = doc_->network();
+  for (int i = 1;; ++i) {
+    const QString name = (i == 1)
+                             ? QStringLiteral("New Cluster")
+                             : QStringLiteral("New Cluster %1").arg(i);
+    if (net.find_cluster(name.toStdString()) == nullptr) return name;
   }
+}
+
+QString NetworkCanvas::uniqueNodeName() const {
+  const auto& net = doc_->network();
+  for (int i = 1;; ++i) {
+    const QString name =
+        (i == 1) ? QStringLiteral("New Node")
+                 : QStringLiteral("New Node %1").arg(i);
+    if (net.find_node(name.toStdString()) == nullptr) return name;
+  }
+}
+
+void NetworkCanvas::startInlineRenameCluster(const QString& cluster) {
+  ClusterItem* ci = clusters_.value(cluster);
+  if (ci == nullptr) return;
+  ci->setSelected(true);
+  beginInlineRename(
+      ci, ci->titleEditRect(), cluster,
+      [ci]() { ci->setTitleVisible(false); },
+      [ci]() { ci->setTitleVisible(true); },
+      [this, cluster](const QString& neu) {
+        doc_->undoStack()->push(new RenameClusterCmd(doc_, cluster, neu));
+      });
+}
+
+void NetworkCanvas::startInlineRenameNode(const QString& node) {
+  NodeItem* item = nodes_.value(node);
+  if (item == nullptr) return;
+  item->setSelected(true);
+  beginInlineRename(
+      item, item->rect().adjusted(4, 2, -4, -2), node,
+      [item]() { item->setLabelVisible(false); },
+      [item]() { item->setLabelVisible(true); },
+      [this, node](const QString& neu) {
+        doc_->undoStack()->push(new RenameNodeCmd(doc_, node, neu));
+      });
 }
 
 NodeItem* NetworkCanvas::nodeItemAt(const QPoint& viewPos) const {
@@ -363,7 +392,7 @@ void NetworkCanvas::mousePressEvent(QMouseEvent* event) {
 
 void NetworkCanvas::contextMenuEvent(QContextMenuEvent* event) {
   QMenu menu(this);
-  menu.addAction(QStringLiteral("Add Cluster…"), this,
+  menu.addAction(QStringLiteral("Add Cluster"), this,
                  &NetworkCanvas::promptAddCluster);
 
   NodeItem* node = nodeItemAt(event->pos());
@@ -377,7 +406,7 @@ void NetworkCanvas::contextMenuEvent(QContextMenuEvent* event) {
 
   if (cluster != nullptr) {
     const QString clusterName = cluster->clusterName();
-    menu.addAction(QStringLiteral("Add Node…"), this, [this, clusterName]() {
+    menu.addAction(QStringLiteral("Add Node"), this, [this, clusterName]() {
       promptAddNode(clusterName);
     });
     menu.addAction(QStringLiteral("Set as Alternatives Cluster"), this,

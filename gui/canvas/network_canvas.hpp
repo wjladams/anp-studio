@@ -64,6 +64,10 @@ private:
   void positionAddClusterButton();
   void promptAddCluster();
   void promptAddNode(const QString& clusterName);
+  [[nodiscard]] QString uniqueClusterName() const;
+  [[nodiscard]] QString uniqueNodeName() const;
+  void startInlineRenameCluster(const QString& cluster);
+  void startInlineRenameNode(const QString& node);
   void beginInlineRename(QGraphicsItem* parentItem,
                          const QRectF& localRect,
                          const QString& oldName,
