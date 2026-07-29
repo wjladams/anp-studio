@@ -239,3 +239,7 @@ Remaining work: multi-user judgments, Rating/Direct prioritizers, sensitivity
 analysis, SuperDecisions `.sdmod` import, contribution guidelines, and
 licensing.
 
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
