@@ -15,11 +15,14 @@
 #include <QButtonGroup>
 #include <QCloseEvent>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSettings>
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QStatusBar>
@@ -94,6 +97,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
                       QKeySequence::New);
   fileMenu->addAction(QStringLiteral("&Open…"), this, &MainWindow::openFile,
                       QKeySequence::Open);
+  recentMenu_ = fileMenu->addMenu(QStringLiteral("Open &Recent"));
+  connect(recentMenu_, &QMenu::aboutToShow, this, &MainWindow::rebuildRecentMenu);
+  rebuildRecentMenu();
   fileMenu->addAction(QStringLiteral("&Save"), this, &MainWindow::saveFile,
                       QKeySequence::Save);
   fileMenu->addAction(QStringLiteral("Save &As…"), this, &MainWindow::saveFileAs,
@@ -319,11 +325,18 @@ void MainWindow::openFile() {
       this, QStringLiteral("Open Network"), {},
       QStringLiteral("ANP Studio JSON (*.json);;All files (*)"));
   if (path.isEmpty()) return;
+  (void)openPath(path);
+}
+
+bool MainWindow::openPath(const QString& path) {
   QString err;
   if (!doc_->loadFromFile(path, &err)) {
     QMessageBox::warning(this, QStringLiteral("Open failed"), err);
+    return false;
   }
+  rememberRecentFile(path);
   updateTitle();
+  return true;
 }
 
 bool MainWindow::saveFile() {
@@ -333,6 +346,7 @@ bool MainWindow::saveFile() {
     QMessageBox::warning(this, QStringLiteral("Save failed"), err);
     return false;
   }
+  rememberRecentFile(doc_->path());
   updateTitle();
   return true;
 }
@@ -347,8 +361,89 @@ bool MainWindow::saveFileAs() {
     QMessageBox::warning(this, QStringLiteral("Save failed"), err);
     return false;
   }
+  rememberRecentFile(path);
   updateTitle();
   return true;
+}
+
+void MainWindow::rememberRecentFile(const QString& path) {
+  const QString abs = QFileInfo(path).absoluteFilePath();
+  if (abs.isEmpty()) return;
+  QSettings settings;
+  QStringList recent = settings.value(QStringLiteral("recentFiles")).toStringList();
+  recent.removeAll(abs);
+  recent.prepend(abs);
+  while (recent.size() > kMaxRecentFiles) {
+    recent.removeLast();
+  }
+  settings.setValue(QStringLiteral("recentFiles"), recent);
+}
+
+void MainWindow::rebuildRecentMenu() {
+  if (recentMenu_ == nullptr) return;
+  recentMenu_->clear();
+
+  QSettings settings;
+  QStringList recent = settings.value(QStringLiteral("recentFiles")).toStringList();
+  QStringList existing;
+  existing.reserve(recent.size());
+  for (const QString& path : recent) {
+    if (QFileInfo::exists(path)) {
+      existing.append(path);
+    }
+  }
+  if (existing.size() != recent.size()) {
+    settings.setValue(QStringLiteral("recentFiles"), existing);
+  }
+
+  if (existing.isEmpty()) {
+    auto* empty = recentMenu_->addAction(QStringLiteral("(No recent files)"));
+    empty->setEnabled(false);
+    return;
+  }
+
+  int i = 0;
+  for (const QString& path : existing) {
+    QString label = QFileInfo(path).fileName();
+    if (i < 9) {
+      label = QStringLiteral("&%1 %2").arg(i + 1).arg(label);
+    }
+    auto* act = recentMenu_->addAction(label);
+    act->setData(path);
+    act->setToolTip(path);
+    connect(act, &QAction::triggered, this, &MainWindow::openRecentFile);
+    ++i;
+  }
+  recentMenu_->addSeparator();
+  recentMenu_->addAction(QStringLiteral("Clear Recent"), this,
+                         &MainWindow::clearRecentFiles);
+}
+
+void MainWindow::openRecentFile() {
+  auto* act = qobject_cast<QAction*>(sender());
+  if (act == nullptr) return;
+  const QString path = act->data().toString();
+  if (path.isEmpty()) return;
+  if (!maybeSave()) return;
+  if (!QFileInfo::exists(path)) {
+    QMessageBox::warning(
+        this, QStringLiteral("Open Recent"),
+        QStringLiteral("File no longer exists:\n%1").arg(path));
+    QSettings settings;
+    QStringList recent =
+        settings.value(QStringLiteral("recentFiles")).toStringList();
+    recent.removeAll(QFileInfo(path).absoluteFilePath());
+    recent.removeAll(path);
+    settings.setValue(QStringLiteral("recentFiles"), recent);
+    return;
+  }
+  (void)openPath(path);
+}
+
+void MainWindow::clearRecentFiles() {
+  QSettings settings;
+  settings.remove(QStringLiteral("recentFiles"));
+  rebuildRecentMenu();
 }
 
 void MainWindow::calculate() {

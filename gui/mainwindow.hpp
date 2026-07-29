@@ -21,6 +21,7 @@ class QButtonGroup;
 class QWidget;
 class QHBoxLayout;
 class QAction;
+class QMenu;
 
 /**
  * @brief Primary window: stages Structure / Judgments / Synthesis.
@@ -52,10 +53,17 @@ private slots:
                               bool ratings);
   void onJudgmentClusterSelected(const QString& parent);
   void onNodeActivated(const QString& name);
+  void openRecentFile();
+  void clearRecentFiles();
+  void rebuildRecentMenu();
 
 private:
   [[nodiscard]] bool maybeSave();
+  [[nodiscard]] bool openPath(const QString& path);
+  void rememberRecentFile(const QString& path);
   void buildStagePages();
+
+  static constexpr int kMaxRecentFiles = 10;
 
   Document* doc_ = nullptr;
   Stage stage_ = Stage::Structure;
@@ -65,6 +73,7 @@ private:
   QWidget* breadcrumbBar_ = nullptr;
   QHBoxLayout* breadcrumbLay_ = nullptr;
   QAction* connectModeAction_ = nullptr;
+  QMenu* recentMenu_ = nullptr;
 
   NetworkCanvas* canvas_ = nullptr;
   InspectorPanel* inspector_ = nullptr;
