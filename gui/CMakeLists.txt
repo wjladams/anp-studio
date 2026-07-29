@@ -12,7 +12,6 @@ add_executable(anpstudio
   canvas/cluster_item.cpp
   canvas/node_item.cpp
   canvas/link_item.cpp
-  panels/structure_panel.cpp
   panels/pairwise_panel.cpp
   panels/results_panel.cpp
   panels/inspector_panel.cpp

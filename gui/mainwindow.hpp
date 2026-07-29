@@ -9,7 +9,6 @@
 
 class Document;
 class NetworkCanvas;
-class StructurePanel;
 class PairwisePanel;
 class ResultsPanel;
 class InspectorPanel;
@@ -19,7 +18,8 @@ class SessionStubPanel;
 class SynthesisSummaryPanel;
 class QStackedWidget;
 class QButtonGroup;
-class QLabel;
+class QWidget;
+class QHBoxLayout;
 class QAction;
 
 /**
@@ -51,6 +51,7 @@ private slots:
                               const QString& destCluster,
                               bool ratings);
   void onJudgmentClusterSelected(const QString& parent);
+  void onNodeActivated(const QString& name);
 
 private:
   [[nodiscard]] bool maybeSave();
@@ -61,11 +62,11 @@ private:
 
   QStackedWidget* stages_ = nullptr;
   QButtonGroup* stageButtons_ = nullptr;
-  QLabel* breadcrumb_ = nullptr;
+  QWidget* breadcrumbBar_ = nullptr;
+  QHBoxLayout* breadcrumbLay_ = nullptr;
   QAction* connectModeAction_ = nullptr;
 
   NetworkCanvas* canvas_ = nullptr;
-  StructurePanel* structure_ = nullptr;
   InspectorPanel* inspector_ = nullptr;
 
   JudgmentNavPanel* judgmentNav_ = nullptr;

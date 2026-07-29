@@ -117,6 +117,18 @@ void Document::popToRoot() {
   notifyChanged();
 }
 
+void Document::popToDepth(int depth) {
+  if (depth < 1) depth = 1;
+  const auto target = static_cast<std::size_t>(depth);
+  if (target >= stack_.size()) return;
+  stack_.resize(target);
+  selectedCluster_.clear();
+  selectedNode_.clear();
+  emit selectionChanged(selectedCluster_, selectedNode_);
+  emit viewNetworkChanged();
+  notifyChanged();
+}
+
 int Document::subnetDepth() const {
   return static_cast<int>(stack_.size());
 }

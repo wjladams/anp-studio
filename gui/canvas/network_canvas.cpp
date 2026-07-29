@@ -13,6 +13,7 @@
 #include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QTimer>
 
 NetworkCanvas::NetworkCanvas(Document* doc, QWidget* parent)
     : QGraphicsView(parent), doc_(doc) {
@@ -93,6 +94,13 @@ void NetworkCanvas::rebuild() {
           [this](const QString& node, int from, int to) {
             doc_->undoStack()->push(new ReorderNodeCmd(doc_, node, from, to));
           });
+      ni->setActivateCallback([this](const QString& node) {
+        // Defer: EnsureSubnet/pushSubnet rebuilds the scene and would delete
+        // this NodeItem while mouseDoubleClickEvent is still on the stack.
+        QTimer::singleShot(0, this, [this, node]() {
+          emit nodeActivated(node);
+        });
+      });
       nodes_.insert(QString::fromStdString(n->name()), ni);
     }
     item->layoutNodes();

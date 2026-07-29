@@ -32,6 +32,11 @@ public:
     reorderCb_ = std::move(cb);
   }
 
+  /** @brief Invoked on double-click (e.g. open subnetwork). */
+  void setActivateCallback(std::function<void(const QString& node)> cb) {
+    activateCb_ = std::move(cb);
+  }
+
 protected:
   void paint(QPainter* painter,
              const QStyleOptionGraphicsItem* option,
@@ -53,6 +58,7 @@ private:
   bool invert_ = false;
   std::function<void()> linkUpdate_;
   std::function<void(const QString&, int, int)> reorderCb_;
+  std::function<void(const QString&)> activateCb_;
 
   bool reordering_ = false;
   int fromIndex_ = -1;

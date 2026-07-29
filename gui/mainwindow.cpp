@@ -1,6 +1,7 @@
 #include "mainwindow.hpp"
 
 #include "canvas/network_canvas.hpp"
+#include "commands/network_commands.hpp"
 #include "document.hpp"
 #include "panels/inspector_panel.hpp"
 #include "panels/judgment_nav_panel.hpp"
@@ -8,7 +9,6 @@
 #include "panels/ratings_panel.hpp"
 #include "panels/results_panel.hpp"
 #include "panels/session_stub_panel.hpp"
-#include "panels/structure_panel.hpp"
 #include "panels/synthesis_summary_panel.hpp"
 
 #include <QAction>
@@ -54,14 +54,12 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   stageRow->addStretch();
   rootLay->addLayout(stageRow);
 
-  auto* crumbRow = new QHBoxLayout;
-  breadcrumb_ = new QLabel(central);
-  crumbRow->addWidget(breadcrumb_, 1);
-  auto* upBtn = new QPushButton(QStringLiteral("Up"), central);
-  auto* rootBtn = new QPushButton(QStringLiteral("Root"), central);
-  crumbRow->addWidget(upBtn);
-  crumbRow->addWidget(rootBtn);
-  rootLay->addLayout(crumbRow);
+  breadcrumbBar_ = new QWidget(central);
+  breadcrumbBar_->setObjectName(QStringLiteral("breadcrumbBar"));
+  breadcrumbLay_ = new QHBoxLayout(breadcrumbBar_);
+  breadcrumbLay_->setContentsMargins(0, 0, 0, 0);
+  breadcrumbLay_->setSpacing(4);
+  rootLay->addWidget(breadcrumbBar_);
 
   stages_ = new QStackedWidget(central);
   rootLay->addWidget(stages_, 1);
@@ -72,17 +70,13 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   connect(stageButtons_, &QButtonGroup::idClicked, this, [this](int id) {
     setStage(static_cast<Stage>(id));
   });
-  connect(upBtn, &QPushButton::clicked, doc_, &Document::popSubnet);
-  connect(rootBtn, &QPushButton::clicked, doc_, &Document::popToRoot);
 
-  connect(structure_, &StructurePanel::nodeSelected, this, [this](const QString&) {
-    // selection already set by StructurePanel
-  });
   connect(canvas_, &NetworkCanvas::selectionChanged, this,
           [this](const QString& cluster, const QString& node) {
             doc_->setSelection(cluster, node);
           });
-  connect(canvas_, &NetworkCanvas::nodeActivated, doc_, &Document::pushSubnet);
+  connect(canvas_, &NetworkCanvas::nodeActivated, this,
+          &MainWindow::onNodeActivated);
   connect(doc_, &Document::selectionChanged, this,
           &MainWindow::onDocumentSelectionChanged);
   connect(doc_, &Document::viewNetworkChanged, this, &MainWindow::updateBreadcrumb);
@@ -155,18 +149,15 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 }
 
 void MainWindow::buildStagePages() {
-  // Structure: tree | canvas | inspector
-  structure_ = new StructurePanel(doc_, this);
+  // Structure: canvas | inspector
   canvas_ = new NetworkCanvas(doc_, this);
   inspector_ = new InspectorPanel(doc_, this);
   auto* structurePage = new QWidget(stages_);
   auto* sSplit = new QSplitter(Qt::Horizontal, structurePage);
-  sSplit->addWidget(structure_);
   sSplit->addWidget(canvas_);
   sSplit->addWidget(inspector_);
-  sSplit->setStretchFactor(0, 1);
-  sSplit->setStretchFactor(1, 3);
-  sSplit->setStretchFactor(2, 1);
+  sSplit->setStretchFactor(0, 4);
+  sSplit->setStretchFactor(1, 1);
   auto* sLay = new QVBoxLayout(structurePage);
   sLay->setContentsMargins(0, 0, 0, 0);
   sLay->addWidget(sSplit);
@@ -201,8 +192,6 @@ void MainWindow::buildStagePages() {
   auto* leftCalc = new QWidget(ySplit);
   auto* leftLay = new QVBoxLayout(leftCalc);
   leftLay->addWidget(new QLabel(QStringLiteral("Calculate"), leftCalc));
-  // Reuse controls already created inside ResultsPanel by keeping Results as
-  // center; duplicate a thin left column that triggers the same calculate.
   auto* calcBtn = new QPushButton(QStringLiteral("Calculate (F5)"), leftCalc);
   calcBtn->setObjectName(QStringLiteral("primaryButton"));
   calcBtn->setCursor(Qt::PointingHandCursor);
@@ -266,8 +255,49 @@ void MainWindow::onJudgmentClusterSelected(const QString& parent) {
   pairwise_->selectClusterParent(parent);
 }
 
+void MainWindow::onNodeActivated(const QString& name) {
+  doc_->undoStack()->push(new EnsureSubnetCmd(doc_, name));
+  doc_->pushSubnet(name);
+}
+
 void MainWindow::updateBreadcrumb() {
-  breadcrumb_->setText(doc_->breadcrumb().join(QStringLiteral(" / ")));
+  while (QLayoutItem* item = breadcrumbLay_->takeAt(0)) {
+    if (QWidget* w = item->widget()) {
+      w->deleteLater();
+    }
+    delete item;
+  }
+
+  const QStringList parts = doc_->breadcrumb();
+  auto* caption = new QLabel(QStringLiteral("Network:"), breadcrumbBar_);
+  caption->setObjectName(QStringLiteral("breadcrumbCaption"));
+  breadcrumbLay_->addWidget(caption);
+
+  for (int i = 0; i < parts.size(); ++i) {
+    if (i > 0) {
+      auto* sep = new QLabel(QStringLiteral("/"), breadcrumbBar_);
+      sep->setObjectName(QStringLiteral("breadcrumbSep"));
+      breadcrumbLay_->addWidget(sep);
+    }
+    const bool isCurrent = (i == parts.size() - 1);
+    if (isCurrent) {
+      auto* cur = new QLabel(parts[i], breadcrumbBar_);
+      cur->setObjectName(QStringLiteral("breadcrumbCurrent"));
+      breadcrumbLay_->addWidget(cur);
+    } else {
+      auto* link = new QPushButton(parts[i], breadcrumbBar_);
+      link->setObjectName(QStringLiteral("breadcrumbLink"));
+      link->setFlat(true);
+      link->setCursor(Qt::PointingHandCursor);
+      // Index i → stack depth i+1 (Root is depth 1).
+      const int depth = i + 1;
+      connect(link, &QPushButton::clicked, this, [this, depth]() {
+        doc_->popToDepth(depth);
+      });
+      breadcrumbLay_->addWidget(link);
+    }
+  }
+  breadcrumbLay_->addStretch();
 }
 
 void MainWindow::updateTitle() {

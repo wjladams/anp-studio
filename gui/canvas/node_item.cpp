@@ -140,5 +140,8 @@ void NodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
 }
 
 void NodeItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) {
-  QGraphicsRectItem::mouseDoubleClickEvent(event);
+  event->accept();
+  if (activateCb_) {
+    activateCb_(name_);
+  }
 }

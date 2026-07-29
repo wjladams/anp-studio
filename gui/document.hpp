@@ -70,6 +70,11 @@ public:
   void popSubnet();
   /** @brief Clears the subnet stack back to the root network. */
   void popToRoot();
+  /**
+   * @brief Pops the subnet stack to @p depth frames (1 = root only).
+   * @param depth Target stack size; values &lt; 1 are treated as 1.
+   */
+  void popToDepth(int depth);
   /** @return Number of subnet frames above root (0 at root). */
   [[nodiscard]] int subnetDepth() const;
   /** @return Breadcrumb trail of host node names for the current view. */

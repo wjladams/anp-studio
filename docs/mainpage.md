@@ -11,7 +11,7 @@ Process (ANP)** networks. Built with **Qt 6 Widgets**.
 MainWindow (stages: Structure | Judgments | Synthesis)
   ├── Document          (model, undo, selection, results freshness)
   ├── Structure stage
-  │     StructurePanel · NetworkCanvas · InspectorPanel
+  │     NetworkCanvas · InspectorPanel (+ clickable breadcrumb)
   ├── Judgments stage
   │     JudgmentNavPanel · PairwisePanel | RatingsPanel · SessionStubPanel
   └── Synthesis stage
@@ -27,8 +27,7 @@ Computational types (`anpcpp::AnpNetwork`, `RatingsPrioritizer`, etc.) come from
 |-------|------|
 | @ref Document | Owns the root network, undo stack, selection, and calc freshness |
 | @ref MainWindow | Stage strip shell and shared menus |
-| @ref NetworkCanvas | Interactive cluster/node diagram |
-| @ref StructurePanel | Hierarchy browser with CRUD |
+| @ref NetworkCanvas | Interactive cluster/node diagram (double-click opens subnet) |
 | @ref InspectorPanel | Selected node/cluster properties |
 | @ref JudgmentNavPanel | Judgment parents, coverage, Pairwise/Ratings switch |
 | @ref PairwisePanel | Node and cluster pairwise comparison tables |

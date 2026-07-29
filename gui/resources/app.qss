@@ -145,6 +145,45 @@ QPushButton#stageTab:checked {
   border-bottom: 2px solid #1a73e8;
 }
 
+/* —— Breadcrumb —— */
+QWidget#breadcrumbBar {
+  background-color: transparent;
+}
+
+QLabel#breadcrumbCaption,
+QLabel#breadcrumbSep {
+  color: #5f6368;
+  background-color: transparent;
+}
+
+QLabel#breadcrumbCurrent {
+  color: #202124;
+  font-weight: 600;
+  background-color: transparent;
+  padding: 4px 2px;
+}
+
+QPushButton#breadcrumbLink {
+  background-color: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 6px;
+  color: #1a73e8;
+  font-weight: 600;
+  min-height: 0;
+}
+
+QPushButton#breadcrumbLink:hover {
+  background-color: #e8f0fe;
+  border: none;
+  color: #1967d2;
+}
+
+QPushButton#breadcrumbLink:pressed {
+  background-color: #d2e3fc;
+  border: none;
+}
+
 /* —— Buttons —— */
 QPushButton {
   background-color: #ffffff;
