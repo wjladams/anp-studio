@@ -1,3 +1,8 @@
+/**
+ * @file pairwise_panel.hpp
+ * @brief Editor for node and cluster pairwise comparison matrices.
+ */
+
 #pragma once
 
 #include <QWidget>
@@ -8,14 +13,24 @@ class QTableWidget;
 class QLabel;
 class QRadioButton;
 
+/**
+ * @brief Table editor for pairwise judgments (node or cluster mode).
+ */
 class PairwisePanel : public QWidget {
   Q_OBJECT
 public:
+  /**
+   * @param doc Document containing judgments to edit.
+   * @param parent Optional parent widget.
+   */
   explicit PairwisePanel(Document* doc, QWidget* parent = nullptr);
 
 public slots:
+  /** @brief Rebuilds parent/destination controls and the comparison table. */
   void refresh();
+  /** @brief Selects a node as the comparison parent (w.r.t. node). */
   void selectNodeParent(const QString& name);
+  /** @brief Selects a cluster as the comparison parent (w.r.t. cluster). */
   void selectClusterParent(const QString& name);
 
 private slots:

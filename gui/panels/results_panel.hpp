@@ -1,3 +1,8 @@
+/**
+ * @file results_panel.hpp
+ * @brief Displays supermatrices, limit matrix, and alternative priorities.
+ */
+
 #pragma once
 
 #include <QWidget>
@@ -12,13 +17,22 @@ class QTableWidget;
 class QComboBox;
 class QLineEdit;
 
+/**
+ * @brief Tabbed view of calculation results and synthesis options.
+ */
 class ResultsPanel : public QWidget {
   Q_OBJECT
 public:
+  /**
+   * @param doc Document to calculate and display.
+   * @param parent Optional parent widget.
+   */
   explicit ResultsPanel(Document* doc, QWidget* parent = nullptr);
 
 public slots:
+  /** @brief Recalculates matrices and alternative priorities from the model. */
   void calculate();
+  /** @brief Syncs synthesis kind / custom expression controls with the model. */
   void refreshSynthesisControls();
 
 private slots:
