@@ -1,0 +1,159 @@
+{
+  "format": "anpcpp",
+  "network": {
+    "alternatives_cluster": "Alternatives",
+    "clusters": [
+      {
+        "cluster_pairwise": {
+          "alternatives": [],
+          "matrix": []
+        },
+        "description": "",
+        "name": "Alternatives",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "A",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "B",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "C",
+            "node_prioritizers": {}
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Criteria"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Goal",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Best",
+            "node_prioritizers": {
+              "Criteria": {
+                "alternatives": [
+                  "Price",
+                  "Quality"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    1.0
+                  ],
+                  [
+                    1.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Alternatives"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Criteria",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Price",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "A",
+                  "B",
+                  "C"
+                ],
+                "categories": [
+                  {
+                    "id": "L",
+                    "label": "Low",
+                    "value": 0.2
+                  },
+                  {
+                    "id": "M",
+                    "label": "Medium",
+                    "value": 0.5
+                  },
+                  {
+                    "id": "H",
+                    "label": "High",
+                    "value": 1.0
+                  }
+                ],
+                "mode": "categorical",
+                "ratings": {
+                  "A": "H",
+                  "B": "M",
+                  "C": "L"
+                },
+                "type": "ratings"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Quality",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "A",
+                  "B",
+                  "C"
+                ],
+                "interpreter": {
+                  "kind": "divide_by_max"
+                },
+                "mode": "numeric",
+                "type": "ratings",
+                "values": {
+                  "A": 40.0,
+                  "B": 80.0,
+                  "C": 100.0
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "synthesis": {
+      "custom_expr": "",
+      "kind": "additive"
+    }
+  },
+  "version": 1
+}

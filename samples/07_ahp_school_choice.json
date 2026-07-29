@@ -1,0 +1,381 @@
+{
+  "format": "anpcpp",
+  "network": {
+    "alternatives_cluster": "Alternatives",
+    "clusters": [
+      {
+        "cluster_pairwise": {
+          "alternatives": [],
+          "matrix": []
+        },
+        "description": "",
+        "name": "Alternatives",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "School1",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "School2",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "School3",
+            "node_prioritizers": {}
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Criteria"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Goal",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Best School",
+            "node_prioritizers": {
+              "Criteria": {
+                "alternatives": [
+                  "Learning",
+                  "Friends",
+                  "SchoolLife",
+                  "Vocational",
+                  "CollegePrep",
+                  "Music",
+                  "Athletics"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    3.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    4.0
+                  ],
+                  [
+                    0.3333333333333333,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.5,
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    2.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                    3.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.3333333333333333,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.25,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Alternatives"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Criteria",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Learning",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "School1",
+                  "School2",
+                  "School3"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    3.0
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    0.3333333333333333,
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Friends",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "School1",
+                  "School2",
+                  "School3"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    3.0
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    0.3333333333333333,
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "SchoolLife",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "School1",
+                  "School2",
+                  "School3"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    3.0
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    0.3333333333333333,
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Vocational",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "School1",
+                  "School2",
+                  "School3"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    3.0
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    0.3333333333333333,
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "CollegePrep",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "School1",
+                  "School2",
+                  "School3"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    3.0
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    0.3333333333333333,
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Music",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "School1",
+                  "School2",
+                  "School3"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.5,
+                    3.0
+                  ],
+                  [
+                    2.0,
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    0.3333333333333333,
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Athletics",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "School1",
+                  "School2",
+                  "School3"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    0.3333333333333333
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    3.0,
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "synthesis": {
+      "custom_expr": "",
+      "kind": "additive"
+    }
+  },
+  "version": 1
+}

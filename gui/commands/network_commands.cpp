@@ -215,3 +215,241 @@ void ReorderNodeCmd::undo() {
                             static_cast<std::size_t>(fromIndex_));
   doc_->notifyChanged();
 }
+
+RemoveNodeCmd::RemoveNodeCmd(Document* doc, QString name)
+    : QUndoCommand(QStringLiteral("Remove node %1").arg(name)),
+      doc_(doc),
+      name_(std::move(name)) {
+  if (auto* n = doc_->network().find_node(name_.toStdString())) {
+    hadNode_ = true;
+    cluster_ = QString::fromStdString(n->cluster()->name());
+  }
+}
+
+void RemoveNodeCmd::redo() {
+  if (!hadNode_) return;
+  doc_->network().remove_node(name_.toStdString());
+  doc_->notifyChanged();
+}
+
+void RemoveNodeCmd::undo() {
+  if (!hadNode_) return;
+  doc_->network().add_node(cluster_.toStdString(), name_.toStdString());
+  doc_->notifyChanged();
+}
+
+RemoveClusterCmd::RemoveClusterCmd(Document* doc, QString name)
+    : QUndoCommand(QStringLiteral("Remove cluster %1").arg(name)),
+      doc_(doc),
+      name_(std::move(name)) {
+  hadCluster_ = doc_->network().find_cluster(name_.toStdString()) != nullptr;
+}
+
+void RemoveClusterCmd::redo() {
+  if (!hadCluster_) return;
+  doc_->network().remove_cluster(name_.toStdString());
+  doc_->notifyChanged();
+}
+
+void RemoveClusterCmd::undo() {
+  if (!hadCluster_) return;
+  doc_->network().add_cluster(name_.toStdString());
+  doc_->notifyChanged();
+}
+
+SetPrioritizerKindCmd::SetPrioritizerKindCmd(Document* doc,
+                                             QString wrt,
+                                             QString destCluster,
+                                             anpcpp::NodePrioritizerKind kind)
+    : QUndoCommand(QStringLiteral("Set prioritizer kind")),
+      doc_(doc),
+      wrt_(std::move(wrt)),
+      destCluster_(std::move(destCluster)),
+      kind_(kind) {
+  oldKind_ = doc_->network()
+                 .node(wrt_.toStdString())
+                 .node_prioritizer_kind(destCluster_.toStdString());
+}
+
+void SetPrioritizerKindCmd::redo() {
+  doc_->network().set_node_prioritizer_kind(
+      wrt_.toStdString(), destCluster_.toStdString(), kind_);
+  doc_->notifyChanged();
+}
+
+void SetPrioritizerKindCmd::undo() {
+  doc_->network().set_node_prioritizer_kind(
+      wrt_.toStdString(), destCluster_.toStdString(), oldKind_);
+  doc_->notifyChanged();
+}
+
+SetRatingsModeCmd::SetRatingsModeCmd(Document* doc,
+                                     QString wrt,
+                                     QString destCluster,
+                                     anpcpp::RatingsPrioritizer::Mode mode)
+    : QUndoCommand(QStringLiteral("Set ratings mode")),
+      doc_(doc),
+      wrt_(std::move(wrt)),
+      destCluster_(std::move(destCluster)),
+      mode_(mode) {
+  oldMode_ = doc_->network()
+                 .node(wrt_.toStdString())
+                 .node_ratings(destCluster_.toStdString())
+                 ->mode();
+}
+
+void SetRatingsModeCmd::redo() {
+  doc_->network()
+      .node(wrt_.toStdString())
+      .node_ratings(destCluster_.toStdString())
+      ->set_mode(mode_);
+  doc_->notifyChanged();
+}
+
+void SetRatingsModeCmd::undo() {
+  doc_->network()
+      .node(wrt_.toStdString())
+      .node_ratings(destCluster_.toStdString())
+      ->set_mode(oldMode_);
+  doc_->notifyChanged();
+}
+
+SetRatingsCategoriesCmd::SetRatingsCategoriesCmd(
+    Document* doc,
+    QString wrt,
+    QString destCluster,
+    std::vector<anpcpp::RatingCategory> cats)
+    : QUndoCommand(QStringLiteral("Set rating categories")),
+      doc_(doc),
+      wrt_(std::move(wrt)),
+      destCluster_(std::move(destCluster)),
+      cats_(std::move(cats)) {
+  oldCats_ = doc_->network()
+                 .node(wrt_.toStdString())
+                 .node_ratings(destCluster_.toStdString())
+                 ->categories();
+}
+
+void SetRatingsCategoriesCmd::redo() {
+  doc_->network()
+      .node(wrt_.toStdString())
+      .node_ratings(destCluster_.toStdString())
+      ->set_categories(cats_);
+  doc_->notifyChanged();
+}
+
+void SetRatingsCategoriesCmd::undo() {
+  doc_->network()
+      .node(wrt_.toStdString())
+      .node_ratings(destCluster_.toStdString())
+      ->set_categories(oldCats_);
+  doc_->notifyChanged();
+}
+
+SetRatingVoteCmd::SetRatingVoteCmd(Document* doc,
+                                   QString wrt,
+                                   QString destCluster,
+                                   QString alt,
+                                   QString categoryId)
+    : QUndoCommand(QStringLiteral("Set rating vote")),
+      doc_(doc),
+      wrt_(std::move(wrt)),
+      destCluster_(std::move(destCluster)),
+      alt_(std::move(alt)),
+      categoryId_(std::move(categoryId)) {
+  const auto old = doc_->network()
+                       .node(wrt_.toStdString())
+                       .node_ratings(destCluster_.toStdString())
+                       ->rating(alt_.toStdString());
+  hadOld_ = old.has_value();
+  if (hadOld_) oldCategoryId_ = QString::fromStdString(*old);
+}
+
+void SetRatingVoteCmd::redo() {
+  auto* rt = doc_->network()
+                 .node(wrt_.toStdString())
+                 .node_ratings(destCluster_.toStdString());
+  if (categoryId_.isEmpty()) rt->clear_rating(alt_.toStdString());
+  else rt->set_rating(alt_.toStdString(), categoryId_.toStdString());
+  doc_->notifyChanged();
+}
+
+void SetRatingVoteCmd::undo() {
+  auto* rt = doc_->network()
+                 .node(wrt_.toStdString())
+                 .node_ratings(destCluster_.toStdString());
+  if (!hadOld_) rt->clear_rating(alt_.toStdString());
+  else rt->set_rating(alt_.toStdString(), oldCategoryId_.toStdString());
+  doc_->notifyChanged();
+}
+
+SetRatingValueCmd::SetRatingValueCmd(Document* doc,
+                                     QString wrt,
+                                     QString destCluster,
+                                     QString alt,
+                                     bool clear,
+                                     double value)
+    : QUndoCommand(QStringLiteral("Set rating value")),
+      doc_(doc),
+      wrt_(std::move(wrt)),
+      destCluster_(std::move(destCluster)),
+      alt_(std::move(alt)),
+      clear_(clear),
+      value_(value) {
+  const auto old = doc_->network()
+                       .node(wrt_.toStdString())
+                       .node_ratings(destCluster_.toStdString())
+                       ->value(alt_.toStdString());
+  hadOld_ = old.has_value();
+  if (hadOld_) oldValue_ = *old;
+}
+
+void SetRatingValueCmd::redo() {
+  auto* rt = doc_->network()
+                 .node(wrt_.toStdString())
+                 .node_ratings(destCluster_.toStdString());
+  if (clear_) rt->clear_value(alt_.toStdString());
+  else rt->set_value(alt_.toStdString(), value_);
+  doc_->notifyChanged();
+}
+
+void SetRatingValueCmd::undo() {
+  auto* rt = doc_->network()
+                 .node(wrt_.toStdString())
+                 .node_ratings(destCluster_.toStdString());
+  if (!hadOld_) rt->clear_value(alt_.toStdString());
+  else rt->set_value(alt_.toStdString(), oldValue_);
+  doc_->notifyChanged();
+}
+
+SetRatingsInterpreterCmd::SetRatingsInterpreterCmd(
+    Document* doc,
+    QString wrt,
+    QString destCluster,
+    anpcpp::ScoreInterpreter interpreter)
+    : QUndoCommand(QStringLiteral("Set ratings interpreter")),
+      doc_(doc),
+      wrt_(std::move(wrt)),
+      destCluster_(std::move(destCluster)),
+      interpreter_(std::move(interpreter)) {
+  oldInterpreter_ = doc_->network()
+                        .node(wrt_.toStdString())
+                        .node_ratings(destCluster_.toStdString())
+                        ->interpreter();
+}
+
+void SetRatingsInterpreterCmd::redo() {
+  doc_->network()
+      .node(wrt_.toStdString())
+      .node_ratings(destCluster_.toStdString())
+      ->set_interpreter(interpreter_);
+  doc_->notifyChanged();
+}
+
+void SetRatingsInterpreterCmd::undo() {
+  doc_->network()
+      .node(wrt_.toStdString())
+      .node_ratings(destCluster_.toStdString())
+      ->set_interpreter(oldInterpreter_);
+  doc_->notifyChanged();
+}

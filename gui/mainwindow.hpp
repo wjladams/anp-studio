@@ -1,6 +1,6 @@
 /**
  * @file mainwindow.hpp
- * @brief Main application window with menus and dock panels.
+ * @brief Main application window with stage-based shell.
  */
 
 #pragma once
@@ -12,43 +12,68 @@ class NetworkCanvas;
 class StructurePanel;
 class PairwisePanel;
 class ResultsPanel;
+class InspectorPanel;
+class JudgmentNavPanel;
+class RatingsPanel;
+class SessionStubPanel;
+class SynthesisSummaryPanel;
+class QStackedWidget;
+class QButtonGroup;
+class QLabel;
+class QAction;
 
 /**
- * @brief Primary window: file operations, calculation, and docked UI panels.
+ * @brief Primary window: stages Structure / Judgments / Synthesis.
  */
 class MainWindow : public QMainWindow {
   Q_OBJECT
 public:
-  /**
-   * @param parent Optional Qt parent widget.
-   */
+  enum class Stage { Structure = 0, Judgments = 1, Synthesis = 2 };
+
   explicit MainWindow(QWidget* parent = nullptr);
 
+public slots:
+  void setStage(Stage stage);
+
 protected:
-  /** @brief Prompts to save before closing if the document is dirty. */
   void closeEvent(QCloseEvent* event) override;
 
 private slots:
-  /** @brief Creates a new empty document. */
   void newFile();
-  /** @brief Opens a JSON network file. */
   void openFile();
-  /** @brief Saves to the current path. @return False if cancelled or failed. */
   bool saveFile();
-  /** @brief Saves via file dialog. @return False if cancelled or failed. */
   bool saveFileAs();
-  /** @brief Updates the window title from path and dirty state. */
   void updateTitle();
-  /** @brief Triggers results calculation in the results panel. */
+  void updateBreadcrumb();
   void calculate();
+  void onDocumentSelectionChanged(const QString& cluster, const QString& node);
+  void onJudgmentNodeSelected(const QString& parent,
+                              const QString& destCluster,
+                              bool ratings);
+  void onJudgmentClusterSelected(const QString& parent);
 
 private:
-  /** @return False if the user cancelled a save prompt. */
   [[nodiscard]] bool maybeSave();
+  void buildStagePages();
 
   Document* doc_ = nullptr;
+  Stage stage_ = Stage::Structure;
+
+  QStackedWidget* stages_ = nullptr;
+  QButtonGroup* stageButtons_ = nullptr;
+  QLabel* breadcrumb_ = nullptr;
+  QAction* connectModeAction_ = nullptr;
+
   NetworkCanvas* canvas_ = nullptr;
   StructurePanel* structure_ = nullptr;
+  InspectorPanel* inspector_ = nullptr;
+
+  JudgmentNavPanel* judgmentNav_ = nullptr;
   PairwisePanel* pairwise_ = nullptr;
+  RatingsPanel* ratings_ = nullptr;
+  SessionStubPanel* sessionStub_ = nullptr;
+  QStackedWidget* judgmentCenter_ = nullptr;
+
   ResultsPanel* results_ = nullptr;
+  SynthesisSummaryPanel* synthesisSummary_ = nullptr;
 };

@@ -1,0 +1,219 @@
+{
+  "format": "anpcpp",
+  "network": {
+    "alternatives_cluster": "Alternatives",
+    "clusters": [
+      {
+        "cluster_pairwise": {
+          "alternatives": [],
+          "matrix": []
+        },
+        "description": "",
+        "name": "Alternatives",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "LowLevel",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "MediumLevel",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "HighLevel",
+            "node_prioritizers": {}
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Alternatives",
+            "Criteria"
+          ],
+          "matrix": [
+            [
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Criteria",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "FloodControl",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "LowLevel",
+                  "MediumLevel",
+                  "HighLevel"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.0,
+                    4.0
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    0.25,
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              },
+              "Criteria": {
+                "alternatives": [
+                  "Environment",
+                  "FloodControl"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    1.0
+                  ],
+                  [
+                    1.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "WaterSupply",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "LowLevel",
+                  "MediumLevel",
+                  "HighLevel"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.0,
+                    0.25
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    4.0,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Environment",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "LowLevel",
+                  "MediumLevel",
+                  "HighLevel"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    0.0,
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              },
+              "Criteria": {
+                "alternatives": [
+                  "Recreation"
+                ],
+                "matrix": [
+                  [
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Recreation",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "LowLevel",
+                  "MediumLevel",
+                  "HighLevel"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.0,
+                    0.3333333333333333
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    3.0,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "synthesis": {
+      "custom_expr": "",
+      "kind": "additive"
+    }
+  },
+  "version": 1
+}

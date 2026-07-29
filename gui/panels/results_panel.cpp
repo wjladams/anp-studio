@@ -3,25 +3,27 @@
 #include "commands/network_commands.hpp"
 #include "document.hpp"
 
+#include <QAbstractItemView>
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
-#include <QAbstractItemView>
 #include <QPushButton>
 #include <QTabWidget>
 #include <QTableWidget>
 #include <QVBoxLayout>
+#include <algorithm>
 
 ResultsPanel::ResultsPanel(Document* doc, QWidget* parent)
     : QWidget(parent), doc_(doc) {
   auto* layout = new QVBoxLayout(this);
 
-  auto* synthRow = new QHBoxLayout;
-  synthRow->addWidget(new QLabel(QStringLiteral("Synthesis:"), this));
-  synthKind_ = new QComboBox(this);
+  controlsHost_ = new QWidget(this);
+  auto* synthRow = new QHBoxLayout(controlsHost_);
+  synthRow->addWidget(new QLabel(QStringLiteral("Synthesis:"), controlsHost_));
+  synthKind_ = new QComboBox(controlsHost_);
   synthKind_->addItem(QStringLiteral("Additive"),
                       static_cast<int>(anpcpp::SynthesisKind::Additive));
   synthKind_->addItem(QStringLiteral("Multiplicative"),
@@ -29,13 +31,18 @@ ResultsPanel::ResultsPanel(Document* doc, QWidget* parent)
   synthKind_->addItem(QStringLiteral("Custom"),
                       static_cast<int>(anpcpp::SynthesisKind::Custom));
   synthRow->addWidget(synthKind_);
-  customExpr_ = new QLineEdit(this);
+  customExpr_ = new QLineEdit(controlsHost_);
   customExpr_->setPlaceholderText(QStringLiteral("e.g. Benefits / Costs"));
   synthRow->addWidget(customExpr_);
-  layout->addLayout(synthRow);
+  layout->addWidget(controlsHost_);
 
-  auto* calc = new QPushButton(QStringLiteral("Calculate"), this);
-  layout->addWidget(calc);
+  staleLabel_ = new QLabel(this);
+  layout->addWidget(staleLabel_);
+
+  calcButton_ = new QPushButton(QStringLiteral("Calculate"), this);
+  calcButton_->setObjectName(QStringLiteral("primaryButton"));
+  calcButton_->setCursor(Qt::PointingHandCursor);
+  layout->addWidget(calcButton_);
 
   tabs_ = new QTabWidget(this);
   auto makeTable = [this]() {
@@ -58,7 +65,7 @@ ResultsPanel::ResultsPanel(Document* doc, QWidget* parent)
   tabs_->addTab(alts_, QStringLiteral("Alternatives"));
   layout->addWidget(tabs_);
 
-  connect(calc, &QPushButton::clicked, this, &ResultsPanel::calculate);
+  connect(calcButton_, &QPushButton::clicked, this, &ResultsPanel::calculate);
   connect(synthKind_, QOverload<int>::of(&QComboBox::currentIndexChanged),
           this, &ResultsPanel::onSynthesisKindChanged);
   connect(customExpr_, &QLineEdit::editingFinished, this,
@@ -67,8 +74,11 @@ ResultsPanel::ResultsPanel(Document* doc, QWidget* parent)
           &ResultsPanel::refreshSynthesisControls);
   connect(doc_, &Document::viewNetworkChanged, this,
           &ResultsPanel::refreshSynthesisControls);
+  connect(doc_, &Document::resultsFreshnessChanged, this,
+          &ResultsPanel::refreshStaleBadge);
 
   refreshSynthesisControls();
+  refreshStaleBadge();
 }
 
 void ResultsPanel::refreshSynthesisControls() {
@@ -79,6 +89,19 @@ void ResultsPanel::refreshSynthesisControls() {
   customExpr_->setEnabled(opt.kind == anpcpp::SynthesisKind::Custom);
 }
 
+void ResultsPanel::refreshStaleBadge() {
+  if (!doc_->hasResults()) {
+    staleLabel_->setText(QStringLiteral("Calculate to populate matrices."));
+    staleLabel_->setStyleSheet(QString());
+  } else if (doc_->resultsStale()) {
+    staleLabel_->setText(QStringLiteral("Results outdated."));
+    staleLabel_->setStyleSheet(QStringLiteral("color: #a60; font-weight: bold;"));
+  } else {
+    staleLabel_->setText(QStringLiteral("Results current."));
+    staleLabel_->setStyleSheet(QString());
+  }
+}
+
 void ResultsPanel::onSynthesisKindChanged(int) {
   anpcpp::SynthesisOptions neu = doc_->network().synthesis_options();
   neu.kind = static_cast<anpcpp::SynthesisKind>(
@@ -86,7 +109,6 @@ void ResultsPanel::onSynthesisKindChanged(int) {
   neu.custom_expr = customExpr_->text().toStdString();
   const auto old = doc_->network().synthesis_options();
   if (neu.kind == old.kind && neu.custom_expr == old.custom_expr) return;
-  // Synthesis options affect subnet aggregation; store on the current network.
   doc_->undoStack()->push(new SetSynthesisOptionsCmd(doc_, neu, old));
   customExpr_->setEnabled(neu.kind == anpcpp::SynthesisKind::Custom);
 }
@@ -140,14 +162,25 @@ void ResultsPanel::calculate() {
     auto& net = doc_->network();
     const auto nodes = net.node_names();
     const auto clusters = net.cluster_names();
-    // Tab order follows the ANP pipeline: raw → cluster-weighted → scaled → limit → priorities.
     fillMatrix(unscaled_, net.unscaled_supermatrix(), nodes, nodes);
     fillMatrix(clusterW_, net.cluster_weight_matrix(), clusters, clusters);
     fillMatrix(scaled_, net.scaled_supermatrix(), nodes, nodes);
     fillMatrix(limit_, net.limit_matrix(), nodes, nodes);
     fillVector(global_, net.global_priority(), nodes);
-    fillVector(alts_, net.priority(), net.alt_names());
+    const auto altNames = net.alt_names();
+    const auto altPri = net.priority();
+    fillVector(alts_, altPri, altNames);
     tabs_->setCurrentWidget(alts_);
+
+    std::vector<std::pair<QString, double>> ranked;
+    ranked.reserve(altNames.size());
+    for (std::size_t i = 0; i < altNames.size(); ++i) {
+      ranked.emplace_back(QString::fromStdString(altNames[i]), altPri[i]);
+    }
+    std::sort(ranked.begin(), ranked.end(),
+              [](const auto& a, const auto& b) { return a.second > b.second; });
+    emit alternativesUpdated(ranked);
+    doc_->markResultsCurrent();
   } catch (const std::exception& e) {
     QMessageBox::warning(this, QStringLiteral("Calculation error"),
                          QString::fromUtf8(e.what()));

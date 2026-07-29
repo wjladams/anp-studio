@@ -15,6 +15,11 @@ add_executable(anpstudio
   panels/structure_panel.cpp
   panels/pairwise_panel.cpp
   panels/results_panel.cpp
+  panels/inspector_panel.cpp
+  panels/judgment_nav_panel.cpp
+  panels/ratings_panel.cpp
+  panels/session_stub_panel.cpp
+  panels/synthesis_summary_panel.cpp
   commands/network_commands.cpp
   resources.qrc
 )

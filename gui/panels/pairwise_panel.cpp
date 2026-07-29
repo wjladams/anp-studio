@@ -60,6 +60,13 @@ void PairwisePanel::selectNodeParent(const QString& name) {
   if (idx >= 0) parentBox_->setCurrentIndex(idx);
 }
 
+void PairwisePanel::selectNodeLink(const QString& parent,
+                                   const QString& destCluster) {
+  selectNodeParent(parent);
+  const int didx = destClusterBox_->findText(destCluster);
+  if (didx >= 0) destClusterBox_->setCurrentIndex(didx);
+}
+
 void PairwisePanel::selectClusterParent(const QString& name) {
   clusterMode_->setChecked(true);
   refresh();

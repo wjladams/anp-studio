@@ -1,0 +1,439 @@
+{
+  "format": "anpcpp",
+  "network": {
+    "clusters": [
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Merits"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Goal",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "ChooseCar",
+            "node_prioritizers": {
+              "Merits": {
+                "alternatives": [
+                  "Benefits",
+                  "Costs",
+                  "Risks"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    3.0
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    0.3333333333333333,
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [],
+          "matrix": []
+        },
+        "description": "",
+        "name": "Merits",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Benefits",
+            "node_prioritizers": {},
+            "subnetwork": {
+              "alternatives_cluster": "Alternatives",
+              "clusters": [
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [
+                      "Alternatives"
+                    ],
+                    "matrix": [
+                      [
+                        1.0
+                      ]
+                    ]
+                  },
+                  "description": "",
+                  "name": "Factors",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Style",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "American",
+                            "European",
+                            "Japanese"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              0.3333333333333333,
+                              0.5
+                            ],
+                            [
+                              3.0,
+                              1.0,
+                              0.0
+                            ],
+                            [
+                              2.0,
+                              0.0,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Reliability",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "American",
+                            "European",
+                            "Japanese"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              0.0,
+                              0.3333333333333333
+                            ],
+                            [
+                              0.0,
+                              1.0,
+                              0.5
+                            ],
+                            [
+                              3.0,
+                              2.0,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [],
+                    "matrix": []
+                  },
+                  "description": "",
+                  "name": "Alternatives",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "American",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "European",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Japanese",
+                      "node_prioritizers": {}
+                    }
+                  ]
+                }
+              ],
+              "synthesis": {
+                "custom_expr": "",
+                "kind": "additive"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": true,
+            "name": "Costs",
+            "node_prioritizers": {},
+            "subnetwork": {
+              "alternatives_cluster": "Alternatives",
+              "clusters": [
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [
+                      "Alternatives"
+                    ],
+                    "matrix": [
+                      [
+                        1.0
+                      ]
+                    ]
+                  },
+                  "description": "",
+                  "name": "Factors",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Purchase",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "American",
+                            "European",
+                            "Japanese"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              0.3333333333333333,
+                              0.0
+                            ],
+                            [
+                              3.0,
+                              1.0,
+                              2.0
+                            ],
+                            [
+                              0.0,
+                              0.5,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Maintenance",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "American",
+                            "European",
+                            "Japanese"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              0.0,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              1.0,
+                              2.0
+                            ],
+                            [
+                              0.0,
+                              0.5,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [],
+                    "matrix": []
+                  },
+                  "description": "",
+                  "name": "Alternatives",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "American",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "European",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Japanese",
+                      "node_prioritizers": {}
+                    }
+                  ]
+                }
+              ],
+              "synthesis": {
+                "custom_expr": "",
+                "kind": "additive"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": true,
+            "name": "Risks",
+            "node_prioritizers": {},
+            "subnetwork": {
+              "alternatives_cluster": "Alternatives",
+              "clusters": [
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [
+                      "Alternatives"
+                    ],
+                    "matrix": [
+                      [
+                        1.0
+                      ]
+                    ]
+                  },
+                  "description": "",
+                  "name": "Factors",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Resale",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "American",
+                            "European",
+                            "Japanese"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              2.0,
+                              0.0
+                            ],
+                            [
+                              0.5,
+                              1.0,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              0.0,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "SafetyConcern",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "American",
+                            "European",
+                            "Japanese"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              0.0,
+                              2.0
+                            ],
+                            [
+                              0.0,
+                              1.0,
+                              0.0
+                            ],
+                            [
+                              0.5,
+                              0.0,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [],
+                    "matrix": []
+                  },
+                  "description": "",
+                  "name": "Alternatives",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "American",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "European",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Japanese",
+                      "node_prioritizers": {}
+                    }
+                  ]
+                }
+              ],
+              "synthesis": {
+                "custom_expr": "",
+                "kind": "additive"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "synthesis": {
+      "custom_expr": "",
+      "kind": "additive"
+    }
+  },
+  "version": 1
+}

@@ -18,6 +18,13 @@ This application is inspired by the workflow of
 cross-checked against concepts from [pyanp](https://pyanp.org/) (reference
 only).
 
+## Sample models
+
+Ready-to-open JSON models live in [`samples/`](samples/). Use **File → Open** in
+ANP Studio. See [`samples/README.md`](samples/README.md) for the catalog
+(Hamburger market share, classic AHP hierarchies, BCR/BOCR subnetworks, ratings
+examples, and more). Regenerate with libanpcpp’s `export_sample_models` example.
+
 ## Architecture
 
 ```text

@@ -1,0 +1,676 @@
+{
+  "format": "anpcpp",
+  "network": {
+    "clusters": [
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "BOCR"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Goal",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "LaunchDecision",
+            "node_prioritizers": {
+              "BOCR": {
+                "alternatives": [
+                  "Benefits",
+                  "Opportunities",
+                  "Costs",
+                  "Risks"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.0,
+                    2.0,
+                    3.0
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    0.0,
+                    2.0
+                  ],
+                  [
+                    0.5,
+                    0.0,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.3333333333333333,
+                    0.5,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [],
+          "matrix": []
+        },
+        "description": "",
+        "name": "BOCR",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Benefits",
+            "node_prioritizers": {},
+            "subnetwork": {
+              "alternatives_cluster": "Alternatives",
+              "clusters": [
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [
+                      "Alternatives"
+                    ],
+                    "matrix": [
+                      [
+                        1.0
+                      ]
+                    ]
+                  },
+                  "description": "",
+                  "name": "Factors",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Revenue",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "FullLaunch",
+                            "Pilot",
+                            "Delay",
+                            "Cancel"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              3.0,
+                              4.0,
+                              0.0
+                            ],
+                            [
+                              0.3333333333333333,
+                              1.0,
+                              0.0,
+                              0.0
+                            ],
+                            [
+                              0.25,
+                              0.0,
+                              1.0,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              0.0,
+                              0.0,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Brand",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "FullLaunch",
+                            "Pilot",
+                            "Delay",
+                            "Cancel"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              0.0,
+                              0.0,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              1.0,
+                              0.0,
+                              3.0
+                            ],
+                            [
+                              0.0,
+                              0.0,
+                              1.0,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              0.3333333333333333,
+                              0.0,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [],
+                    "matrix": []
+                  },
+                  "description": "",
+                  "name": "Alternatives",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "FullLaunch",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Pilot",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Delay",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Cancel",
+                      "node_prioritizers": {}
+                    }
+                  ]
+                }
+              ],
+              "synthesis": {
+                "custom_expr": "",
+                "kind": "additive"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Opportunities",
+            "node_prioritizers": {},
+            "subnetwork": {
+              "alternatives_cluster": "Alternatives",
+              "clusters": [
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [
+                      "Alternatives"
+                    ],
+                    "matrix": [
+                      [
+                        1.0
+                      ]
+                    ]
+                  },
+                  "description": "",
+                  "name": "Factors",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "MarketShare",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "FullLaunch",
+                            "Pilot",
+                            "Delay",
+                            "Cancel"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              0.0,
+                              4.0,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              1.0,
+                              0.0,
+                              0.0
+                            ],
+                            [
+                              0.25,
+                              0.0,
+                              1.0,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              0.0,
+                              0.0,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Partnerships",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "FullLaunch",
+                            "Pilot",
+                            "Delay",
+                            "Cancel"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              0.0,
+                              0.0,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              1.0,
+                              0.0,
+                              3.0
+                            ],
+                            [
+                              0.0,
+                              0.0,
+                              1.0,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              0.3333333333333333,
+                              0.0,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [],
+                    "matrix": []
+                  },
+                  "description": "",
+                  "name": "Alternatives",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "FullLaunch",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Pilot",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Delay",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Cancel",
+                      "node_prioritizers": {}
+                    }
+                  ]
+                }
+              ],
+              "synthesis": {
+                "custom_expr": "",
+                "kind": "additive"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": true,
+            "name": "Costs",
+            "node_prioritizers": {},
+            "subnetwork": {
+              "alternatives_cluster": "Alternatives",
+              "clusters": [
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [
+                      "Alternatives"
+                    ],
+                    "matrix": [
+                      [
+                        1.0
+                      ]
+                    ]
+                  },
+                  "description": "",
+                  "name": "Factors",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Capex",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "FullLaunch",
+                            "Pilot",
+                            "Delay",
+                            "Cancel"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              3.0,
+                              0.0,
+                              0.0
+                            ],
+                            [
+                              0.3333333333333333,
+                              1.0,
+                              0.0,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              0.0,
+                              1.0,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              0.0,
+                              0.0,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Opex",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "FullLaunch",
+                            "Pilot",
+                            "Delay",
+                            "Cancel"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              0.0,
+                              2.0,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              1.0,
+                              0.0,
+                              0.0
+                            ],
+                            [
+                              0.5,
+                              0.0,
+                              1.0,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              0.0,
+                              0.0,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [],
+                    "matrix": []
+                  },
+                  "description": "",
+                  "name": "Alternatives",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "FullLaunch",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Pilot",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Delay",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Cancel",
+                      "node_prioritizers": {}
+                    }
+                  ]
+                }
+              ],
+              "synthesis": {
+                "custom_expr": "",
+                "kind": "additive"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": true,
+            "name": "Risks",
+            "node_prioritizers": {},
+            "subnetwork": {
+              "alternatives_cluster": "Alternatives",
+              "clusters": [
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [
+                      "Alternatives"
+                    ],
+                    "matrix": [
+                      [
+                        1.0
+                      ]
+                    ]
+                  },
+                  "description": "",
+                  "name": "Factors",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Competitive",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "FullLaunch",
+                            "Pilot",
+                            "Delay",
+                            "Cancel"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              0.0,
+                              0.3333333333333333,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              1.0,
+                              0.0,
+                              0.0
+                            ],
+                            [
+                              3.0,
+                              0.0,
+                              1.0,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              0.0,
+                              0.0,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Execution",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "FullLaunch",
+                            "Pilot",
+                            "Delay",
+                            "Cancel"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              2.0,
+                              0.0,
+                              0.0
+                            ],
+                            [
+                              0.5,
+                              1.0,
+                              0.0,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              0.0,
+                              1.0,
+                              0.0
+                            ],
+                            [
+                              0.0,
+                              0.0,
+                              0.0,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [],
+                    "matrix": []
+                  },
+                  "description": "",
+                  "name": "Alternatives",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "FullLaunch",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Pilot",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Delay",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Cancel",
+                      "node_prioritizers": {}
+                    }
+                  ]
+                }
+              ],
+              "synthesis": {
+                "custom_expr": "",
+                "kind": "additive"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "synthesis": {
+      "custom_expr": "Benefits * Opportunities / (Costs * Risks)",
+      "kind": "custom"
+    }
+  },
+  "version": 1
+}

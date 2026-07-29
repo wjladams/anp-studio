@@ -2,7 +2,9 @@
 
 #include <QUndoCommand>
 #include <QString>
+#include <vector>
 
+#include "anpcpp/ratings.hpp"
 #include "document.hpp"
 
 class AddClusterCmd : public QUndoCommand {
@@ -150,4 +152,140 @@ private:
   QString node_;
   int fromIndex_;
   int toIndex_;
+};
+
+class RemoveNodeCmd : public QUndoCommand {
+public:
+  RemoveNodeCmd(Document* doc, QString name);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString name_;
+  QString cluster_;
+  bool hadNode_ = false;
+};
+
+class RemoveClusterCmd : public QUndoCommand {
+public:
+  RemoveClusterCmd(Document* doc, QString name);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString name_;
+  bool hadCluster_ = false;
+};
+
+class SetPrioritizerKindCmd : public QUndoCommand {
+public:
+  SetPrioritizerKindCmd(Document* doc,
+                        QString wrt,
+                        QString destCluster,
+                        anpcpp::NodePrioritizerKind kind);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString wrt_;
+  QString destCluster_;
+  anpcpp::NodePrioritizerKind kind_;
+  anpcpp::NodePrioritizerKind oldKind_ = anpcpp::NodePrioritizerKind::Pairwise;
+};
+
+class SetRatingsModeCmd : public QUndoCommand {
+public:
+  SetRatingsModeCmd(Document* doc,
+                    QString wrt,
+                    QString destCluster,
+                    anpcpp::RatingsPrioritizer::Mode mode);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString wrt_;
+  QString destCluster_;
+  anpcpp::RatingsPrioritizer::Mode mode_;
+  anpcpp::RatingsPrioritizer::Mode oldMode_ =
+      anpcpp::RatingsPrioritizer::Mode::Numeric;
+};
+
+class SetRatingsCategoriesCmd : public QUndoCommand {
+public:
+  SetRatingsCategoriesCmd(Document* doc,
+                          QString wrt,
+                          QString destCluster,
+                          std::vector<anpcpp::RatingCategory> cats);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString wrt_;
+  QString destCluster_;
+  std::vector<anpcpp::RatingCategory> cats_;
+  std::vector<anpcpp::RatingCategory> oldCats_;
+};
+
+class SetRatingVoteCmd : public QUndoCommand {
+public:
+  SetRatingVoteCmd(Document* doc,
+                   QString wrt,
+                   QString destCluster,
+                   QString alt,
+                   QString categoryId);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString wrt_;
+  QString destCluster_;
+  QString alt_;
+  QString categoryId_;
+  QString oldCategoryId_;
+  bool hadOld_ = false;
+};
+
+class SetRatingValueCmd : public QUndoCommand {
+public:
+  SetRatingValueCmd(Document* doc,
+                    QString wrt,
+                    QString destCluster,
+                    QString alt,
+                    bool clear,
+                    double value);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString wrt_;
+  QString destCluster_;
+  QString alt_;
+  bool clear_ = false;
+  double value_ = 0.0;
+  bool hadOld_ = false;
+  double oldValue_ = 0.0;
+};
+
+class SetRatingsInterpreterCmd : public QUndoCommand {
+public:
+  SetRatingsInterpreterCmd(Document* doc,
+                           QString wrt,
+                           QString destCluster,
+                           anpcpp::ScoreInterpreter interpreter);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString wrt_;
+  QString destCluster_;
+  anpcpp::ScoreInterpreter interpreter_;
+  anpcpp::ScoreInterpreter oldInterpreter_;
 };

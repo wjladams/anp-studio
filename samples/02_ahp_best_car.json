@@ -1,0 +1,201 @@
+{
+  "format": "anpcpp",
+  "network": {
+    "alternatives_cluster": "Alternatives",
+    "clusters": [
+      {
+        "cluster_pairwise": {
+          "alternatives": [],
+          "matrix": []
+        },
+        "description": "",
+        "name": "Alternatives",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Civic",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Accord",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "CR-V",
+            "node_prioritizers": {}
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Criteria"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Goal",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Best Car",
+            "node_prioritizers": {
+              "Criteria": {
+                "alternatives": [
+                  "Cost",
+                  "Quality",
+                  "Style"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    4.0
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    0.25,
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Alternatives"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Criteria",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Cost",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "Civic",
+                  "Accord",
+                  "CR-V"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    4.0
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    0.25,
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Quality",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "Civic",
+                  "Accord",
+                  "CR-V"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.3333333333333333,
+                    0.5
+                  ],
+                  [
+                    3.0,
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    2.0,
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Style",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "Civic",
+                  "Accord",
+                  "CR-V"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    0.5
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    0.3333333333333333
+                  ],
+                  [
+                    2.0,
+                    3.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "synthesis": {
+      "custom_expr": "",
+      "kind": "additive"
+    }
+  },
+  "version": 1
+}

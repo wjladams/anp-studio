@@ -1,0 +1,333 @@
+{
+  "format": "anpcpp",
+  "network": {
+    "alternatives_cluster": "Alternatives",
+    "clusters": [
+      {
+        "cluster_pairwise": {
+          "alternatives": [],
+          "matrix": []
+        },
+        "description": "",
+        "name": "Alternatives",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "OfferA",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "OfferB",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "OfferC",
+            "node_prioritizers": {}
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Criteria"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Goal",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Best Job",
+            "node_prioritizers": {
+              "Criteria": {
+                "alternatives": [
+                  "Salary",
+                  "Growth",
+                  "Location",
+                  "Interest",
+                  "Benefits",
+                  "Flexibility"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.0,
+                    2.0,
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    2.0
+                  ],
+                  [
+                    0.5,
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                    3.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.3333333333333333,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.5,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Alternatives"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Criteria",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Salary",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "OfferA",
+                  "OfferB",
+                  "OfferC"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    3.0
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.3333333333333333,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Growth",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "OfferA",
+                  "OfferB",
+                  "OfferC"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.5,
+                    0.0
+                  ],
+                  [
+                    2.0,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Location",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "OfferA",
+                  "OfferB",
+                  "OfferC"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.0,
+                    0.3333333333333333
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    3.0,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Interest",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "OfferA",
+                  "OfferB",
+                  "OfferC"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    0.0,
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Benefits",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "OfferA",
+                  "OfferB",
+                  "OfferC"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.0,
+                    2.0
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.5,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Flexibility",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "OfferA",
+                  "OfferB",
+                  "OfferC"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    0.5
+                  ],
+                  [
+                    0.0,
+                    2.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "synthesis": {
+      "custom_expr": "",
+      "kind": "additive"
+    }
+  },
+  "version": 1
+}

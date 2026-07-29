@@ -9,4 +9,7 @@
     <file alias="anpstudio-32.png">resources/anpstudio-32.png</file>
     <file alias="anpstudio-16.png">resources/anpstudio-16.png</file>
   </qresource>
+  <qresource prefix="/styles">
+    <file alias="app.qss">resources/app.qss</file>
+  </qresource>
 </RCC>

@@ -78,6 +78,28 @@ public:
   /** @brief Marks the document dirty and emits @ref modelChanged. */
   void notifyChanged();
 
+  /** @return Selected cluster name (may be empty). */
+  [[nodiscard]] QString selectedCluster() const { return selectedCluster_; }
+  /** @return Selected node name (may be empty). */
+  [[nodiscard]] QString selectedNode() const { return selectedNode_; }
+  /**
+   * @brief Soft-persists structure selection across stages.
+   * @param cluster Selected cluster (empty if node-only).
+   * @param node Selected node (empty if cluster-only).
+   */
+  void setSelection(const QString& cluster, const QString& node);
+
+  /** @return True if Calculate has produced a results snapshot. */
+  [[nodiscard]] bool hasResults() const { return hasResults_; }
+  /** @return True if the model changed since the last successful Calculate. */
+  [[nodiscard]] bool resultsStale() const {
+    return hasResults_ && resultsStale_;
+  }
+  /** @brief Marks results current after a successful Calculate. */
+  void markResultsCurrent();
+  /** @brief Marks results stale (or clears hasResults if never calculated). */
+  void invalidateResults();
+
 signals:
   /** @brief Emitted when the model structure or data changes. */
   void modelChanged();
@@ -87,6 +109,10 @@ signals:
   void pathChanged(const QString& path);
   /** @brief Emitted when the active network view changes (subnet navigation). */
   void viewNetworkChanged();
+  /** @brief Emitted when soft selection changes. */
+  void selectionChanged(const QString& cluster, const QString& node);
+  /** @brief Emitted when calc freshness changes. */
+  void resultsFreshnessChanged();
 
 private:
   struct Frame {
@@ -95,10 +121,15 @@ private:
   };
 
   void replaceRoot(std::unique_ptr<anpcpp::AnpNetwork> net);
+  void clearSelectionIfInvalid();
 
   std::unique_ptr<anpcpp::AnpNetwork> root_;
   std::vector<Frame> stack_;
   QUndoStack undo_;
   QString path_;
   bool dirty_ = false;
+  QString selectedCluster_;
+  QString selectedNode_;
+  bool hasResults_ = false;
+  bool resultsStale_ = false;
 };

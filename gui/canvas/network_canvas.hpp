@@ -35,6 +35,8 @@ public:
   void setConnectMode(bool on);
   /** @return True when connect mode is active. */
   [[nodiscard]] bool connectMode() const { return connectMode_; }
+  /** @brief Highlights a cluster/node from Document selection. */
+  void select(const QString& cluster, const QString& node);
 
 signals:
   /** @brief Emitted when a node is double-clicked (e.g. to open subnetwork). */

@@ -30,6 +30,8 @@ public slots:
   void refresh();
   /** @brief Selects a node as the comparison parent (w.r.t. node). */
   void selectNodeParent(const QString& name);
+  /** @brief Selects node parent and destination cluster. */
+  void selectNodeLink(const QString& parent, const QString& destCluster);
   /** @brief Selects a cluster as the comparison parent (w.r.t. cluster). */
   void selectClusterParent(const QString& name);
 

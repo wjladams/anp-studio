@@ -1,0 +1,308 @@
+{
+  "format": "anpcpp",
+  "network": {
+    "clusters": [
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Control"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Goal",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Choose",
+            "node_prioritizers": {
+              "Control": {
+                "alternatives": [
+                  "Benefits",
+                  "Costs"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [],
+          "matrix": []
+        },
+        "description": "",
+        "name": "Control",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Benefits",
+            "node_prioritizers": {},
+            "subnetwork": {
+              "alternatives_cluster": "Alternatives",
+              "clusters": [
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [
+                      "Alternatives"
+                    ],
+                    "matrix": [
+                      [
+                        1.0
+                      ]
+                    ]
+                  },
+                  "description": "",
+                  "name": "Factors",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Performance",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "Plan1",
+                            "Plan2",
+                            "Plan3"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              2.0,
+                              4.0
+                            ],
+                            [
+                              0.5,
+                              1.0,
+                              2.0
+                            ],
+                            [
+                              0.25,
+                              0.5,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Convenience",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "Plan1",
+                            "Plan2",
+                            "Plan3"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              0.5,
+                              0.3333333333333333
+                            ],
+                            [
+                              2.0,
+                              1.0,
+                              0.5
+                            ],
+                            [
+                              3.0,
+                              2.0,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [],
+                    "matrix": []
+                  },
+                  "description": "",
+                  "name": "Alternatives",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Plan1",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Plan2",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Plan3",
+                      "node_prioritizers": {}
+                    }
+                  ]
+                }
+              ],
+              "synthesis": {
+                "custom_expr": "",
+                "kind": "additive"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": true,
+            "name": "Costs",
+            "node_prioritizers": {},
+            "subnetwork": {
+              "alternatives_cluster": "Alternatives",
+              "clusters": [
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [
+                      "Alternatives"
+                    ],
+                    "matrix": [
+                      [
+                        1.0
+                      ]
+                    ]
+                  },
+                  "description": "",
+                  "name": "Factors",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Money",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "Plan1",
+                            "Plan2",
+                            "Plan3"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              0.5,
+                              0.25
+                            ],
+                            [
+                              2.0,
+                              1.0,
+                              0.5
+                            ],
+                            [
+                              4.0,
+                              2.0,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Risk",
+                      "node_prioritizers": {
+                        "Alternatives": {
+                          "alternatives": [
+                            "Plan1",
+                            "Plan2",
+                            "Plan3"
+                          ],
+                          "matrix": [
+                            [
+                              1.0,
+                              2.0,
+                              3.0
+                            ],
+                            [
+                              0.5,
+                              1.0,
+                              2.0
+                            ],
+                            [
+                              0.3333333333333333,
+                              0.5,
+                              1.0
+                            ]
+                          ],
+                          "type": "pairwise"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "cluster_pairwise": {
+                    "alternatives": [],
+                    "matrix": []
+                  },
+                  "description": "",
+                  "name": "Alternatives",
+                  "nodes": [
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Plan1",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Plan2",
+                      "node_prioritizers": {}
+                    },
+                    {
+                      "description": "",
+                      "invert": false,
+                      "name": "Plan3",
+                      "node_prioritizers": {}
+                    }
+                  ]
+                }
+              ],
+              "synthesis": {
+                "custom_expr": "",
+                "kind": "additive"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "synthesis": {
+      "custom_expr": "",
+      "kind": "additive"
+    }
+  },
+  "version": 1
+}

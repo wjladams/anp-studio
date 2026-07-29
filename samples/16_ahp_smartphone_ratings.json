@@ -1,0 +1,234 @@
+{
+  "format": "anpcpp",
+  "network": {
+    "alternatives_cluster": "Alternatives",
+    "clusters": [
+      {
+        "cluster_pairwise": {
+          "alternatives": [],
+          "matrix": []
+        },
+        "description": "",
+        "name": "Alternatives",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "PhoneX",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "PhoneY",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "PhoneZ",
+            "node_prioritizers": {}
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Criteria"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Goal",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Best Phone",
+            "node_prioritizers": {
+              "Criteria": {
+                "alternatives": [
+                  "Camera",
+                  "Battery",
+                  "Price",
+                  "Storage"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.0,
+                    2.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    0.0,
+                    2.0
+                  ],
+                  [
+                    0.5,
+                    0.0,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.5,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Alternatives"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Criteria",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Camera",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "PhoneX",
+                  "PhoneY",
+                  "PhoneZ"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    3.0
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.3333333333333333,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Battery",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "PhoneX",
+                  "PhoneY",
+                  "PhoneZ"
+                ],
+                "interpreter": {
+                  "kind": "divide_by_max"
+                },
+                "mode": "numeric",
+                "type": "ratings",
+                "values": {
+                  "PhoneX": 4000.0,
+                  "PhoneY": 5000.0,
+                  "PhoneZ": 4500.0
+                }
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Price",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "PhoneX",
+                  "PhoneY",
+                  "PhoneZ"
+                ],
+                "categories": [
+                  {
+                    "id": "Exp",
+                    "label": "Expensive",
+                    "value": 0.2
+                  },
+                  {
+                    "id": "Mid",
+                    "label": "Mid",
+                    "value": 0.5
+                  },
+                  {
+                    "id": "Val",
+                    "label": "Value",
+                    "value": 1.0
+                  }
+                ],
+                "mode": "categorical",
+                "ratings": {
+                  "PhoneX": "Exp",
+                  "PhoneY": "Mid",
+                  "PhoneZ": "Val"
+                },
+                "type": "ratings"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Storage",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "PhoneX",
+                  "PhoneY",
+                  "PhoneZ"
+                ],
+                "interpreter": {
+                  "constant": 512.0,
+                  "kind": "divide_by_constant"
+                },
+                "mode": "numeric",
+                "type": "ratings",
+                "values": {
+                  "PhoneX": 256.0,
+                  "PhoneY": 512.0,
+                  "PhoneZ": 128.0
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "synthesis": {
+      "custom_expr": "",
+      "kind": "additive"
+    }
+  },
+  "version": 1
+}

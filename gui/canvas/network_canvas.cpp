@@ -46,6 +46,21 @@ void NetworkCanvas::setConnectMode(bool on) {
   setCursor(on ? Qt::CrossCursor : Qt::ArrowCursor);
 }
 
+void NetworkCanvas::select(const QString& cluster, const QString& node) {
+  const bool blocked = scene_->blockSignals(true);
+  scene_->clearSelection();
+  if (!node.isEmpty()) {
+    if (auto* ni = nodes_.value(node)) {
+      ni->setSelected(true);
+    }
+  } else if (!cluster.isEmpty()) {
+    if (auto* ci = clusters_.value(cluster)) {
+      ci->setSelected(true);
+    }
+  }
+  scene_->blockSignals(blocked);
+}
+
 void NetworkCanvas::rebuild() {
   persistLayout();
   scene_->clear();
@@ -84,15 +99,14 @@ void NetworkCanvas::rebuild() {
     ++i;
   }
 
-  // Directed links from each node's pairwise destinations (src -> dest).
-  // Intra-cluster links loop out the side; give each its own lane.
+  // Directed links from each node's prioritizer destinations (src -> dest).
   QHash<QString, int> loopLanes;
   for (anpcpp::AnpNode* src : net.nodes()) {
     for (anpcpp::AnpCluster* destC : net.clusters()) {
-      const anpcpp::PairwiseJudgments* pw =
-          src->node_pairwise(destC->name());
-      if (pw == nullptr) continue;
-      for (const auto& destName : pw->alternatives()) {
+      const anpcpp::NodePrioritizerSlot* slot =
+          src->node_prioritizer(destC->name());
+      if (slot == nullptr || slot->empty()) continue;
+      for (const auto& destName : slot->alternatives()) {
         NodeItem* a = nodes_.value(QString::fromStdString(src->name()));
         NodeItem* b = nodes_.value(QString::fromStdString(destName));
         if (a == nullptr || b == nullptr) continue;

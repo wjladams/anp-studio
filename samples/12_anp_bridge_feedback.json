@@ -1,0 +1,215 @@
+{
+  "format": "anpcpp",
+  "network": {
+    "alternatives_cluster": "Alternatives",
+    "clusters": [
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Criteria",
+            "Alternatives"
+          ],
+          "matrix": [
+            [
+              1.0,
+              1.0
+            ],
+            [
+              1.0,
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Alternatives",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Build",
+            "node_prioritizers": {
+              "Criteria": {
+                "alternatives": [
+                  "Economic",
+                  "Social"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    3.0
+                  ],
+                  [
+                    0.3333333333333333,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Repair",
+            "node_prioritizers": {
+              "Criteria": {
+                "alternatives": [
+                  "Economic",
+                  "Social"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.5
+                  ],
+                  [
+                    2.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "StatusQuo",
+            "node_prioritizers": {
+              "Criteria": {
+                "alternatives": [
+                  "Economic",
+                  "Social"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    1.0
+                  ],
+                  [
+                    1.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Criteria",
+            "Alternatives"
+          ],
+          "matrix": [
+            [
+              1.0,
+              0.5
+            ],
+            [
+              2.0,
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Criteria",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Economic",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "Build",
+                  "Repair",
+                  "StatusQuo"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    4.0
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.25,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              },
+              "Criteria": {
+                "alternatives": [
+                  "Social"
+                ],
+                "matrix": [
+                  [
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Social",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "Build",
+                  "Repair",
+                  "StatusQuo"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.5,
+                    0.0
+                  ],
+                  [
+                    2.0,
+                    1.0,
+                    3.0
+                  ],
+                  [
+                    0.0,
+                    0.3333333333333333,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              },
+              "Criteria": {
+                "alternatives": [
+                  "Economic"
+                ],
+                "matrix": [
+                  [
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "synthesis": {
+      "custom_expr": "",
+      "kind": "additive"
+    }
+  },
+  "version": 1
+}

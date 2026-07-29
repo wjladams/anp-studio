@@ -1,12 +1,13 @@
 /**
  * @file results_panel.hpp
- * @brief Displays supermatrices, limit matrix, and alternative priorities.
+ * @brief Displays matrices and alternative priorities (Synthesis center).
  */
 
 #pragma once
 
 #include <QWidget>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "anpcpp/matrix.hpp"
@@ -16,24 +17,27 @@ class QTabWidget;
 class QTableWidget;
 class QComboBox;
 class QLineEdit;
+class QLabel;
+class QPushButton;
 
-/**
- * @brief Tabbed view of calculation results and synthesis options.
- */
 class ResultsPanel : public QWidget {
   Q_OBJECT
 public:
-  /**
-   * @param doc Document to calculate and display.
-   * @param parent Optional parent widget.
-   */
   explicit ResultsPanel(Document* doc, QWidget* parent = nullptr);
 
+  /** @return Synth kind combo for the Synthesis left column (may be reparented). */
+  [[nodiscard]] QComboBox* synthesisKindBox() const { return synthKind_; }
+  [[nodiscard]] QLineEdit* customExprEdit() const { return customExpr_; }
+  [[nodiscard]] QPushButton* calculateButton() const { return calcButton_; }
+  [[nodiscard]] QLabel* staleLabel() const { return staleLabel_; }
+
 public slots:
-  /** @brief Recalculates matrices and alternative priorities from the model. */
   void calculate();
-  /** @brief Syncs synthesis kind / custom expression controls with the model. */
   void refreshSynthesisControls();
+  void refreshStaleBadge();
+
+signals:
+  void alternativesUpdated(const std::vector<std::pair<QString, double>>& ranked);
 
 private slots:
   void onSynthesisKindChanged(int index);
@@ -51,6 +55,9 @@ private:
   Document* doc_ = nullptr;
   QComboBox* synthKind_ = nullptr;
   QLineEdit* customExpr_ = nullptr;
+  QPushButton* calcButton_ = nullptr;
+  QLabel* staleLabel_ = nullptr;
+  QWidget* controlsHost_ = nullptr;
   QTabWidget* tabs_ = nullptr;
   QTableWidget* unscaled_ = nullptr;
   QTableWidget* clusterW_ = nullptr;

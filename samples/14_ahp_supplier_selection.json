@@ -1,0 +1,343 @@
+{
+  "format": "anpcpp",
+  "network": {
+    "alternatives_cluster": "Alternatives",
+    "clusters": [
+      {
+        "cluster_pairwise": {
+          "alternatives": [],
+          "matrix": []
+        },
+        "description": "",
+        "name": "Alternatives",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Supplier1",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Supplier2",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Supplier3",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Supplier4",
+            "node_prioritizers": {}
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Criteria"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Goal",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Best Supplier",
+            "node_prioritizers": {
+              "Criteria": {
+                "alternatives": [
+                  "Quality",
+                  "Cost",
+                  "Delivery",
+                  "Service",
+                  "Flexibility"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    1.0,
+                    2.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    0.5,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Alternatives"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Criteria",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Quality",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "Supplier1",
+                  "Supplier2",
+                  "Supplier3",
+                  "Supplier4"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.0,
+                    3.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.3333333333333333,
+                    0.0,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Cost",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "Supplier1",
+                  "Supplier2",
+                  "Supplier3",
+                  "Supplier4"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.5
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    2.0,
+                    0.0,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Delivery",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "Supplier1",
+                  "Supplier2",
+                  "Supplier3",
+                  "Supplier4"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    0.0,
+                    2.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.5,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Service",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "Supplier1",
+                  "Supplier2",
+                  "Supplier3",
+                  "Supplier4"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Flexibility",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "Supplier1",
+                  "Supplier2",
+                  "Supplier3",
+                  "Supplier4"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    0.0,
+                    0.0,
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "synthesis": {
+      "custom_expr": "",
+      "kind": "additive"
+    }
+  },
+  "version": 1
+}

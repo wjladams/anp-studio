@@ -2,54 +2,98 @@
 
 #include "canvas/network_canvas.hpp"
 #include "document.hpp"
+#include "panels/inspector_panel.hpp"
+#include "panels/judgment_nav_panel.hpp"
 #include "panels/pairwise_panel.hpp"
+#include "panels/ratings_panel.hpp"
 #include "panels/results_panel.hpp"
+#include "panels/session_stub_panel.hpp"
 #include "panels/structure_panel.hpp"
+#include "panels/synthesis_summary_panel.hpp"
 
 #include <QAction>
+#include <QButtonGroup>
 #include <QCloseEvent>
-#include <QDockWidget>
 #include <QFileDialog>
+#include <QHBoxLayout>
+#include <QLabel>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QPushButton>
+#include <QSplitter>
+#include <QStackedWidget>
 #include <QStatusBar>
 #include <QToolBar>
 #include <QUndoStack>
+#include <QVBoxLayout>
+#include <QWidget>
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   doc_ = new Document(this);
-  canvas_ = new NetworkCanvas(doc_, this);
-  setCentralWidget(canvas_);
 
-  structure_ = new StructurePanel(doc_, this);
-  pairwise_ = new PairwisePanel(doc_, this);
-  results_ = new ResultsPanel(doc_, this);
+  auto* central = new QWidget(this);
+  auto* rootLay = new QVBoxLayout(central);
+  rootLay->setContentsMargins(12, 8, 12, 8);
+  rootLay->setSpacing(8);
 
-  // Dock layout: structure left, pairwise right, results bottom.
-  auto* structDock = new QDockWidget(QStringLiteral("Structure"), this);
-  structDock->setWidget(structure_);
-  addDockWidget(Qt::LeftDockWidgetArea, structDock);
+  auto* stageRow = new QHBoxLayout;
+  stageButtons_ = new QButtonGroup(this);
+  stageButtons_->setExclusive(true);
+  auto addStageBtn = [&](const QString& text, Stage s) {
+    auto* b = new QPushButton(text, central);
+    b->setObjectName(QStringLiteral("stageTab"));
+    b->setCheckable(true);
+    b->setFlat(true);
+    b->setCursor(Qt::PointingHandCursor);
+    stageButtons_->addButton(b, static_cast<int>(s));
+    stageRow->addWidget(b);
+  };
+  addStageBtn(QStringLiteral("Structure"), Stage::Structure);
+  addStageBtn(QStringLiteral("Judgments"), Stage::Judgments);
+  addStageBtn(QStringLiteral("Synthesis"), Stage::Synthesis);
+  stageRow->addStretch();
+  rootLay->addLayout(stageRow);
 
-  auto* pairDock = new QDockWidget(QStringLiteral("Pairwise"), this);
-  pairDock->setWidget(pairwise_);
-  addDockWidget(Qt::RightDockWidgetArea, pairDock);
+  auto* crumbRow = new QHBoxLayout;
+  breadcrumb_ = new QLabel(central);
+  crumbRow->addWidget(breadcrumb_, 1);
+  auto* upBtn = new QPushButton(QStringLiteral("Up"), central);
+  auto* rootBtn = new QPushButton(QStringLiteral("Root"), central);
+  crumbRow->addWidget(upBtn);
+  crumbRow->addWidget(rootBtn);
+  rootLay->addLayout(crumbRow);
 
-  auto* resultsDock = new QDockWidget(QStringLiteral("Results"), this);
-  resultsDock->setWidget(results_);
-  addDockWidget(Qt::BottomDockWidgetArea, resultsDock);
+  stages_ = new QStackedWidget(central);
+  rootLay->addWidget(stages_, 1);
+  setCentralWidget(central);
 
-  // Keep pairwise panel parent in sync with structure tree and canvas selection.
-  connect(structure_, &StructurePanel::nodeSelected, pairwise_,
-          &PairwisePanel::selectNodeParent);
-  connect(structure_, &StructurePanel::clusterSelected, pairwise_,
-          &PairwisePanel::selectClusterParent);
+  buildStagePages();
+
+  connect(stageButtons_, &QButtonGroup::idClicked, this, [this](int id) {
+    setStage(static_cast<Stage>(id));
+  });
+  connect(upBtn, &QPushButton::clicked, doc_, &Document::popSubnet);
+  connect(rootBtn, &QPushButton::clicked, doc_, &Document::popToRoot);
+
+  connect(structure_, &StructurePanel::nodeSelected, this, [this](const QString&) {
+    // selection already set by StructurePanel
+  });
   connect(canvas_, &NetworkCanvas::selectionChanged, this,
           [this](const QString& cluster, const QString& node) {
-            if (!node.isEmpty()) pairwise_->selectNodeParent(node);
-            else if (!cluster.isEmpty()) pairwise_->selectClusterParent(cluster);
+            doc_->setSelection(cluster, node);
           });
-  // Double-click a node on the canvas to edit its subnetwork.
   connect(canvas_, &NetworkCanvas::nodeActivated, doc_, &Document::pushSubnet);
+  connect(doc_, &Document::selectionChanged, this,
+          &MainWindow::onDocumentSelectionChanged);
+  connect(doc_, &Document::viewNetworkChanged, this, &MainWindow::updateBreadcrumb);
+  connect(doc_, &Document::modelChanged, this, &MainWindow::updateBreadcrumb);
+
+  connect(judgmentNav_, &JudgmentNavPanel::nodeJudgmentSelected, this,
+          &MainWindow::onJudgmentNodeSelected);
+  connect(judgmentNav_, &JudgmentNavPanel::clusterJudgmentSelected, this,
+          &MainWindow::onJudgmentClusterSelected);
+  connect(results_, &ResultsPanel::alternativesUpdated, synthesisSummary_,
+          &SynthesisSummaryPanel::setAlternatives);
 
   auto* fileMenu = menuBar()->addMenu(QStringLiteral("&File"));
   fileMenu->addAction(QStringLiteral("&New"), this, &MainWindow::newFile,
@@ -71,9 +115,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
       this, QStringLiteral("Redo")));
 
   auto* netMenu = menuBar()->addMenu(QStringLiteral("&Network"));
-  netMenu->addAction(QStringLiteral("Connect Mode"), this, [this]() {
-    canvas_->setConnectMode(!canvas_->connectMode());
-  });
+  connectModeAction_ =
+      netMenu->addAction(QStringLiteral("Connect Mode"), this, [this]() {
+        canvas_->setConnectMode(!canvas_->connectMode());
+      });
   netMenu->addAction(QStringLiteral("Up Subnetwork"), doc_,
                      &Document::popSubnet);
   netMenu->addAction(QStringLiteral("Root Network"), doc_,
@@ -98,10 +143,131 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     updateTitle();
   });
 
-  resize(1280, 800);
+  if (auto* b = stageButtons_->button(static_cast<int>(Stage::Structure))) {
+    b->setChecked(true);
+  }
+  setStage(Stage::Structure);
+  resize(1400, 900);
   updateTitle();
+  updateBreadcrumb();
   statusBar()->showMessage(
-      QStringLiteral("Ready — right-click canvas to add clusters/nodes"));
+      QStringLiteral("Structure → Judgments → Synthesis"));
+}
+
+void MainWindow::buildStagePages() {
+  // Structure: tree | canvas | inspector
+  structure_ = new StructurePanel(doc_, this);
+  canvas_ = new NetworkCanvas(doc_, this);
+  inspector_ = new InspectorPanel(doc_, this);
+  auto* structurePage = new QWidget(stages_);
+  auto* sSplit = new QSplitter(Qt::Horizontal, structurePage);
+  sSplit->addWidget(structure_);
+  sSplit->addWidget(canvas_);
+  sSplit->addWidget(inspector_);
+  sSplit->setStretchFactor(0, 1);
+  sSplit->setStretchFactor(1, 3);
+  sSplit->setStretchFactor(2, 1);
+  auto* sLay = new QVBoxLayout(structurePage);
+  sLay->setContentsMargins(0, 0, 0, 0);
+  sLay->addWidget(sSplit);
+  stages_->addWidget(structurePage);
+
+  // Judgments: nav | pairwise/ratings | session
+  judgmentNav_ = new JudgmentNavPanel(doc_, this);
+  pairwise_ = new PairwisePanel(doc_, this);
+  ratings_ = new RatingsPanel(doc_, this);
+  sessionStub_ = new SessionStubPanel(this);
+  judgmentCenter_ = new QStackedWidget(this);
+  judgmentCenter_->addWidget(pairwise_);
+  judgmentCenter_->addWidget(ratings_);
+  auto* judgmentsPage = new QWidget(stages_);
+  auto* jSplit = new QSplitter(Qt::Horizontal, judgmentsPage);
+  jSplit->addWidget(judgmentNav_);
+  jSplit->addWidget(judgmentCenter_);
+  jSplit->addWidget(sessionStub_);
+  jSplit->setStretchFactor(0, 1);
+  jSplit->setStretchFactor(1, 3);
+  jSplit->setStretchFactor(2, 1);
+  auto* jLay = new QVBoxLayout(judgmentsPage);
+  jLay->setContentsMargins(0, 0, 0, 0);
+  jLay->addWidget(jSplit);
+  stages_->addWidget(judgmentsPage);
+
+  // Synthesis: calc controls | matrices | summary
+  results_ = new ResultsPanel(doc_, this);
+  synthesisSummary_ = new SynthesisSummaryPanel(doc_, this);
+  auto* synthesisPage = new QWidget(stages_);
+  auto* ySplit = new QSplitter(Qt::Horizontal, synthesisPage);
+  auto* leftCalc = new QWidget(ySplit);
+  auto* leftLay = new QVBoxLayout(leftCalc);
+  leftLay->addWidget(new QLabel(QStringLiteral("Calculate"), leftCalc));
+  // Reuse controls already created inside ResultsPanel by keeping Results as
+  // center; duplicate a thin left column that triggers the same calculate.
+  auto* calcBtn = new QPushButton(QStringLiteral("Calculate (F5)"), leftCalc);
+  calcBtn->setObjectName(QStringLiteral("primaryButton"));
+  calcBtn->setCursor(Qt::PointingHandCursor);
+  connect(calcBtn, &QPushButton::clicked, this, &MainWindow::calculate);
+  leftLay->addWidget(calcBtn);
+  leftLay->addWidget(results_->staleLabel());
+  leftLay->addStretch();
+  ySplit->addWidget(leftCalc);
+  ySplit->addWidget(results_);
+  ySplit->addWidget(synthesisSummary_);
+  ySplit->setStretchFactor(0, 1);
+  ySplit->setStretchFactor(1, 3);
+  ySplit->setStretchFactor(2, 1);
+  auto* yLay = new QVBoxLayout(synthesisPage);
+  yLay->setContentsMargins(0, 0, 0, 0);
+  yLay->addWidget(ySplit);
+  stages_->addWidget(synthesisPage);
+}
+
+void MainWindow::setStage(Stage stage) {
+  stage_ = stage;
+  stages_->setCurrentIndex(static_cast<int>(stage));
+  if (auto* b = stageButtons_->button(static_cast<int>(stage))) {
+    b->setChecked(true);
+  }
+  if (connectModeAction_ != nullptr) {
+    connectModeAction_->setEnabled(stage == Stage::Structure);
+  }
+  if (stage == Stage::Structure) {
+    canvas_->select(doc_->selectedCluster(), doc_->selectedNode());
+  } else if (stage == Stage::Judgments) {
+    if (!doc_->selectedNode().isEmpty()) {
+      pairwise_->selectNodeParent(doc_->selectedNode());
+    } else if (!doc_->selectedCluster().isEmpty()) {
+      pairwise_->selectClusterParent(doc_->selectedCluster());
+    }
+  }
+}
+
+void MainWindow::onDocumentSelectionChanged(const QString& cluster,
+                                            const QString& node) {
+  if (stage_ == Stage::Structure) {
+    canvas_->select(cluster, node);
+  }
+}
+
+void MainWindow::onJudgmentNodeSelected(const QString& parent,
+                                        const QString& destCluster,
+                                        bool ratings) {
+  if (ratings) {
+    judgmentCenter_->setCurrentWidget(ratings_);
+    ratings_->selectLink(parent, destCluster);
+  } else {
+    judgmentCenter_->setCurrentWidget(pairwise_);
+    pairwise_->selectNodeLink(parent, destCluster);
+  }
+}
+
+void MainWindow::onJudgmentClusterSelected(const QString& parent) {
+  judgmentCenter_->setCurrentWidget(pairwise_);
+  pairwise_->selectClusterParent(parent);
+}
+
+void MainWindow::updateBreadcrumb() {
+  breadcrumb_->setText(doc_->breadcrumb().join(QStringLiteral(" / ")));
 }
 
 void MainWindow::updateTitle() {
@@ -157,6 +323,7 @@ bool MainWindow::saveFileAs() {
 }
 
 void MainWindow::calculate() {
+  setStage(Stage::Synthesis);
   results_->calculate();
 }
 
