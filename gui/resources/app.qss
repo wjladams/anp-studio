@@ -216,6 +216,23 @@ QLabel#selectorMuted {
   background-color: transparent;
 }
 
+QWidget#questionnaireRow {
+  background-color: #ffffff;
+  border: 1px solid #e8eaed;
+  border-radius: 6px;
+}
+
+QRadioButton#saatyScaleBtn {
+  spacing: 2px;
+  padding: 2px 1px;
+  min-width: 18px;
+}
+
+QRadioButton#saatyScaleBtn::indicator {
+  width: 14px;
+  height: 14px;
+}
+
 /* —— Buttons —— */
 QPushButton {
   background-color: #ffffff;

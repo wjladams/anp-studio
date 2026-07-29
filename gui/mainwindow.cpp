@@ -5,10 +5,10 @@
 #include "document.hpp"
 #include "panels/inspector_panel.hpp"
 #include "panels/judgment_nav_panel.hpp"
+#include "panels/judgment_priorities_panel.hpp"
 #include "panels/pairwise_panel.hpp"
 #include "panels/ratings_panel.hpp"
 #include "panels/results_panel.hpp"
-#include "panels/session_stub_panel.hpp"
 #include "panels/synthesis_summary_panel.hpp"
 
 #include <QAction>
@@ -163,11 +163,11 @@ void MainWindow::buildStagePages() {
   sLay->addWidget(sSplit);
   stages_->addWidget(structurePage);
 
-  // Judgments: top selector | pairwise/ratings | session
+  // Judgments: top selector | pairwise/ratings | priorities chart
   judgmentNav_ = new JudgmentNavPanel(doc_, this);
   pairwise_ = new PairwisePanel(doc_, this);
   ratings_ = new RatingsPanel(doc_, this);
-  sessionStub_ = new SessionStubPanel(this);
+  judgmentPriorities_ = new JudgmentPrioritiesPanel(doc_, this);
   judgmentCenter_ = new QStackedWidget(this);
   judgmentCenter_->addWidget(pairwise_);
   judgmentCenter_->addWidget(ratings_);
@@ -178,7 +178,7 @@ void MainWindow::buildStagePages() {
   jLay->addWidget(judgmentNav_);
   auto* jSplit = new QSplitter(Qt::Horizontal, judgmentsPage);
   jSplit->addWidget(judgmentCenter_);
-  jSplit->addWidget(sessionStub_);
+  jSplit->addWidget(judgmentPriorities_);
   jSplit->setStretchFactor(0, 4);
   jSplit->setStretchFactor(1, 1);
   jLay->addWidget(jSplit, 1);
@@ -240,15 +240,18 @@ void MainWindow::onJudgmentNodeSelected(const QString& parent,
   if (ratings) {
     judgmentCenter_->setCurrentWidget(ratings_);
     ratings_->selectLink(parent, destCluster);
+    judgmentPriorities_->showNodeRatings(parent, destCluster);
   } else {
     judgmentCenter_->setCurrentWidget(pairwise_);
     pairwise_->selectNodeLink(parent, destCluster);
+    judgmentPriorities_->showNodePairwise(parent, destCluster);
   }
 }
 
 void MainWindow::onJudgmentClusterSelected(const QString& parent) {
   judgmentCenter_->setCurrentWidget(pairwise_);
   pairwise_->selectClusterParent(parent);
+  judgmentPriorities_->showClusterPairwise(parent);
 }
 
 void MainWindow::onNodeActivated(const QString& name) {

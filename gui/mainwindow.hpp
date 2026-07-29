@@ -14,7 +14,7 @@ class ResultsPanel;
 class InspectorPanel;
 class JudgmentNavPanel;
 class RatingsPanel;
-class SessionStubPanel;
+class JudgmentPrioritiesPanel;
 class SynthesisSummaryPanel;
 class QStackedWidget;
 class QButtonGroup;
@@ -72,7 +72,7 @@ private:
   JudgmentNavPanel* judgmentNav_ = nullptr;
   PairwisePanel* pairwise_ = nullptr;
   RatingsPanel* ratings_ = nullptr;
-  SessionStubPanel* sessionStub_ = nullptr;
+  JudgmentPrioritiesPanel* judgmentPriorities_ = nullptr;
   QStackedWidget* judgmentCenter_ = nullptr;
 
   ResultsPanel* results_ = nullptr;
