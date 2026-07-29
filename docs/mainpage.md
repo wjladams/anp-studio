@@ -13,7 +13,7 @@ MainWindow (stages: Structure | Judgments | Synthesis)
   ├── Structure stage
   │     NetworkCanvas · InspectorPanel (+ clickable breadcrumb)
   ├── Judgments stage
-  │     JudgmentNavPanel · PairwisePanel | RatingsPanel · SessionStubPanel
+  │     JudgmentNavPanel (top selector) · PairwisePanel | RatingsPanel · SessionStubPanel
   └── Synthesis stage
         ResultsPanel · SynthesisSummaryPanel
 ```
@@ -29,7 +29,7 @@ Computational types (`anpcpp::AnpNetwork`, `RatingsPrioritizer`, etc.) come from
 | @ref MainWindow | Stage strip shell and shared menus |
 | @ref NetworkCanvas | Interactive cluster/node diagram (double-click opens subnet) |
 | @ref InspectorPanel | Selected node/cluster properties |
-| @ref JudgmentNavPanel | Judgment parents, coverage, Pairwise/Ratings switch |
+| @ref JudgmentNavPanel | Top selector: Node/Cluster, Wrt, Other Cluster, Pairwise/Ratings |
 | @ref PairwisePanel | Node and cluster pairwise comparison tables |
 | @ref RatingsPanel | Ratings scale definition and votes |
 | @ref ResultsPanel | Supermatrices, limit matrix, and alternative scores |

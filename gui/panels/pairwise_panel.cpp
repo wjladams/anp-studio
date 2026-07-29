@@ -3,120 +3,49 @@
 #include "commands/network_commands.hpp"
 #include "document.hpp"
 
-#include <QComboBox>
-#include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
-#include <QRadioButton>
 #include <QTableWidget>
 #include <QVBoxLayout>
 
 PairwisePanel::PairwisePanel(Document* doc, QWidget* parent)
     : QWidget(parent), doc_(doc) {
   auto* layout = new QVBoxLayout(this);
-  auto* modeRow = new QHBoxLayout;
-  nodeMode_ = new QRadioButton(QStringLiteral("Node parent"), this);
-  clusterMode_ = new QRadioButton(QStringLiteral("Cluster parent"), this);
-  nodeMode_->setChecked(true);
-  modeRow->addWidget(nodeMode_);
-  modeRow->addWidget(clusterMode_);
-  layout->addLayout(modeRow);
-
-  parentBox_ = new QComboBox(this);
-  destClusterBox_ = new QComboBox(this);
-  layout->addWidget(new QLabel(QStringLiteral("Parent:"), this));
-  layout->addWidget(parentBox_);
-  layout->addWidget(new QLabel(QStringLiteral("Destination cluster:"), this));
-  layout->addWidget(destClusterBox_);
-
+  layout->setContentsMargins(0, 0, 0, 0);
   table_ = new QTableWidget(this);
   table_->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
   layout->addWidget(table_);
   info_ = new QLabel(this);
   layout->addWidget(info_);
 
-  connect(nodeMode_, &QRadioButton::toggled, this,
-          &PairwisePanel::onParentModeChanged);
-  connect(parentBox_, QOverload<int>::of(&QComboBox::currentIndexChanged),
-          this, &PairwisePanel::onParentChanged);
-  connect(destClusterBox_, QOverload<int>::of(&QComboBox::currentIndexChanged),
-          this, &PairwisePanel::onDestClusterChanged);
   connect(table_, &QTableWidget::cellChanged, this,
           &PairwisePanel::onCellChanged);
   connect(doc_, &Document::modelChanged, this, &PairwisePanel::refresh);
   connect(doc_, &Document::viewNetworkChanged, this, &PairwisePanel::refresh);
-
-  refresh();
-}
-
-bool PairwisePanel::nodeMode() const {
-  return nodeMode_->isChecked();
 }
 
 void PairwisePanel::selectNodeParent(const QString& name) {
-  nodeMode_->setChecked(true);
-  refresh();
-  const int idx = parentBox_->findText(name);
-  if (idx >= 0) parentBox_->setCurrentIndex(idx);
+  nodeMode_ = true;
+  parent_ = name;
+  rebuildTable();
 }
 
 void PairwisePanel::selectNodeLink(const QString& parent,
                                    const QString& destCluster) {
-  selectNodeParent(parent);
-  const int didx = destClusterBox_->findText(destCluster);
-  if (didx >= 0) destClusterBox_->setCurrentIndex(didx);
-}
-
-void PairwisePanel::selectClusterParent(const QString& name) {
-  clusterMode_->setChecked(true);
-  refresh();
-  const int idx = parentBox_->findText(name);
-  if (idx >= 0) parentBox_->setCurrentIndex(idx);
-}
-
-void PairwisePanel::onParentModeChanged() {
-  refresh();
-}
-
-void PairwisePanel::onParentChanged(int) {
+  nodeMode_ = true;
+  parent_ = parent;
+  destCluster_ = destCluster;
   rebuildTable();
 }
 
-void PairwisePanel::onDestClusterChanged(int) {
+void PairwisePanel::selectClusterParent(const QString& name) {
+  nodeMode_ = false;
+  parent_ = name;
+  destCluster_.clear();
   rebuildTable();
 }
 
 void PairwisePanel::refresh() {
-  // Guard table/cell handlers while repopulating combo boxes.
-  updating_ = true;
-  const QString curParent = parentBox_->currentText();
-  const QString curDest = destClusterBox_->currentText();
-  parentBox_->clear();
-  destClusterBox_->clear();
-
-  auto& net = doc_->network();
-  if (nodeMode()) {
-    // Node parent: compare nodes in a chosen destination cluster.
-    for (const auto& n : net.node_names()) {
-      parentBox_->addItem(QString::fromStdString(n));
-    }
-    for (const auto& c : net.cluster_names()) {
-      destClusterBox_->addItem(QString::fromStdString(c));
-    }
-    destClusterBox_->setEnabled(true);
-  } else {
-    // Cluster parent: compare clusters (no destination selector).
-    for (const auto& c : net.cluster_names()) {
-      parentBox_->addItem(QString::fromStdString(c));
-    }
-    destClusterBox_->setEnabled(false);
-  }
-
-  int p = parentBox_->findText(curParent);
-  if (p >= 0) parentBox_->setCurrentIndex(p);
-  int d = destClusterBox_->findText(curDest);
-  if (d >= 0) destClusterBox_->setCurrentIndex(d);
-  updating_ = false;
   rebuildTable();
 }
 
@@ -127,7 +56,9 @@ void PairwisePanel::rebuildTable() {
   table_->setColumnCount(0);
   info_->clear();
 
-  if (parentBox_->currentText().isEmpty()) {
+  if (parent_.isEmpty()) {
+    info_->setText(
+        QStringLiteral("Select a Wrt parent above to edit comparisons."));
     updating_ = false;
     return;
   }
@@ -135,18 +66,27 @@ void PairwisePanel::rebuildTable() {
   auto& net = doc_->network();
   const anpcpp::PairwiseJudgments* pw = nullptr;
 
-  // Resolve the pairwise table for the current parent + mode selection.
   if (nodeMode()) {
-    if (destClusterBox_->currentText().isEmpty()) {
+    if (destCluster_.isEmpty()) {
+      info_->setText(QStringLiteral("Select an Other Cluster above."));
       updating_ = false;
       return;
     }
-    anpcpp::AnpNode& node =
-        net.node(parentBox_->currentText().toStdString());
-    pw = node.node_pairwise(destClusterBox_->currentText().toStdString());
+    if (net.find_node(parent_.toStdString()) == nullptr) {
+      info_->setText(QStringLiteral("Selected node is not in this network."));
+      updating_ = false;
+      return;
+    }
+    anpcpp::AnpNode& node = net.node(parent_.toStdString());
+    pw = node.node_pairwise(destCluster_.toStdString());
   } else {
-    pw = &net.cluster(parentBox_->currentText().toStdString())
-              .cluster_pairwise();
+    if (net.find_cluster(parent_.toStdString()) == nullptr) {
+      info_->setText(
+          QStringLiteral("Selected cluster is not in this network."));
+      updating_ = false;
+      return;
+    }
+    pw = &net.cluster(parent_.toStdString()).cluster_pairwise();
   }
 
   if (pw == nullptr || pw->size() == 0) {
@@ -170,7 +110,6 @@ void PairwisePanel::rebuildTable() {
           QString::number(pw->comparison(static_cast<std::size_t>(i),
                                          static_cast<std::size_t>(j)),
                           'g', 6));
-      // Diagonal is always 1 and not user-editable.
       if (i == j) item->setFlags(item->flags() & ~Qt::ItemIsEditable);
       table_->setItem(i, j, item);
     }
@@ -192,39 +131,35 @@ void PairwisePanel::rebuildTable() {
 }
 
 void PairwisePanel::onCellChanged(int row, int col) {
-  // Ignore programmatic fills and reciprocal diagonal updates.
   if (updating_ || row == col) return;
+  if (table_->item(row, col) == nullptr) return;
   bool ok = false;
   const double value = table_->item(row, col)->text().toDouble(&ok);
   if (!ok) return;
 
   auto& net = doc_->network();
   if (nodeMode()) {
-    anpcpp::AnpNode& node =
-        net.node(parentBox_->currentText().toStdString());
-    auto* pw =
-        node.node_pairwise(destClusterBox_->currentText().toStdString());
+    anpcpp::AnpNode& node = net.node(parent_.toStdString());
+    auto* pw = node.node_pairwise(destCluster_.toStdString());
     if (pw == nullptr || pw->size() == 0) return;
     const auto& names = pw->alternatives();
     const double old =
         pw->comparison(static_cast<std::size_t>(row),
                        static_cast<std::size_t>(col));
-    // Route edits through undo so the table refresh stays in sync with the model.
     doc_->undoStack()->push(new SetNodeComparisonCmd(
-        doc_, parentBox_->currentText(),
+        doc_, parent_,
         QString::fromStdString(names[static_cast<std::size_t>(row)]),
         QString::fromStdString(names[static_cast<std::size_t>(col)]), value,
         old));
   } else {
-    auto& pw =
-        net.cluster(parentBox_->currentText().toStdString()).cluster_pairwise();
+    auto& pw = net.cluster(parent_.toStdString()).cluster_pairwise();
     if (pw.size() == 0) return;
     const auto& names = pw.alternatives();
     const double old =
         pw.comparison(static_cast<std::size_t>(row),
                       static_cast<std::size_t>(col));
     doc_->undoStack()->push(new SetClusterComparisonCmd(
-        doc_, parentBox_->currentText(),
+        doc_, parent_,
         QString::fromStdString(names[static_cast<std::size_t>(row)]),
         QString::fromStdString(names[static_cast<std::size_t>(col)]), value,
         old));

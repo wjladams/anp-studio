@@ -1,6 +1,6 @@
 /**
  * @file judgment_nav_panel.hpp
- * @brief Navigator of judgment parents with coverage and kind.
+ * @brief Top selector for judgment parent / destination / kind.
  */
 
 #pragma once
@@ -8,13 +8,16 @@
 #include <QWidget>
 
 class Document;
-class QTreeWidget;
 class QComboBox;
 class QLabel;
 class QPushButton;
+class QButtonGroup;
 
 /**
- * @brief Navigator of judgment parents with coverage and Pairwise/Ratings switch.
+ * @brief Horizontal judgment selector: Node|Cluster, Wrt, Other Cluster.
+ *
+ * Wrt lists only parents that have outgoing connections. Other Cluster lists
+ * only destination clusters connected from the selected Wrt node.
  */
 class JudgmentNavPanel : public QWidget {
   Q_OBJECT
@@ -32,18 +35,30 @@ signals:
   /** @brief Cluster parent selected (pairwise only). */
   void clusterJudgmentSelected(const QString& parent);
 
-private:
-  void onItemClicked();
+private slots:
+  void onModeChanged();
+  void onWrtChanged();
+  void onOtherChanged();
   void onSwitchToPairwise();
   void onSwitchToRatings();
 
+private:
+  void emitCurrent();
+  void rebuildWrtList();
+  void rebuildOtherList();
+  [[nodiscard]] bool nodeMode() const;
+
   Document* doc_ = nullptr;
-  QTreeWidget* tree_ = nullptr;
-  QComboBox* filter_ = nullptr;
-  QLabel* coverageLabel_ = nullptr;
+  QButtonGroup* modeGroup_ = nullptr;
+  QPushButton* nodeModeBtn_ = nullptr;
+  QPushButton* clusterModeBtn_ = nullptr;
+  QLabel* wrtLabel_ = nullptr;
+  QComboBox* wrtBox_ = nullptr;
+  QLabel* otherLabel_ = nullptr;
+  QComboBox* otherBox_ = nullptr;
   QPushButton* toPairwise_ = nullptr;
   QPushButton* toRatings_ = nullptr;
-  QString currentParent_;
-  QString currentDest_;
-  bool currentIsNode_ = true;
+  QLabel* coverageLabel_ = nullptr;
+  bool updating_ = false;
+  bool preferRatings_ = false;
 };

@@ -163,7 +163,7 @@ void MainWindow::buildStagePages() {
   sLay->addWidget(sSplit);
   stages_->addWidget(structurePage);
 
-  // Judgments: nav | pairwise/ratings | session
+  // Judgments: top selector | pairwise/ratings | session
   judgmentNav_ = new JudgmentNavPanel(doc_, this);
   pairwise_ = new PairwisePanel(doc_, this);
   ratings_ = new RatingsPanel(doc_, this);
@@ -172,16 +172,16 @@ void MainWindow::buildStagePages() {
   judgmentCenter_->addWidget(pairwise_);
   judgmentCenter_->addWidget(ratings_);
   auto* judgmentsPage = new QWidget(stages_);
-  auto* jSplit = new QSplitter(Qt::Horizontal, judgmentsPage);
-  jSplit->addWidget(judgmentNav_);
-  jSplit->addWidget(judgmentCenter_);
-  jSplit->addWidget(sessionStub_);
-  jSplit->setStretchFactor(0, 1);
-  jSplit->setStretchFactor(1, 3);
-  jSplit->setStretchFactor(2, 1);
   auto* jLay = new QVBoxLayout(judgmentsPage);
   jLay->setContentsMargins(0, 0, 0, 0);
-  jLay->addWidget(jSplit);
+  jLay->setSpacing(8);
+  jLay->addWidget(judgmentNav_);
+  auto* jSplit = new QSplitter(Qt::Horizontal, judgmentsPage);
+  jSplit->addWidget(judgmentCenter_);
+  jSplit->addWidget(sessionStub_);
+  jSplit->setStretchFactor(0, 4);
+  jSplit->setStretchFactor(1, 1);
+  jLay->addWidget(jSplit, 1);
   stages_->addWidget(judgmentsPage);
 
   // Synthesis: calc controls | matrices | summary
@@ -223,11 +223,7 @@ void MainWindow::setStage(Stage stage) {
   if (stage == Stage::Structure) {
     canvas_->select(doc_->selectedCluster(), doc_->selectedNode());
   } else if (stage == Stage::Judgments) {
-    if (!doc_->selectedNode().isEmpty()) {
-      pairwise_->selectNodeParent(doc_->selectedNode());
-    } else if (!doc_->selectedCluster().isEmpty()) {
-      pairwise_->selectClusterParent(doc_->selectedCluster());
-    }
+    judgmentNav_->refresh();
   }
 }
 

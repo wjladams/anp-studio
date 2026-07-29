@@ -3,13 +3,11 @@
 #include "commands/network_commands.hpp"
 #include "document.hpp"
 
+#include <QButtonGroup>
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
-#include <QTreeWidget>
-#include <QTreeWidgetItem>
-#include <QVBoxLayout>
 
 namespace {
 
@@ -40,40 +38,89 @@ double ratingsCoverage(const anpcpp::RatingsPrioritizer& rt) {
   return static_cast<double>(filled) / static_cast<double>(rt.size());
 }
 
+bool nodeHasOutgoing(const anpcpp::AnpNode& n) {
+  for (anpcpp::AnpCluster* dest : n.network()->clusters()) {
+    const auto* slot = n.node_prioritizer(dest->name());
+    if (slot != nullptr && !slot->empty()) return true;
+  }
+  return false;
+}
+
+bool clusterHasOutgoing(const anpcpp::AnpCluster& c) {
+  // Cluster pairwise alternatives are destinations connected from this cluster.
+  return c.cluster_pairwise().size() >= 2;
+}
+
 }  // namespace
 
 JudgmentNavPanel::JudgmentNavPanel(Document* doc, QWidget* parent)
     : QWidget(parent), doc_(doc) {
-  auto* layout = new QVBoxLayout(this);
-  layout->addWidget(new QLabel(QStringLiteral("Judgments"), this));
+  setObjectName(QStringLiteral("judgmentSelector"));
+  auto* layout = new QHBoxLayout(this);
+  layout->setContentsMargins(0, 0, 0, 0);
+  layout->setSpacing(8);
 
-  filter_ = new QComboBox(this);
-  filter_->addItem(QStringLiteral("All"), 0);
-  filter_->addItem(QStringLiteral("Node parents"), 1);
-  filter_->addItem(QStringLiteral("Cluster parents"), 2);
-  filter_->addItem(QStringLiteral("Alternatives dest only"), 3);
-  layout->addWidget(filter_);
+  auto* modeLabel = new QLabel(QStringLiteral("Compare:"), this);
+  modeLabel->setObjectName(QStringLiteral("selectorCaption"));
+  layout->addWidget(modeLabel);
+
+  modeGroup_ = new QButtonGroup(this);
+  modeGroup_->setExclusive(true);
+  nodeModeBtn_ = new QPushButton(QStringLiteral("Node"), this);
+  clusterModeBtn_ = new QPushButton(QStringLiteral("Cluster"), this);
+  for (auto* b : {nodeModeBtn_, clusterModeBtn_}) {
+    b->setObjectName(QStringLiteral("selectorToggle"));
+    b->setCheckable(true);
+    b->setFlat(true);
+    b->setCursor(Qt::PointingHandCursor);
+    layout->addWidget(b);
+  }
+  modeGroup_->addButton(nodeModeBtn_, 0);
+  modeGroup_->addButton(clusterModeBtn_, 1);
+  nodeModeBtn_->setChecked(true);
+
+  wrtLabel_ = new QLabel(QStringLiteral("Wrt Node:"), this);
+  wrtLabel_->setObjectName(QStringLiteral("selectorCaption"));
+  layout->addWidget(wrtLabel_);
+  wrtBox_ = new QComboBox(this);
+  wrtBox_->setMinimumWidth(140);
+  layout->addWidget(wrtBox_);
+
+  otherLabel_ = new QLabel(QStringLiteral("Other Cluster:"), this);
+  otherLabel_->setObjectName(QStringLiteral("selectorCaption"));
+  layout->addWidget(otherLabel_);
+  otherBox_ = new QComboBox(this);
+  otherBox_->setMinimumWidth(140);
+  layout->addWidget(otherBox_);
+
+  toPairwise_ = new QPushButton(QStringLiteral("Pairwise"), this);
+  toRatings_ = new QPushButton(QStringLiteral("Ratings"), this);
+  toPairwise_->setObjectName(QStringLiteral("selectorToggle"));
+  toRatings_->setObjectName(QStringLiteral("selectorToggle"));
+  toPairwise_->setCheckable(true);
+  toRatings_->setCheckable(true);
+  toPairwise_->setFlat(true);
+  toRatings_->setFlat(true);
+  toPairwise_->setCursor(Qt::PointingHandCursor);
+  toRatings_->setCursor(Qt::PointingHandCursor);
+  auto* kindGroup = new QButtonGroup(this);
+  kindGroup->setExclusive(true);
+  kindGroup->addButton(toPairwise_);
+  kindGroup->addButton(toRatings_);
+  toPairwise_->setChecked(true);
+  layout->addWidget(toPairwise_);
+  layout->addWidget(toRatings_);
 
   coverageLabel_ = new QLabel(this);
-  layout->addWidget(coverageLabel_);
+  coverageLabel_->setObjectName(QStringLiteral("selectorMuted"));
+  layout->addWidget(coverageLabel_, 1);
 
-  tree_ = new QTreeWidget(this);
-  tree_->setHeaderLabels({QStringLiteral("Parent"), QStringLiteral("Dest"),
-                          QStringLiteral("Kind"), QStringLiteral("Cover"),
-                          QStringLiteral("CR")});
-  layout->addWidget(tree_);
-
-  auto* switchRow = new QHBoxLayout;
-  toPairwise_ = new QPushButton(QStringLiteral("Use Pairwise"), this);
-  toRatings_ = new QPushButton(QStringLiteral("Use Ratings"), this);
-  switchRow->addWidget(toPairwise_);
-  switchRow->addWidget(toRatings_);
-  layout->addLayout(switchRow);
-
-  connect(filter_, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-          &JudgmentNavPanel::refresh);
-  connect(tree_, &QTreeWidget::itemClicked, this,
-          &JudgmentNavPanel::onItemClicked);
+  connect(modeGroup_, &QButtonGroup::idClicked, this,
+          [this](int) { onModeChanged(); });
+  connect(wrtBox_, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+          [this](int) { onWrtChanged(); });
+  connect(otherBox_, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+          [this](int) { onOtherChanged(); });
   connect(toPairwise_, &QPushButton::clicked, this,
           &JudgmentNavPanel::onSwitchToPairwise);
   connect(toRatings_, &QPushButton::clicked, this,
@@ -83,129 +130,175 @@ JudgmentNavPanel::JudgmentNavPanel(Document* doc, QWidget* parent)
   refresh();
 }
 
-void JudgmentNavPanel::refresh() {
-  tree_->clear();
-  auto& net = doc_->network();
-  const int filter = filter_->currentData().toInt();
-  QString altsName;
-  if (auto* a = net.alternatives_cluster()) {
-    altsName = QString::fromStdString(a->name());
-  }
-
-  double coverSum = 0.0;
-  int coverCount = 0;
-
-  if (filter != 2) {
-    for (anpcpp::AnpNode* n : net.nodes()) {
-      for (anpcpp::AnpCluster* dest : net.clusters()) {
-        const auto* slot = n->node_prioritizer(dest->name());
-        if (slot == nullptr || slot->empty()) continue;
-        const QString destName = QString::fromStdString(dest->name());
-        if (filter == 3 && !altsName.isEmpty() && destName != altsName) continue;
-
-        const bool ratings =
-            slot->kind == anpcpp::NodePrioritizerKind::Ratings;
-        double cover = 0.0;
-        QString crText = QStringLiteral("—");
-        if (ratings) {
-          cover = ratingsCoverage(slot->ratings);
-        } else {
-          cover = pairwiseCoverage(slot->pairwise);
-          if (slot->pairwise.size() >= 3) {
-            const double cr = slot->pairwise.consistency_ratio();
-            crText = QString::number(cr, 'f', 3);
-            if (cr > 0.1) crText += QStringLiteral(" ⚠");
-          }
-        }
-        coverSum += cover;
-        ++coverCount;
-
-        auto* item = new QTreeWidgetItem(tree_);
-        item->setText(0, QString::fromStdString(n->name()));
-        item->setText(1, destName);
-        item->setText(2, ratings ? QStringLiteral("Ratings")
-                                 : QStringLiteral("Pairwise"));
-        item->setText(3, QString::number(cover * 100.0, 'f', 0) +
-                             QStringLiteral("%"));
-        item->setText(4, crText);
-        item->setData(0, Qt::UserRole, 1);  // node
-        item->setData(0, Qt::UserRole + 1, ratings);
-      }
-    }
-  }
-
-  if (filter == 0 || filter == 2) {
-    for (anpcpp::AnpCluster* c : net.clusters()) {
-      const auto& pw = c->cluster_pairwise();
-      if (pw.size() < 2) continue;
-      const double cover = pairwiseCoverage(pw);
-      coverSum += cover;
-      ++coverCount;
-      QString crText = QStringLiteral("—");
-      if (pw.size() >= 3) {
-        const double cr = pw.consistency_ratio();
-        crText = QString::number(cr, 'f', 3);
-        if (cr > 0.1) crText += QStringLiteral(" ⚠");
-      }
-      auto* item = new QTreeWidgetItem(tree_);
-      item->setText(0, QString::fromStdString(c->name()));
-      item->setText(1, QStringLiteral("(clusters)"));
-      item->setText(2, QStringLiteral("Pairwise"));
-      item->setText(3, QString::number(cover * 100.0, 'f', 0) +
-                           QStringLiteral("%"));
-      item->setText(4, crText);
-      item->setData(0, Qt::UserRole, 0);  // cluster
-    }
-  }
-
-  if (coverCount > 0) {
-    coverageLabel_->setText(
-        QStringLiteral("Overall coverage: %1%")
-            .arg(QString::number(100.0 * coverSum / coverCount, 'f', 0)));
-  } else {
-    coverageLabel_->setText(
-        QStringLiteral("No judgment parents — connect nodes in Structure."));
-  }
-
-  const bool canSwitch = currentIsNode_ && !currentParent_.isEmpty() &&
-                         !currentDest_.isEmpty();
-  toPairwise_->setEnabled(canSwitch);
-  toRatings_->setEnabled(canSwitch);
+bool JudgmentNavPanel::nodeMode() const {
+  return nodeModeBtn_->isChecked();
 }
 
-void JudgmentNavPanel::onItemClicked() {
-  auto* item = tree_->currentItem();
-  if (item == nullptr) return;
-  currentParent_ = item->text(0);
-  currentDest_ = item->text(1);
-  currentIsNode_ = item->data(0, Qt::UserRole).toInt() == 1;
-  const bool ratings = item->data(0, Qt::UserRole + 1).toBool();
+void JudgmentNavPanel::onModeChanged() {
+  preferRatings_ = false;
+  toPairwise_->setChecked(true);
+  refresh();
+}
 
-  if (currentIsNode_) {
-    doc_->setSelection({}, currentParent_);
-    emit nodeJudgmentSelected(currentParent_, currentDest_, ratings);
-  } else {
-    doc_->setSelection(currentParent_, {});
-    emit clusterJudgmentSelected(currentParent_);
-  }
-  toPairwise_->setEnabled(currentIsNode_);
-  toRatings_->setEnabled(currentIsNode_);
+void JudgmentNavPanel::onWrtChanged() {
+  if (updating_) return;
+  rebuildOtherList();
+  emitCurrent();
+}
+
+void JudgmentNavPanel::onOtherChanged() {
+  if (updating_) return;
+  emitCurrent();
 }
 
 void JudgmentNavPanel::onSwitchToPairwise() {
-  if (!currentIsNode_ || currentParent_.isEmpty() || currentDest_.isEmpty())
+  preferRatings_ = false;
+  toPairwise_->setChecked(true);
+  if (!nodeMode() || wrtBox_->currentText().isEmpty() ||
+      otherBox_->currentText().isEmpty()) {
+    emitCurrent();
     return;
+  }
   doc_->undoStack()->push(new SetPrioritizerKindCmd(
-      doc_, currentParent_, currentDest_,
+      doc_, wrtBox_->currentText(), otherBox_->currentText(),
       anpcpp::NodePrioritizerKind::Pairwise));
-  emit nodeJudgmentSelected(currentParent_, currentDest_, false);
+  emit nodeJudgmentSelected(wrtBox_->currentText(), otherBox_->currentText(),
+                            false);
 }
 
 void JudgmentNavPanel::onSwitchToRatings() {
-  if (!currentIsNode_ || currentParent_.isEmpty() || currentDest_.isEmpty())
+  preferRatings_ = true;
+  toRatings_->setChecked(true);
+  if (!nodeMode() || wrtBox_->currentText().isEmpty() ||
+      otherBox_->currentText().isEmpty()) {
     return;
+  }
   doc_->undoStack()->push(new SetPrioritizerKindCmd(
-      doc_, currentParent_, currentDest_,
+      doc_, wrtBox_->currentText(), otherBox_->currentText(),
       anpcpp::NodePrioritizerKind::Ratings));
-  emit nodeJudgmentSelected(currentParent_, currentDest_, true);
+  emit nodeJudgmentSelected(wrtBox_->currentText(), otherBox_->currentText(),
+                            true);
+}
+
+void JudgmentNavPanel::refresh() {
+  updating_ = true;
+  const QString curWrt = wrtBox_->currentText();
+  const QString curOther = otherBox_->currentText();
+
+  wrtLabel_->setText(nodeMode() ? QStringLiteral("Wrt Node:")
+                                : QStringLiteral("Wrt Cluster:"));
+  otherLabel_->setVisible(nodeMode());
+  otherBox_->setVisible(nodeMode());
+  toPairwise_->setVisible(nodeMode());
+  toRatings_->setVisible(nodeMode());
+
+  rebuildWrtList();
+  int wi = wrtBox_->findText(curWrt);
+  if (wi >= 0) wrtBox_->setCurrentIndex(wi);
+  else if (wrtBox_->count() > 0) wrtBox_->setCurrentIndex(0);
+
+  rebuildOtherList();
+  int oi = otherBox_->findText(curOther);
+  if (oi >= 0) otherBox_->setCurrentIndex(oi);
+  else if (otherBox_->count() > 0) otherBox_->setCurrentIndex(0);
+
+  // Coverage for the current selection (or hint when empty).
+  if (wrtBox_->count() == 0) {
+    coverageLabel_->setText(
+        QStringLiteral("No connected parents — connect nodes in Structure."));
+  } else if (nodeMode() && !wrtBox_->currentText().isEmpty() &&
+             !otherBox_->currentText().isEmpty()) {
+    auto& n = doc_->network().node(wrtBox_->currentText().toStdString());
+    const auto* slot =
+        n.node_prioritizer(otherBox_->currentText().toStdString());
+    if (slot != nullptr && !slot->empty()) {
+      const bool ratings =
+          slot->kind == anpcpp::NodePrioritizerKind::Ratings;
+      preferRatings_ = ratings;
+      toRatings_->setChecked(ratings);
+      toPairwise_->setChecked(!ratings);
+      const double cover = ratings ? ratingsCoverage(slot->ratings)
+                                   : pairwiseCoverage(slot->pairwise);
+      QString text = QStringLiteral("Coverage: %1%")
+                         .arg(QString::number(cover * 100.0, 'f', 0));
+      if (!ratings && slot->pairwise.size() >= 3) {
+        const double cr = slot->pairwise.consistency_ratio();
+        text += QStringLiteral("   CR: %1").arg(QString::number(cr, 'f', 3));
+        if (cr > 0.1) text += QStringLiteral(" ⚠");
+      }
+      coverageLabel_->setText(text);
+    } else {
+      coverageLabel_->clear();
+    }
+  } else if (!nodeMode() && !wrtBox_->currentText().isEmpty()) {
+    const auto& pw =
+        doc_->network().cluster(wrtBox_->currentText().toStdString())
+            .cluster_pairwise();
+    const double cover = pairwiseCoverage(pw);
+    QString text = QStringLiteral("Coverage: %1%")
+                       .arg(QString::number(cover * 100.0, 'f', 0));
+    if (pw.size() >= 3) {
+      const double cr = pw.consistency_ratio();
+      text += QStringLiteral("   CR: %1").arg(QString::number(cr, 'f', 3));
+      if (cr > 0.1) text += QStringLiteral(" ⚠");
+    }
+    coverageLabel_->setText(text);
+  } else {
+    coverageLabel_->clear();
+  }
+
+  updating_ = false;
+  emitCurrent();
+}
+
+void JudgmentNavPanel::rebuildWrtList() {
+  wrtBox_->clear();
+  auto& net = doc_->network();
+  if (nodeMode()) {
+    for (anpcpp::AnpNode* n : net.nodes()) {
+      if (nodeHasOutgoing(*n)) {
+        wrtBox_->addItem(QString::fromStdString(n->name()));
+      }
+    }
+  } else {
+    for (anpcpp::AnpCluster* c : net.clusters()) {
+      if (clusterHasOutgoing(*c)) {
+        wrtBox_->addItem(QString::fromStdString(c->name()));
+      }
+    }
+  }
+}
+
+void JudgmentNavPanel::rebuildOtherList() {
+  otherBox_->clear();
+  if (!nodeMode() || wrtBox_->currentText().isEmpty()) return;
+  auto& n = doc_->network().node(wrtBox_->currentText().toStdString());
+  for (anpcpp::AnpCluster* dest : doc_->network().clusters()) {
+    const auto* slot = n.node_prioritizer(dest->name());
+    if (slot != nullptr && !slot->empty()) {
+      otherBox_->addItem(QString::fromStdString(dest->name()));
+    }
+  }
+}
+
+void JudgmentNavPanel::emitCurrent() {
+  if (updating_) return;
+  if (nodeMode()) {
+    if (wrtBox_->currentText().isEmpty() || otherBox_->currentText().isEmpty())
+      return;
+    auto& n = doc_->network().node(wrtBox_->currentText().toStdString());
+    const auto* slot =
+        n.node_prioritizer(otherBox_->currentText().toStdString());
+    const bool ratings =
+        preferRatings_ ||
+        (slot != nullptr &&
+         slot->kind == anpcpp::NodePrioritizerKind::Ratings);
+    doc_->setSelection({}, wrtBox_->currentText());
+    emit nodeJudgmentSelected(wrtBox_->currentText(), otherBox_->currentText(),
+                              ratings);
+  } else {
+    if (wrtBox_->currentText().isEmpty()) return;
+    doc_->setSelection(wrtBox_->currentText(), {});
+    emit clusterJudgmentSelected(wrtBox_->currentText());
+  }
 }

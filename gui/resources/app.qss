@@ -184,6 +184,38 @@ QPushButton#breadcrumbLink:pressed {
   border: none;
 }
 
+QPushButton#selectorToggle {
+  background-color: transparent;
+  border: 1px solid #dadce0;
+  border-radius: 6px;
+  padding: 5px 12px;
+  color: #3c4043;
+  min-height: 22px;
+}
+
+QPushButton#selectorToggle:hover {
+  background-color: #f1f3f4;
+  border-color: #bdc1c6;
+}
+
+QPushButton#selectorToggle:checked {
+  background-color: #e8f0fe;
+  border-color: #aecbfa;
+  color: #1967d2;
+  font-weight: 600;
+}
+
+QLabel#selectorCaption {
+  color: #5f6368;
+  background-color: transparent;
+  font-weight: 600;
+}
+
+QLabel#selectorMuted {
+  color: #5f6368;
+  background-color: transparent;
+}
+
 /* —— Buttons —— */
 QPushButton {
   background-color: #ffffff;
