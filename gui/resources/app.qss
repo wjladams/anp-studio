@@ -222,15 +222,15 @@ QWidget#questionnaireRow {
   border-radius: 6px;
 }
 
-QRadioButton#saatyScaleBtn {
-  spacing: 2px;
-  padding: 2px 1px;
-  min-width: 18px;
-}
-
-QRadioButton#saatyScaleBtn::indicator {
-  width: 14px;
-  height: 14px;
+QPushButton#saatyScaleBtn {
+  border-radius: 4px;
+  padding: 0;
+  margin: 0;
+  font-weight: 600;
+  min-width: 28px;
+  max-width: 28px;
+  min-height: 28px;
+  max-height: 28px;
 }
 
 /* —— Buttons —— */

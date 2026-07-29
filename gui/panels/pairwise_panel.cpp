@@ -5,17 +5,18 @@
 
 #include <QAbstractButton>
 #include <QButtonGroup>
+#include <QColor>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
 #include <QPushButton>
-#include <QRadioButton>
 #include <QScrollArea>
 #include <QStackedWidget>
 #include <QTableWidget>
 #include <QVBoxLayout>
 
+#include <algorithm>
 #include <cmath>
 
 namespace {
@@ -36,6 +37,68 @@ void decodeSaaty(double aLeftRight, int* intensityOut, bool* preferLeftOut) {
   }
   if (*intensityOut < 1) *intensityOut = 1;
   if (*intensityOut > 9) *intensityOut = 9;
+}
+
+QColor lerpColor(const QColor& a, const QColor& b, double t) {
+  t = std::clamp(t, 0.0, 1.0);
+  return QColor(
+      static_cast<int>(std::lround(a.red() + (b.red() - a.red()) * t)),
+      static_cast<int>(std::lround(a.green() + (b.green() - a.green()) * t)),
+      static_cast<int>(std::lround(a.blue() + (b.blue() - a.blue()) * t)));
+}
+
+/** Blue (left 9) → black (1) → red (right 9). */
+QColor saatyHueForButtonId(int buttonId) {
+  int idx = 8;
+  if (buttonId < 0) {
+    idx = 9 - (-buttonId);  // -9 → 0 … -2 → 7
+  } else if (buttonId > 1) {
+    idx = 7 + buttonId;  // 2 → 9 … 9 → 16
+  }
+  const double t = static_cast<double>(idx) / 16.0;
+  const QColor blue(0x1a, 0x73, 0xe8);
+  const QColor black(0x20, 0x21, 0x24);
+  const QColor red(0xd9, 0x30, 0x25);
+  if (t <= 0.5) {
+    return lerpColor(blue, black, t / 0.5);
+  }
+  return lerpColor(black, red, (t - 0.5) / 0.5);
+}
+
+QColor lightTint(const QColor& c) {
+  return QColor(
+      static_cast<int>(std::lround(c.red() * 0.18 + 255 * 0.82)),
+      static_cast<int>(std::lround(c.green() * 0.18 + 255 * 0.82)),
+      static_cast<int>(std::lround(c.blue() * 0.18 + 255 * 0.82)));
+}
+
+QString saatyButtonStyle(int buttonId) {
+  const QColor hue = saatyHueForButtonId(buttonId);
+  const QColor tint = lightTint(hue);
+  // Unselected: light tint bg + hue text. Selected: solid hue bg + white text.
+  return QStringLiteral(
+             "QPushButton {"
+             "  background-color: %1;"
+             "  color: %2;"
+             "  border: 1px solid %2;"
+             "  border-radius: 4px;"
+             "  padding: 0;"
+             "  font-weight: 600;"
+             "}"
+             "QPushButton:hover {"
+             "  background-color: %3;"
+             "}"
+             "QPushButton:checked {"
+             "  background-color: %2;"
+             "  color: #ffffff;"
+             "  border-color: %2;"
+             "}"
+             "QPushButton:checked:hover {"
+             "  background-color: %2;"
+             "  color: #ffffff;"
+             "}")
+      .arg(tint.name(), hue.name(),
+           lerpColor(tint, hue, 0.35).name());
 }
 
 }  // namespace
@@ -238,9 +301,12 @@ void PairwisePanel::rebuildQuestionnaire(const anpcpp::PairwiseJudgments* pw) {
       rowLay->setSpacing(4);
 
       auto* leftLabel = new QLabel(left, row);
+      leftLabel->setObjectName(QStringLiteral("questionnaireLeft"));
       leftLabel->setMinimumWidth(100);
       leftLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
       leftLabel->setWordWrap(true);
+      leftLabel->setStyleSheet(
+          QStringLiteral("color: #1a73e8; font-weight: 600; background: transparent;"));
       rowLay->addWidget(leftLabel, 1);
 
       auto* scaleGroup = new QButtonGroup(row);
@@ -252,9 +318,14 @@ void PairwisePanel::rebuildQuestionnaire(const anpcpp::PairwiseJudgments* pw) {
 
       // Left side: 9..2 (prefer left), then 1, then right side 2..9 (prefer right).
       auto addScaleBtn = [&](int id, const QString& text) {
-        auto* btn = new QRadioButton(text, row);
+        auto* btn = new QPushButton(text, row);
         btn->setObjectName(QStringLiteral("saatyScaleBtn"));
+        btn->setCheckable(true);
+        btn->setFlat(true);
         btn->setCursor(Qt::PointingHandCursor);
+        btn->setFixedSize(28, 28);
+        btn->setFocusPolicy(Qt::NoFocus);
+        btn->setStyleSheet(saatyButtonStyle(id));
         scaleGroup->addButton(btn, id);
         rowLay->addWidget(btn);
       };
@@ -276,9 +347,12 @@ void PairwisePanel::rebuildQuestionnaire(const anpcpp::PairwiseJudgments* pw) {
       }
 
       auto* rightLabel = new QLabel(right, row);
+      rightLabel->setObjectName(QStringLiteral("questionnaireRight"));
       rightLabel->setMinimumWidth(100);
       rightLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
       rightLabel->setWordWrap(true);
+      rightLabel->setStyleSheet(
+          QStringLiteral("color: #d93025; font-weight: 600; background: transparent;"));
       rowLay->addWidget(rightLabel, 1);
 
       connect(scaleGroup, &QButtonGroup::idClicked, this,
