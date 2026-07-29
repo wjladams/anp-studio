@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 project(cppanp
   VERSION 0.1.0
-  DESCRIPTION "Analytic Network Process library and tools"
+  DESCRIPTION "Analytic Network Process desktop application"
   LANGUAGES CXX
 )
 
@@ -10,53 +10,30 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-option(CPPANP_BUILD_TESTS "Build unit tests" ON)
-option(CPPANP_BUILD_EXAMPLES "Build example programs" ON)
 option(CPPANP_BUILD_GUI "Build Qt 6 GUI application" ON)
+option(CPPANP_BUILD_DOCS "Build Doxygen GUI documentation" ON)
+
+# Prefer a sibling ../libanpcpp checkout during development; otherwise fetch
+# from GitHub (pin GIT_TAG once libanpcpp publishes releases).
+if(NOT ANPCPP_SOURCE_DIR AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../libanpcpp/CMakeLists.txt")
+  set(ANPCPP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../libanpcpp" CACHE PATH
+      "Path to libanpcpp source tree")
+endif()
 
 include(FetchContent)
-FetchContent_Declare(
-  nlohmann_json
-  GIT_REPOSITORY https://github.com/nlohmann/json.git
-  GIT_TAG v3.11.3
-)
-FetchContent_MakeAvailable(nlohmann_json)
-
-add_library(cppanp_core STATIC
-  src/matrix.cpp
-  src/eigen.cpp
-  src/inconsistency.cpp
-  src/pairwise.cpp
-  src/limit_matrix.cpp
-  src/network.cpp
-  src/synthesis.cpp
-  src/json_io.cpp
-)
-
-add_library(cppanp::core ALIAS cppanp_core)
-
-target_include_directories(cppanp_core
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
-target_link_libraries(cppanp_core PUBLIC nlohmann_json::nlohmann_json)
-
-if(MSVC)
-  target_compile_options(cppanp_core PRIVATE /W4)
+if(ANPCPP_SOURCE_DIR)
+  message(STATUS "Using local anpcpp from ${ANPCPP_SOURCE_DIR}")
+  FetchContent_Declare(anpcpp SOURCE_DIR "${ANPCPP_SOURCE_DIR}")
 else()
-  target_compile_options(cppanp_core PRIVATE -Wall -Wextra -Wpedantic)
+  FetchContent_Declare(anpcpp
+    GIT_REPOSITORY https://github.com/wjadams/libanpcpp.git
+    GIT_TAG v0.1.0
+  )
 endif()
 
-if(CPPANP_BUILD_TESTS)
-  enable_testing()
-  add_subdirectory(tests)
-endif()
-
-if(CPPANP_BUILD_EXAMPLES)
-  add_subdirectory(examples)
-endif()
+set(ANPCPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ANPCPP_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(anpcpp)
 
 if(CPPANP_BUILD_GUI)
   find_package(Qt6 QUIET COMPONENTS Widgets)
@@ -65,4 +42,8 @@ if(CPPANP_BUILD_GUI)
   else()
     message(WARNING "CPPANP_BUILD_GUI=ON but Qt6 Widgets was not found; skipping gui/")
   endif()
+endif()
+
+if(CPPANP_BUILD_DOCS)
+  include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/Doxygen.cmake")
 endif()
