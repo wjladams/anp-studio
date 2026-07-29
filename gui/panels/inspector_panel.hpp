@@ -13,6 +13,9 @@ class QCheckBox;
 class QLabel;
 class QPushButton;
 
+/**
+ * @brief Property inspector for the selected cluster or node.
+ */
 class InspectorPanel : public QWidget {
   Q_OBJECT
 public:

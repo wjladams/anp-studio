@@ -13,6 +13,9 @@ class Document;
 class QLabel;
 class QListWidget;
 
+/**
+ * @brief Ranked alternatives summary and stale-results badge.
+ */
 class SynthesisSummaryPanel : public QWidget {
   Q_OBJECT
 public:

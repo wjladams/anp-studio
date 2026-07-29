@@ -17,6 +17,9 @@ class QDoubleSpinBox;
 class QStackedWidget;
 class QPushButton;
 
+/**
+ * @brief Editor for RatingsPrioritizer scale definition and votes.
+ */
 class RatingsPanel : public QWidget {
   Q_OBJECT
 public:

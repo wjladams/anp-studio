@@ -20,6 +20,9 @@ class QLineEdit;
 class QLabel;
 class QPushButton;
 
+/**
+ * @brief Displays supermatrices, limit matrix, and alternative scores.
+ */
 class ResultsPanel : public QWidget {
   Q_OBJECT
 public:

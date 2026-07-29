@@ -10,6 +10,9 @@
 class Document;
 class QTreeWidget;
 
+/**
+ * @brief Hierarchy browser for clusters and nodes (Structure stage).
+ */
 class StructurePanel : public QWidget {
   Q_OBJECT
 public:

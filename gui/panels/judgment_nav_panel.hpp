@@ -13,6 +13,9 @@ class QComboBox;
 class QLabel;
 class QPushButton;
 
+/**
+ * @brief Navigator of judgment parents with coverage and Pairwise/Ratings switch.
+ */
 class JudgmentNavPanel : public QWidget {
   Q_OBJECT
 public:

@@ -10,8 +10,12 @@ INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@/gui/document.hpp \
                          @CMAKE_CURRENT_SOURCE_DIR@/gui/mainwindow.hpp \
                          @CMAKE_CURRENT_SOURCE_DIR@/gui/canvas/network_canvas.hpp \
                          @CMAKE_CURRENT_SOURCE_DIR@/gui/panels/structure_panel.hpp \
+                         @CMAKE_CURRENT_SOURCE_DIR@/gui/panels/inspector_panel.hpp \
+                         @CMAKE_CURRENT_SOURCE_DIR@/gui/panels/judgment_nav_panel.hpp \
                          @CMAKE_CURRENT_SOURCE_DIR@/gui/panels/pairwise_panel.hpp \
+                         @CMAKE_CURRENT_SOURCE_DIR@/gui/panels/ratings_panel.hpp \
                          @CMAKE_CURRENT_SOURCE_DIR@/gui/panels/results_panel.hpp \
+                         @CMAKE_CURRENT_SOURCE_DIR@/gui/panels/synthesis_summary_panel.hpp \
                          @CMAKE_CURRENT_SOURCE_DIR@/docs/mainpage.md
 RECURSIVE              = NO
 FILE_PATTERNS          = *.hpp *.md
