@@ -302,6 +302,93 @@ void RenameClusterCmd::undo() {
   doc_->notifyChanged();
 }
 
+SetNetworkNameCmd::SetNetworkNameCmd(Document* doc, QString name)
+    : QUndoCommand(QStringLiteral("Set network name")),
+      doc_(doc),
+      name_(std::move(name)) {
+  oldName_ = QString::fromStdString(doc_->network().name());
+}
+
+void SetNetworkNameCmd::redo() {
+  doc_->network().set_name(name_.toStdString());
+  doc_->notifyChanged();
+}
+
+void SetNetworkNameCmd::undo() {
+  doc_->network().set_name(oldName_.toStdString());
+  doc_->notifyChanged();
+}
+
+SetNetworkDescriptionCmd::SetNetworkDescriptionCmd(Document* doc,
+                                                   QString description)
+    : QUndoCommand(QStringLiteral("Set network description")),
+      doc_(doc),
+      description_(std::move(description)) {
+  oldDescription_ = QString::fromStdString(doc_->network().description());
+}
+
+void SetNetworkDescriptionCmd::redo() {
+  doc_->network().set_description(description_.toStdString());
+  doc_->notifyChanged();
+}
+
+void SetNetworkDescriptionCmd::undo() {
+  doc_->network().set_description(oldDescription_.toStdString());
+  doc_->notifyChanged();
+}
+
+SetNodeDescriptionCmd::SetNodeDescriptionCmd(Document* doc,
+                                             QString node,
+                                             QString description)
+    : QUndoCommand(QStringLiteral("Set node description")),
+      doc_(doc),
+      node_(std::move(node)),
+      description_(std::move(description)) {
+  if (auto* n = doc_->network().find_node(node_.toStdString())) {
+    oldDescription_ = QString::fromStdString(n->description());
+  }
+}
+
+void SetNodeDescriptionCmd::redo() {
+  if (auto* n = doc_->network().find_node(node_.toStdString())) {
+    n->set_description(description_.toStdString());
+    doc_->notifyChanged();
+  }
+}
+
+void SetNodeDescriptionCmd::undo() {
+  if (auto* n = doc_->network().find_node(node_.toStdString())) {
+    n->set_description(oldDescription_.toStdString());
+    doc_->notifyChanged();
+  }
+}
+
+SetClusterDescriptionCmd::SetClusterDescriptionCmd(Document* doc,
+                                                   QString cluster,
+                                                   QString description)
+    : QUndoCommand(QStringLiteral("Set cluster description")),
+      doc_(doc),
+      cluster_(std::move(cluster)),
+      description_(std::move(description)) {
+  if (auto* c = doc_->network().find_cluster(cluster_.toStdString())) {
+    oldDescription_ = QString::fromStdString(c->description());
+  }
+}
+
+void SetClusterDescriptionCmd::redo() {
+  if (auto* c = doc_->network().find_cluster(cluster_.toStdString())) {
+    c->set_description(description_.toStdString());
+    doc_->notifyChanged();
+  }
+}
+
+void SetClusterDescriptionCmd::undo() {
+  if (auto* c = doc_->network().find_cluster(cluster_.toStdString())) {
+    c->set_description(oldDescription_.toStdString());
+    doc_->notifyChanged();
+  }
+}
+
 SetPrioritizerKindCmd::SetPrioritizerKindCmd(Document* doc,
                                              QString wrt,
                                              QString destCluster,

@@ -203,6 +203,56 @@ private:
   QString newName_;
 };
 
+class SetNetworkNameCmd : public QUndoCommand {
+public:
+  SetNetworkNameCmd(Document* doc, QString name);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString name_;
+  QString oldName_;
+};
+
+class SetNetworkDescriptionCmd : public QUndoCommand {
+public:
+  SetNetworkDescriptionCmd(Document* doc, QString description);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString description_;
+  QString oldDescription_;
+};
+
+class SetNodeDescriptionCmd : public QUndoCommand {
+public:
+  SetNodeDescriptionCmd(Document* doc, QString node, QString description);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString node_;
+  QString description_;
+  QString oldDescription_;
+};
+
+class SetClusterDescriptionCmd : public QUndoCommand {
+public:
+  SetClusterDescriptionCmd(Document* doc, QString cluster, QString description);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString cluster_;
+  QString description_;
+  QString oldDescription_;
+};
+
 class SetPrioritizerKindCmd : public QUndoCommand {
 public:
   SetPrioritizerKindCmd(Document* doc,
