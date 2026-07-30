@@ -142,7 +142,7 @@ void JudgmentPrioritiesPanel::clear() {
   source_ = Source::None;
   parent_.clear();
   destCluster_.clear();
-  setEntries({}, QStringLiteral("Select a judgment above."));
+  setEntries({}, QStringLiteral("Select a judgment in the left panel."));
 }
 
 void JudgmentPrioritiesPanel::setEntries(
@@ -153,7 +153,7 @@ void JudgmentPrioritiesPanel::setEntries(
 
 void JudgmentPrioritiesPanel::refresh() {
   if (source_ == Source::None || parent_.isEmpty()) {
-    setEntries({}, QStringLiteral("Select a judgment above."));
+    setEntries({}, QStringLiteral("Select a judgment in the left panel."));
     return;
   }
 

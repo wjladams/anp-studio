@@ -8,6 +8,8 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QSizePolicy>
+#include <QVBoxLayout>
 
 namespace {
 
@@ -47,8 +49,13 @@ bool nodeHasOutgoing(const anpcpp::AnpNode& n) {
 }
 
 bool clusterHasOutgoing(const anpcpp::AnpCluster& c) {
-  // Cluster pairwise alternatives are destinations connected from this cluster.
   return c.cluster_pairwise().size() >= 2;
+}
+
+QLabel* sectionCaption(const QString& text, QWidget* parent) {
+  auto* lab = new QLabel(text, parent);
+  lab->setObjectName(QStringLiteral("selectorSection"));
+  return lab;
 }
 
 }  // namespace
@@ -56,14 +63,16 @@ bool clusterHasOutgoing(const anpcpp::AnpCluster& c) {
 JudgmentNavPanel::JudgmentNavPanel(Document* doc, QWidget* parent)
     : QWidget(parent), doc_(doc) {
   setObjectName(QStringLiteral("judgmentSelector"));
-  auto* layout = new QHBoxLayout(this);
-  layout->setContentsMargins(0, 0, 0, 0);
-  layout->setSpacing(8);
+  setMinimumWidth(200);
+  setMaximumWidth(280);
 
-  auto* modeLabel = new QLabel(QStringLiteral("Compare:"), this);
-  modeLabel->setObjectName(QStringLiteral("selectorCaption"));
-  layout->addWidget(modeLabel);
+  auto* layout = new QVBoxLayout(this);
+  layout->setContentsMargins(10, 12, 10, 12);
+  layout->setSpacing(6);
 
+  layout->addWidget(sectionCaption(QStringLiteral("Compare"), this));
+  auto* modeRow = new QHBoxLayout;
+  modeRow->setSpacing(6);
   modeGroup_ = new QButtonGroup(this);
   modeGroup_->setExclusive(true);
   nodeModeBtn_ = new QPushButton(QStringLiteral("Node"), this);
@@ -73,26 +82,30 @@ JudgmentNavPanel::JudgmentNavPanel(Document* doc, QWidget* parent)
     b->setCheckable(true);
     b->setFlat(true);
     b->setCursor(Qt::PointingHandCursor);
-    layout->addWidget(b);
+    b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    modeRow->addWidget(b);
   }
   modeGroup_->addButton(nodeModeBtn_, 0);
   modeGroup_->addButton(clusterModeBtn_, 1);
   nodeModeBtn_->setChecked(true);
+  layout->addLayout(modeRow);
 
-  wrtLabel_ = new QLabel(QStringLiteral("Wrt Node:"), this);
-  wrtLabel_->setObjectName(QStringLiteral("selectorCaption"));
+  wrtLabel_ = sectionCaption(QStringLiteral("Wrt node"), this);
   layout->addWidget(wrtLabel_);
   wrtBox_ = new QComboBox(this);
-  wrtBox_->setMinimumWidth(140);
+  wrtBox_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
   layout->addWidget(wrtBox_);
 
-  otherLabel_ = new QLabel(QStringLiteral("Other Cluster:"), this);
-  otherLabel_->setObjectName(QStringLiteral("selectorCaption"));
+  otherLabel_ = sectionCaption(QStringLiteral("Other cluster"), this);
   layout->addWidget(otherLabel_);
   otherBox_ = new QComboBox(this);
-  otherBox_->setMinimumWidth(140);
+  otherBox_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
   layout->addWidget(otherBox_);
 
+  methodLabel_ = sectionCaption(QStringLiteral("Method"), this);
+  layout->addWidget(methodLabel_);
+  auto* kindRow = new QHBoxLayout;
+  kindRow->setSpacing(6);
   toPairwise_ = new QPushButton(QStringLiteral("Pairwise"), this);
   toRatings_ = new QPushButton(QStringLiteral("Ratings"), this);
   toPairwise_->setObjectName(QStringLiteral("selectorToggle"));
@@ -103,17 +116,25 @@ JudgmentNavPanel::JudgmentNavPanel(Document* doc, QWidget* parent)
   toRatings_->setFlat(true);
   toPairwise_->setCursor(Qt::PointingHandCursor);
   toRatings_->setCursor(Qt::PointingHandCursor);
+  toPairwise_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+  toRatings_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
   auto* kindGroup = new QButtonGroup(this);
   kindGroup->setExclusive(true);
   kindGroup->addButton(toPairwise_);
   kindGroup->addButton(toRatings_);
   toPairwise_->setChecked(true);
-  layout->addWidget(toPairwise_);
-  layout->addWidget(toRatings_);
+  kindRow->addWidget(toPairwise_);
+  kindRow->addWidget(toRatings_);
+  layout->addLayout(kindRow);
 
+  statusLabel_ = sectionCaption(QStringLiteral("Status"), this);
+  layout->addWidget(statusLabel_);
   coverageLabel_ = new QLabel(this);
   coverageLabel_->setObjectName(QStringLiteral("selectorMuted"));
-  layout->addWidget(coverageLabel_, 1);
+  coverageLabel_->setWordWrap(true);
+  layout->addWidget(coverageLabel_);
+
+  layout->addStretch(1);
 
   connect(modeGroup_, &QButtonGroup::idClicked, this,
           [this](int) { onModeChanged(); });
@@ -185,10 +206,11 @@ void JudgmentNavPanel::refresh() {
   const QString curWrt = wrtBox_->currentText();
   const QString curOther = otherBox_->currentText();
 
-  wrtLabel_->setText(nodeMode() ? QStringLiteral("Wrt Node:")
-                                : QStringLiteral("Wrt Cluster:"));
+  wrtLabel_->setText(nodeMode() ? QStringLiteral("Wrt node")
+                                : QStringLiteral("Wrt cluster"));
   otherLabel_->setVisible(nodeMode());
   otherBox_->setVisible(nodeMode());
+  methodLabel_->setVisible(nodeMode());
   toPairwise_->setVisible(nodeMode());
   toRatings_->setVisible(nodeMode());
 
@@ -202,7 +224,6 @@ void JudgmentNavPanel::refresh() {
   if (oi >= 0) otherBox_->setCurrentIndex(oi);
   else if (otherBox_->count() > 0) otherBox_->setCurrentIndex(0);
 
-  // Coverage for the current selection (or hint when empty).
   if (wrtBox_->count() == 0) {
     coverageLabel_->setText(
         QStringLiteral("No connected parents — connect nodes in Structure."));
@@ -219,11 +240,11 @@ void JudgmentNavPanel::refresh() {
       toPairwise_->setChecked(!ratings);
       const double cover = ratings ? ratingsCoverage(slot->ratings)
                                    : pairwiseCoverage(slot->pairwise);
-      QString text = QStringLiteral("Coverage: %1%")
+      QString text = QStringLiteral("Coverage %1%")
                          .arg(QString::number(cover * 100.0, 'f', 0));
       if (!ratings && slot->pairwise.size() >= 3) {
         const double cr = slot->pairwise.consistency_ratio();
-        text += QStringLiteral("   CR: %1").arg(QString::number(cr, 'f', 3));
+        text += QStringLiteral("\nCR %1").arg(QString::number(cr, 'f', 3));
         if (cr > 0.1) text += QStringLiteral(" ⚠");
       }
       coverageLabel_->setText(text);
@@ -235,11 +256,11 @@ void JudgmentNavPanel::refresh() {
         doc_->network().cluster(wrtBox_->currentText().toStdString())
             .cluster_pairwise();
     const double cover = pairwiseCoverage(pw);
-    QString text = QStringLiteral("Coverage: %1%")
+    QString text = QStringLiteral("Coverage %1%")
                        .arg(QString::number(cover * 100.0, 'f', 0));
     if (pw.size() >= 3) {
       const double cr = pw.consistency_ratio();
-      text += QStringLiteral("   CR: %1").arg(QString::number(cr, 'f', 3));
+      text += QStringLiteral("\nCR %1").arg(QString::number(cr, 'f', 3));
       if (cr > 0.1) text += QStringLiteral(" ⚠");
     }
     coverageLabel_->setText(text);

@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Judgments left-nav options</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --ink: #1c1b19;
+      --muted: #5c574e;
+      --line: #d4cfc4;
+      --panel: #fffdf8;
+      --accent: #2f5d50;
+      --accent-soft: #e4efe9;
+      --select: #c8ddd4;
+      --chrome: #ebe6dc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.45 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    header {
+      padding: 1.75rem 2rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+    header h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.65rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      margin: 0;
+      max-width: 42rem;
+      color: var(--muted);
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      padding: 1rem 2rem 0;
+    }
+    .tabs button {
+      font: inherit;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      padding: 0.45rem 0.85rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .tabs button[aria-selected="true"] {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    main { padding: 1rem 2rem 3rem; }
+    article { display: none; }
+    article.active { display: block; }
+    .meta {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+      max-width: 1100px;
+    }
+    @media (max-width: 860px) {
+      .meta { grid-template-columns: 1fr; }
+    }
+    .meta h2 {
+      margin: 0 0 0.4rem;
+      font-size: 1.25rem;
+    }
+    .meta p, .meta li { color: var(--muted); }
+    .meta ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+    .pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--select);
+      background: var(--accent-soft);
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      margin-bottom: 0.5rem;
+    }
+    .wire {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      overflow: hidden;
+      max-width: 1100px;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-size: 12px;
+    }
+    .stage-strip {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.55rem 0.75rem;
+      background: var(--chrome);
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .stage-strip strong { color: var(--ink); }
+    .body {
+      display: grid;
+      grid-template-columns: 220px 1fr 180px;
+      min-height: 340px;
+    }
+    .body.two-col { grid-template-columns: 240px 1fr; }
+    .body.nav-wide { grid-template-columns: 260px 1fr 180px; }
+    .col {
+      border-right: 1px solid var(--line);
+      padding: 0.6rem;
+      background: var(--panel);
+    }
+    .col:last-child { border-right: none; }
+    .col h3 {
+      margin: 0 0 0.5rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .tree { list-style: none; margin: 0; padding: 0; }
+    .tree ul { list-style: none; margin: 0; padding-left: 0.85rem; }
+    .tree li {
+      padding: 0.22rem 0.35rem;
+      border-radius: 3px;
+      margin: 0.08rem 0;
+      color: var(--ink);
+    }
+    .tree .group {
+      font-weight: 600;
+      margin-top: 0.45rem;
+      color: var(--muted);
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .tree .sel { background: var(--select); font-weight: 600; }
+    .tree .dim { color: var(--muted); }
+    .center-mock {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px dashed var(--line);
+    }
+    .chip {
+      border: 1px solid var(--line);
+      padding: 0.2rem 0.45rem;
+      border-radius: 3px;
+      background: #fff;
+      color: var(--muted);
+    }
+    .chip.on {
+      background: var(--accent-soft);
+      border-color: var(--select);
+      color: var(--ink);
+      font-weight: 600;
+    }
+    .matrix {
+      flex: 1;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      display: grid;
+      grid-template-columns: 48px repeat(3, 1fr);
+      grid-auto-rows: 28px;
+      place-items: center;
+      background:
+        linear-gradient(to right, transparent 47px, var(--line) 47px),
+        linear-gradient(to bottom, transparent 27px, var(--line) 27px);
+      background-size: 100% 100%, 100% 100%;
+      color: var(--muted);
+    }
+    .bars { display: flex; flex-direction: column; gap: 0.55rem; margin-top: 0.4rem; }
+    .bar-row { display: grid; grid-template-columns: 36px 1fr; gap: 0.35rem; align-items: center; }
+    .bar {
+      height: 10px;
+      background: var(--accent);
+      border-radius: 2px;
+      opacity: 0.75;
+    }
+    .note {
+      margin-top: 1rem;
+      padding: 0.75rem 0.9rem;
+      border-left: 3px solid var(--accent);
+      background: var(--accent-soft);
+      max-width: 1100px;
+      color: var(--ink);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Judgments stage — left-nav options</h1>
+    <p>
+      Five ways to organize Judgment configuration like Analysis’s left tree,
+      instead of the current top bar of overlapping toggles and combos.
+      Click a tab to compare layouts. Open this file in any browser.
+    </p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" aria-selected="true" data-tab="a">A · Link catalog</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="b">B · Mode first</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="c">C · Parent → dest</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="d">D · Two panes</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="e">E · Wireframe classic</button>
+  </div>
+
+  <main>
+    <!-- A -->
+    <article id="a" class="active">
+      <div class="meta">
+        <div>
+          <div class="pill">Closest to Analysis</div>
+          <h2>A — Judgment link catalog</h2>
+          <p>
+            Left tree lists every judgment <em>link</em> that exists. Selecting a
+            leaf opens that editor. Method and view live as secondary choices on
+            the selected link (or as small children under it).
+          </p>
+          <ul>
+            <li>Pros: one place to see what needs work; mirrors Analysis tree</li>
+            <li>Cons: long trees on big models; cluster vs node mixed in one list</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">What moves where</h2>
+          <ul>
+            <li>Top bar Compare / Wrt / Other / Pairwise|Ratings → left tree</li>
+            <li>Matrix|Questionnaire stays in center chrome</li>
+            <li>Coverage / CR stays as status on leaf or center header</li>
+            <li>Priorities stay right</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis</div>
+        <div class="body">
+          <div class="col">
+            <h3>Nav</h3>
+            <ul class="tree">
+              <li class="group">Node judgments</li>
+              <li>
+                Benefits
+                <ul>
+                  <li class="sel">→ Alternatives · Pairwise</li>
+                  <li class="dim">→ Alternatives · Ratings</li>
+                </ul>
+              </li>
+              <li>
+                Costs
+                <ul>
+                  <li class="dim">→ Alternatives · Pairwise</li>
+                </ul>
+              </li>
+              <li class="group">Cluster judgments</li>
+              <li class="dim">Criteria · Pairwise</li>
+            </ul>
+          </div>
+          <div class="col center-mock">
+            <h3>Center</h3>
+            <div class="toolbar">
+              <span class="chip on">Matrix</span>
+              <span class="chip">Questionnaire</span>
+              <span class="chip">Coverage 67%</span>
+              <span class="chip">CR 0.04</span>
+            </div>
+            <div class="matrix" aria-hidden="true">
+              <span></span><span>A</span><span>B</span><span>C</span>
+              <span>A</span><span>1</span><span>3</span><span>1/2</span>
+              <span>B</span><span></span><span>1</span><span>2</span>
+              <span>C</span><span></span><span></span><span>1</span>
+            </div>
+          </div>
+          <div class="col">
+            <h3>Priorities</h3>
+            <div class="bars">
+              <div class="bar-row"><span>A</span><div class="bar" style="width:70%"></div></div>
+              <div class="bar-row"><span>B</span><div class="bar" style="width:45%"></div></div>
+              <div class="bar-row"><span>C</span><div class="bar" style="width:30%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Best if the main pain is “I don’t know which comparisons exist.” Selection = open that link’s editor.</p>
+    </article>
+
+    <!-- B -->
+    <article id="b">
+      <div class="meta">
+        <div>
+          <div class="pill">Task-oriented</div>
+          <h2>B — Mode first (Pairwise / Ratings / Cluster)</h2>
+          <p>
+            Top-level nav is the <em>kind of work</em>, then parents and destinations
+            underneath. Matches how people often think: “I’m doing ratings now.”
+          </p>
+          <ul>
+            <li>Pros: clear mental model; ratings never compete with cluster UI</li>
+            <li>Cons: same parent appears under multiple branches; more clicking</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">What moves where</h2>
+          <ul>
+            <li>Pairwise | Ratings | Cluster Compare become tree roots</li>
+            <li>Wrt / Other become nested lists under the mode</li>
+            <li>Center only shows the active editor + view toggle</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis</div>
+        <div class="body">
+          <div class="col">
+            <h3>Nav</h3>
+            <ul class="tree">
+              <li class="group">Pairwise</li>
+              <li>
+                Benefits
+                <ul>
+                  <li class="sel">Alternatives</li>
+                  <li class="dim">Criteria</li>
+                </ul>
+              </li>
+              <li class="dim">Costs → Alternatives</li>
+              <li class="group">Ratings</li>
+              <li class="dim">Benefits → Alternatives</li>
+              <li class="group">Cluster pairwise</li>
+              <li class="dim">Criteria</li>
+            </ul>
+          </div>
+          <div class="col center-mock">
+            <h3>Center — pairwise editor</h3>
+            <div class="toolbar">
+              <span class="chip on">Matrix</span>
+              <span class="chip">Questionnaire</span>
+            </div>
+            <div class="matrix" aria-hidden="true">
+              <span></span><span>A</span><span>B</span><span>C</span>
+              <span>A</span><span>1</span><span>3</span><span>1/2</span>
+              <span>B</span><span></span><span>1</span><span>2</span>
+              <span>C</span><span></span><span></span><span>1</span>
+            </div>
+          </div>
+          <div class="col">
+            <h3>Priorities</h3>
+            <div class="bars">
+              <div class="bar-row"><span>A</span><div class="bar" style="width:70%"></div></div>
+              <div class="bar-row"><span>B</span><div class="bar" style="width:45%"></div></div>
+              <div class="bar-row"><span>C</span><div class="bar" style="width:30%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Best if Pairwise vs Ratings vs Cluster feels like three different tools today.</p>
+    </article>
+
+    <!-- C -->
+    <article id="c">
+      <div class="meta">
+        <div>
+          <div class="pill">Structure-aligned</div>
+          <h2>C — Parent first, then destination</h2>
+          <p>
+            Navigate by Wrt parent (node or cluster), then pick the destination
+            cluster / comparison set. Method is a child of the destination (or a
+            compact toggle once a dest is selected).
+          </p>
+          <ul>
+            <li>Pros: tracks network structure; easy “finish all judgments from Benefits”</li>
+            <li>Cons: method switch is one level deeper than option B</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">What moves where</h2>
+          <ul>
+            <li>Wrt combo → expandable parents</li>
+            <li>Other cluster → children of each parent</li>
+            <li>Pairwise/Ratings under each dest (or sticky segment control)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis</div>
+        <div class="body nav-wide">
+          <div class="col">
+            <h3>Nav</h3>
+            <ul class="tree">
+              <li class="group">Nodes</li>
+              <li>
+                Benefits
+                <ul>
+                  <li>
+                    Alternatives
+                    <ul>
+                      <li class="sel">Pairwise</li>
+                      <li class="dim">Ratings</li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li class="dim">Costs → Alternatives</li>
+              <li class="group">Clusters</li>
+              <li class="dim">Criteria → Pairwise</li>
+            </ul>
+          </div>
+          <div class="col center-mock">
+            <h3>Center</h3>
+            <div class="toolbar">
+              <span class="chip on">Matrix</span>
+              <span class="chip">Questionnaire</span>
+              <span class="chip">Benefits → Alternatives</span>
+            </div>
+            <div class="matrix" aria-hidden="true">
+              <span></span><span>A</span><span>B</span><span>C</span>
+              <span>A</span><span>1</span><span>3</span><span>1/2</span>
+              <span>B</span><span></span><span>1</span><span>2</span>
+              <span>C</span><span></span><span></span><span>1</span>
+            </div>
+          </div>
+          <div class="col">
+            <h3>Priorities</h3>
+            <div class="bars">
+              <div class="bar-row"><span>A</span><div class="bar" style="width:70%"></div></div>
+              <div class="bar-row"><span>B</span><div class="bar" style="width:45%"></div></div>
+              <div class="bar-row"><span>C</span><div class="bar" style="width:30%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Best if you bounce Structure ↔ Judgments and want the same parent names in both places.</p>
+    </article>
+
+    <!-- D -->
+    <article id="d">
+      <div class="meta">
+        <div>
+          <div class="pill">Config dock</div>
+          <h2>D — Left config stack + clean center</h2>
+          <p>
+            Left column is a vertical <em>form</em> of the current controls
+            (Compare, Wrt, Other, Method, Coverage), not a deep tree. Center is
+            only the editor. Same information as today, but ordered top-to-bottom
+            instead of jammed in one horizontal bar.
+          </p>
+          <ul>
+            <li>Pros: smallest code change; fixes stacking clutter immediately</li>
+            <li>Cons: less “browse all judgments”; still combo-driven</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">What moves where</h2>
+          <ul>
+            <li>Entire JudgmentNavPanel → left column, vertical layout</li>
+            <li>No hierarchy of all links</li>
+            <li>Can evolve later into A/B/C without rewriting the editor</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis</div>
+        <div class="body">
+          <div class="col">
+            <h3>Config</h3>
+            <ul class="tree">
+              <li class="group">Compare</li>
+              <li class="sel">Node</li>
+              <li class="dim">Cluster</li>
+              <li class="group">Wrt node</li>
+              <li class="sel">Benefits ▾</li>
+              <li class="group">Other cluster</li>
+              <li class="sel">Alternatives ▾</li>
+              <li class="group">Method</li>
+              <li class="sel">Pairwise</li>
+              <li class="dim">Ratings</li>
+              <li class="group">Status</li>
+              <li>Coverage 67%</li>
+              <li>CR 0.04</li>
+            </ul>
+          </div>
+          <div class="col center-mock">
+            <h3>Center — editor only</h3>
+            <div class="toolbar">
+              <span class="chip on">Matrix</span>
+              <span class="chip">Questionnaire</span>
+            </div>
+            <div class="matrix" aria-hidden="true">
+              <span></span><span>A</span><span>B</span><span>C</span>
+              <span>A</span><span>1</span><span>3</span><span>1/2</span>
+              <span>B</span><span></span><span>1</span><span>2</span>
+              <span>C</span><span></span><span></span><span>1</span>
+            </div>
+          </div>
+          <div class="col">
+            <h3>Priorities</h3>
+            <div class="bars">
+              <div class="bar-row"><span>A</span><div class="bar" style="width:70%"></div></div>
+              <div class="bar-row"><span>B</span><div class="bar" style="width:45%"></div></div>
+              <div class="bar-row"><span>C</span><div class="bar" style="width:30%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Best as a fast cleanup if you like today’s model but hate the horizontal chrome.</p>
+    </article>
+
+    <!-- E -->
+    <article id="e">
+      <div class="meta">
+        <div>
+          <div class="pill">From ia-stage-wireframe</div>
+          <h2>E — Classic wireframe (parent list + session)</h2>
+          <p>
+            Matches <code>docs/ia-stage-wireframe.md</code>: left list of parents
+            that have comparisons; center is Matrix | Questionnaire | (later Graph);
+            right is Session / user context instead of (or above) priorities.
+          </p>
+          <ul>
+            <li>Pros: already documented; room for multi-user later</li>
+            <li>Cons: dest/method still need a place (center header or secondary list)</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">What moves where</h2>
+          <ul>
+            <li>Left = parents with outgoing judgments only</li>
+            <li>Dest + method in center header (compact)</li>
+            <li>Right = Session ● later; priorities can sit under session or share the right column</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis</div>
+        <div class="body two-col" style="grid-template-columns: 200px 1fr 200px;">
+          <div class="col">
+            <h3>Parents</h3>
+            <ul class="tree">
+              <li class="sel">Benefits</li>
+              <li class="dim">Costs</li>
+              <li class="dim">Risks</li>
+              <li class="group">Clusters</li>
+              <li class="dim">Criteria</li>
+            </ul>
+          </div>
+          <div class="col center-mock">
+            <h3>Center</h3>
+            <div class="toolbar">
+              <span class="chip">Other: Alternatives ▾</span>
+              <span class="chip on">Pairwise</span>
+              <span class="chip">Ratings</span>
+              <span class="chip on">Matrix</span>
+              <span class="chip">Quest</span>
+              <span class="chip">Graph</span>
+            </div>
+            <div class="matrix" aria-hidden="true">
+              <span></span><span>A</span><span>B</span><span>C</span>
+              <span>A</span><span>1</span><span>3</span><span>1/2</span>
+              <span>B</span><span></span><span>1</span><span>2</span>
+              <span>C</span><span></span><span></span><span>1</span>
+            </div>
+          </div>
+          <div class="col">
+            <h3>Session</h3>
+            <ul class="tree">
+              <li class="sel">You</li>
+              <li class="dim">Participant 2</li>
+              <li class="dim">Group avg</li>
+            </ul>
+            <h3 style="margin-top:1rem">Priorities</h3>
+            <div class="bars">
+              <div class="bar-row"><span>A</span><div class="bar" style="width:70%"></div></div>
+              <div class="bar-row"><span>B</span><div class="bar" style="width:45%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Best if multi-user / session is coming soon and you want the IA doc to stay the source of truth.</p>
+    </article>
+  </main>
+
+  <script>
+    const tabs = document.querySelectorAll('.tabs button');
+    const articles = document.querySelectorAll('article');
+    tabs.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        tabs.forEach((b) => b.setAttribute('aria-selected', 'false'));
+        articles.forEach((a) => a.classList.remove('active'));
+        btn.setAttribute('aria-selected', 'true');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

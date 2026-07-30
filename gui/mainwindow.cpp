@@ -157,7 +157,7 @@ void MainWindow::buildStagePages() {
   sLay->addWidget(sSplit);
   stages_->addWidget(structurePage);
 
-  // Judgments: top selector | pairwise/ratings | priorities chart
+  // Judgments: left config dock | pairwise/ratings | priorities chart
   judgmentNav_ = new JudgmentNavPanel(doc_, this);
   pairwise_ = new PairwisePanel(doc_, this);
   ratings_ = new RatingsPanel(doc_, this);
@@ -168,13 +168,15 @@ void MainWindow::buildStagePages() {
   auto* judgmentsPage = new QWidget(stages_);
   auto* jLay = new QVBoxLayout(judgmentsPage);
   jLay->setContentsMargins(0, 0, 0, 0);
-  jLay->setSpacing(8);
-  jLay->addWidget(judgmentNav_);
+  jLay->setSpacing(0);
   auto* jSplit = new QSplitter(Qt::Horizontal, judgmentsPage);
+  jSplit->addWidget(judgmentNav_);
   jSplit->addWidget(judgmentCenter_);
   jSplit->addWidget(judgmentPriorities_);
-  jSplit->setStretchFactor(0, 4);
-  jSplit->setStretchFactor(1, 1);
+  jSplit->setStretchFactor(0, 0);
+  jSplit->setStretchFactor(1, 4);
+  jSplit->setStretchFactor(2, 1);
+  jSplit->setCollapsible(0, false);
   jLay->addWidget(jSplit, 1);
   stages_->addWidget(judgmentsPage);
 

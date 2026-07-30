@@ -1,6 +1,6 @@
 /**
  * @file judgment_nav_panel.hpp
- * @brief Top selector for judgment parent / destination / kind.
+ * @brief Left config dock for judgment parent / destination / kind.
  */
 
 #pragma once
@@ -14,7 +14,7 @@ class QPushButton;
 class QButtonGroup;
 
 /**
- * @brief Horizontal judgment selector: Node|Cluster, Wrt, Other Cluster.
+ * @brief Vertical judgment config dock: Compare, Wrt, Other, Method, Status.
  *
  * Wrt lists only parents that have outgoing connections. Other Cluster lists
  * only destination clusters connected from the selected Wrt node.
@@ -56,8 +56,10 @@ private:
   QComboBox* wrtBox_ = nullptr;
   QLabel* otherLabel_ = nullptr;
   QComboBox* otherBox_ = nullptr;
+  QLabel* methodLabel_ = nullptr;
   QPushButton* toPairwise_ = nullptr;
   QPushButton* toRatings_ = nullptr;
+  QLabel* statusLabel_ = nullptr;
   QLabel* coverageLabel_ = nullptr;
   bool updating_ = false;
   bool preferRatings_ = false;

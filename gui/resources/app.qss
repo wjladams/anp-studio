@@ -194,6 +194,38 @@ QTreeWidget#analysisNav::branch {
   background-color: transparent;
 }
 
+QWidget#judgmentSelector {
+  background-color: #f8f9fa;
+  border: none;
+  border-right: 1px solid #dadce0;
+}
+
+QLabel#selectorSection {
+  color: #1a73e8;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-top: 8px;
+  background: transparent;
+}
+
+QWidget#judgmentSelector QComboBox {
+  background-color: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  padding: 4px 6px;
+  min-height: 24px;
+}
+
+QWidget#judgmentSelector QComboBox:hover {
+  border-color: #aecbfa;
+}
+
+QWidget#judgmentSelector QComboBox:focus {
+  border-color: #1a73e8;
+}
+
 QPushButton#breadcrumbLink {
   background-color: transparent;
   border: none;
