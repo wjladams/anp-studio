@@ -16,9 +16,13 @@
 #include <QLabel>
 #include <QSlider>
 #include <QSpinBox>
-#include <QTabWidget>
+#include <QStackedWidget>
 #include <QTableWidget>
 #include <QTextBrowser>
+#include <QTimer>
+#include <QTreeWidget>
+#include <QTreeWidgetItem>
+#include <QUrl>
 #include <QVBoxLayout>
 
 #include <cmath>
@@ -26,6 +30,9 @@
 #include <stdexcept>
 
 namespace {
+
+constexpr int kRolePage = Qt::UserRole;
+constexpr int kRoleAnchor = Qt::UserRole + 1;
 
 QString esc(const QString& s) {
   QString o = s;
@@ -83,108 +90,211 @@ std::size_t nodeRowIndex(const anpcpp::AnpNetwork& net, const std::string& name)
   throw std::out_of_range("unknown node");
 }
 
+QTreeWidgetItem* makeNavItem(QTreeWidgetItem* parent,
+                             const QString& text,
+                             AnalysisPanel::Page page,
+                             const QString& anchor = QString()) {
+  auto* item = parent ? new QTreeWidgetItem(parent)
+                      : new QTreeWidgetItem();
+  item->setText(0, text);
+  item->setData(0, kRolePage, static_cast<int>(page));
+  item->setData(0, kRoleAnchor, anchor);
+  item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+  return item;
+}
+
+QTableWidget* makeInfluenceTable(QWidget* parent) {
+  auto* table = new QTableWidget(parent);
+  table->setSortingEnabled(true);
+  table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+  table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  return table;
+}
+
 }  // namespace
 
 AnalysisPanel::AnalysisPanel(Document* doc, QWidget* parent)
     : QWidget(parent), doc_(doc) {
   auto* root = new QHBoxLayout(this);
   root->setContentsMargins(0, 0, 0, 0);
+  root->setSpacing(0);
 
-  tabs_ = new QTabWidget(this);
-  tabs_->setTabPosition(QTabWidget::West);
+  nav_ = new QTreeWidget(this);
+  nav_->setObjectName(QStringLiteral("analysisNav"));
+  nav_->setHeaderHidden(true);
+  nav_->setRootIsDecorated(true);
+  nav_->setAnimated(false);
+  nav_->setIndentation(16);
+  nav_->setMinimumWidth(220);
+  nav_->setMaximumWidth(300);
+  nav_->setFocusPolicy(Qt::NoFocus);
+  buildNavTree();
+  root->addWidget(nav_);
+
+  stack_ = new QStackedWidget(this);
 
   // --- Synthesis ---
-  synthBrowser_ = new QTextBrowser(this);
+  synthBrowser_ = new QTextBrowser(stack_);
   synthBrowser_->setOpenExternalLinks(false);
-  tabs_->addTab(synthBrowser_, QStringLiteral("Synthesis"));
+  stack_->addWidget(synthBrowser_);
 
-  // --- Sensitivity ---
-  auto* sensPage = new QWidget(this);
-  auto* sensLay = new QVBoxLayout(sensPage);
-  auto* sensControls = new QHBoxLayout;
-  sensMode_ = new QComboBox(sensPage);
-  sensMode_->addItem(QStringLiteral("Interactive"));
-  sensMode_->addItem(QStringLiteral("Global"));
-  sensControls->addWidget(new QLabel(QStringLiteral("Mode:"), sensPage));
-  sensControls->addWidget(sensMode_);
-  sensControls->addWidget(new QLabel(QStringLiteral("Row Node:"), sensPage));
-  sensWrt_ = new QComboBox(sensPage);
-  sensControls->addWidget(sensWrt_, 1);
-  sensLay->addLayout(sensControls);
+  // --- Sensitivity overview ---
+  sensOverview_ = new QTextBrowser(stack_);
+  sensOverview_->setOpenExternalLinks(false);
+  sensOverview_->setOpenLinks(false);
+  sensOverview_->setHtml(QStringLiteral(
+      "<html><body style='font-family: sans-serif; max-width: 40em;'>"
+      "<h1>Sensitivity</h1>"
+      "<p>ANP Row Sensitivity varies a parameter <i>p</i> for a chosen row "
+      "(Wrt) node while holding the rest of the model fixed. At "
+      "<i>p</i>&nbsp;=&nbsp;0.5 the original priorities are recovered.</p>"
+      "<h2><a href='anp://SensInteractive'>Interactive</a></h2>"
+      "<p>Pick a Wrt node and adjust <i>p</i> with a slider. Alternative scores "
+      "for the selected network are shown as a horizontal bar chart.</p>"
+      "<h2><a href='anp://SensGlobal'>Global</a></h2>"
+      "<p>Sweep <i>p</i> from 0.01 to 1.00 in steps of 0.01 and plot each "
+      "alternative's synthesized score as a line series against <i>p</i>.</p>"
+      "</body></html>"));
+  stack_->addWidget(sensOverview_);
 
-  sensInteractiveHost_ = new QWidget(sensPage);
-  auto* pRow = new QHBoxLayout(sensInteractiveHost_);
-  pRow->setContentsMargins(0, 0, 0, 0);
-  pRow->addWidget(new QLabel(QStringLiteral("p:"), sensInteractiveHost_));
-  sensSlider_ = new QSlider(Qt::Horizontal, sensInteractiveHost_);
+  // --- Sensitivity Interactive ---
+  auto* sensInteractivePage = new QWidget(stack_);
+  auto* sensIntLay = new QVBoxLayout(sensInteractivePage);
+  auto* sensIntControls = new QHBoxLayout;
+  sensIntControls->addWidget(new QLabel(QStringLiteral("Row Node:"), sensInteractivePage));
+  sensWrtInteractive_ = new QComboBox(sensInteractivePage);
+  sensIntControls->addWidget(sensWrtInteractive_, 1);
+  sensIntLay->addLayout(sensIntControls);
+
+  auto* pRow = new QHBoxLayout;
+  pRow->addWidget(new QLabel(QStringLiteral("p:"), sensInteractivePage));
+  sensSlider_ = new QSlider(Qt::Horizontal, sensInteractivePage);
   sensSlider_->setRange(0, 100);
   sensSlider_->setValue(50);
   pRow->addWidget(sensSlider_, 1);
-  sensPSpin_ = new QDoubleSpinBox(sensInteractiveHost_);
+  sensPSpin_ = new QDoubleSpinBox(sensInteractivePage);
   sensPSpin_->setRange(0.0, 1.0);
   sensPSpin_->setSingleStep(0.01);
   sensPSpin_->setDecimals(2);
   sensPSpin_->setValue(0.5);
   pRow->addWidget(sensPSpin_);
-  sensLay->addWidget(sensInteractiveHost_);
+  sensIntLay->addLayout(pRow);
 
-  sensChart_ = new SensitivityChartWidget(sensPage);
-  sensLay->addWidget(sensChart_, 1);
-  tabs_->addTab(sensPage, QStringLiteral("Sensitivity"));
+  sensChartInteractive_ = new SensitivityChartWidget(sensInteractivePage);
+  sensIntLay->addWidget(sensChartInteractive_, 1);
+  stack_->addWidget(sensInteractivePage);
 
-  // --- Influence ---
-  auto* inflPage = new QWidget(this);
-  auto* inflLay = new QVBoxLayout(inflPage);
-  auto* inflTop = new QHBoxLayout;
-  inflMode_ = new QComboBox(inflPage);
-  inflMode_->addItem(QStringLiteral("Raw"));
-  inflMode_->addItem(QStringLiteral("Rank"));
-  inflMode_->addItem(QStringLiteral("Marginal"));
-  inflTop->addWidget(new QLabel(QStringLiteral("Mode:"), inflPage));
-  inflTop->addWidget(inflMode_);
-  inflTop->addWidget(new QLabel(QStringLiteral("Wrt:"), inflPage));
-  inflWrt_ = new QComboBox(inflPage);
-  inflTop->addWidget(inflWrt_, 1);
-  inflLay->addLayout(inflTop);
+  // --- Sensitivity Global ---
+  auto* sensGlobalPage = new QWidget(stack_);
+  auto* sensGlobLay = new QVBoxLayout(sensGlobalPage);
+  auto* sensGlobControls = new QHBoxLayout;
+  sensGlobControls->addWidget(new QLabel(QStringLiteral("Row Node:"), sensGlobalPage));
+  sensWrtGlobal_ = new QComboBox(sensGlobalPage);
+  sensGlobControls->addWidget(sensWrtGlobal_, 1);
+  sensGlobLay->addLayout(sensGlobControls);
+  sensChartGlobal_ = new SensitivityChartWidget(sensGlobalPage);
+  sensGlobLay->addWidget(sensChartGlobal_, 1);
+  stack_->addWidget(sensGlobalPage);
 
-  inflRawParams_ = new QWidget(inflPage);
-  auto* rawForm = new QHBoxLayout(inflRawParams_);
-  rawForm->setContentsMargins(0, 0, 0, 0);
-  rawForm->addWidget(new QLabel(QStringLiteral("Δ up:"), inflRawParams_));
-  inflDeltaUp_ = new QDoubleSpinBox(inflRawParams_);
+  // --- Influence overview ---
+  inflOverview_ = new QTextBrowser(stack_);
+  inflOverview_->setOpenExternalLinks(false);
+  inflOverview_->setOpenLinks(false);
+  inflOverview_->setHtml(QStringLiteral(
+      "<html><body style='font-family: sans-serif; max-width: 40em;'>"
+      "<h1>Influence analysis</h1>"
+      "<p>Influence analysis measures how alternative scores respond when a "
+      "chosen Wrt node's row weight is perturbed around the resting parameter "
+      "<i>p</i><sub>0</sub>&nbsp;=&nbsp;0.5 (the value that recovers the "
+      "original supermatrix).</p>"
+      "<h2><a href='anp://InflRaw'>Raw</a></h2>"
+      "<p>Apply fixed Δ up and Δ down to <i>p</i>, resynthesize, and report "
+      "each alternative's original score plus the upward and downward scores "
+      "with differences.</p>"
+      "<h2><a href='anp://InflRank'>Rank</a></h2>"
+      "<p>Compute the rank influence score for each alternative relative to "
+      "the selected Wrt node.</p>"
+      "<h2><a href='anp://InflMarginal'>Marginal</a></h2>"
+      "<p>Compute the marginal influence score (and smart <i>p</i><sub>0</sub>) "
+      "for each alternative.</p>"
+      "</body></html>"));
+  stack_->addWidget(inflOverview_);
+
+  // --- Influence Raw ---
+  auto* inflRawPage = new QWidget(stack_);
+  auto* inflRawLay = new QVBoxLayout(inflRawPage);
+  auto* inflRawTop = new QHBoxLayout;
+  inflRawTop->addWidget(new QLabel(QStringLiteral("Wrt:"), inflRawPage));
+  inflWrtRaw_ = new QComboBox(inflRawPage);
+  inflRawTop->addWidget(inflWrtRaw_, 1);
+  inflRawLay->addLayout(inflRawTop);
+
+  auto* rawForm = new QHBoxLayout;
+  rawForm->addWidget(new QLabel(QStringLiteral("Δ up:"), inflRawPage));
+  inflDeltaUp_ = new QDoubleSpinBox(inflRawPage);
   inflDeltaUp_->setRange(0.01, 0.5);
   inflDeltaUp_->setSingleStep(0.01);
   inflDeltaUp_->setValue(0.1);
   rawForm->addWidget(inflDeltaUp_);
-  rawForm->addWidget(new QLabel(QStringLiteral("Δ down:"), inflRawParams_));
-  inflDeltaDown_ = new QDoubleSpinBox(inflRawParams_);
+  rawForm->addWidget(new QLabel(QStringLiteral("Δ down:"), inflRawPage));
+  inflDeltaDown_ = new QDoubleSpinBox(inflRawPage);
   inflDeltaDown_->setRange(0.01, 0.5);
   inflDeltaDown_->setSingleStep(0.01);
   inflDeltaDown_->setValue(0.1);
   rawForm->addWidget(inflDeltaDown_);
-  rawForm->addWidget(new QLabel(QStringLiteral("Decimals:"), inflRawParams_));
-  inflDecimals_ = new QSpinBox(inflRawParams_);
+  rawForm->addWidget(new QLabel(QStringLiteral("Decimals:"), inflRawPage));
+  inflDecimals_ = new QSpinBox(inflRawPage);
   inflDecimals_->setRange(2, 8);
   inflDecimals_->setValue(4);
   rawForm->addWidget(inflDecimals_);
   rawForm->addStretch();
-  inflLay->addWidget(inflRawParams_);
+  inflRawLay->addLayout(rawForm);
 
-  inflTable_ = new QTableWidget(inflPage);
-  inflTable_->setSortingEnabled(true);
-  inflTable_->setEditTriggers(QAbstractItemView::NoEditTriggers);
-  inflTable_->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-  inflLay->addWidget(inflTable_, 1);
-  tabs_->addTab(inflPage, QStringLiteral("Influence"));
+  inflTableRaw_ = makeInfluenceTable(inflRawPage);
+  inflRawLay->addWidget(inflTableRaw_, 1);
+  stack_->addWidget(inflRawPage);
 
-  root->addWidget(tabs_);
+  // --- Influence Rank ---
+  auto* inflRankPage = new QWidget(stack_);
+  auto* inflRankLay = new QVBoxLayout(inflRankPage);
+  auto* inflRankTop = new QHBoxLayout;
+  inflRankTop->addWidget(new QLabel(QStringLiteral("Wrt:"), inflRankPage));
+  inflWrtRank_ = new QComboBox(inflRankPage);
+  inflRankTop->addWidget(inflWrtRank_, 1);
+  inflRankLay->addLayout(inflRankTop);
+  inflTableRank_ = makeInfluenceTable(inflRankPage);
+  inflRankLay->addWidget(inflTableRank_, 1);
+  stack_->addWidget(inflRankPage);
+
+  // --- Influence Marginal ---
+  auto* inflMargPage = new QWidget(stack_);
+  auto* inflMargLay = new QVBoxLayout(inflMargPage);
+  auto* inflMargTop = new QHBoxLayout;
+  inflMargTop->addWidget(new QLabel(QStringLiteral("Wrt:"), inflMargPage));
+  inflWrtMarginal_ = new QComboBox(inflMargPage);
+  inflMargTop->addWidget(inflWrtMarginal_, 1);
+  inflMargLay->addLayout(inflMargTop);
+  inflTableMarginal_ = makeInfluenceTable(inflMargPage);
+  inflMargLay->addWidget(inflTableMarginal_, 1);
+  stack_->addWidget(inflMargPage);
+
+  root->addWidget(stack_, 1);
 
   connect(doc_, &Document::modelChanged, this, &AnalysisPanel::refresh);
   connect(doc_, &Document::viewNetworkChanged, this, &AnalysisPanel::refresh);
-  connect(sensMode_, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-          &AnalysisPanel::onSensModeChanged);
-  connect(sensWrt_, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-          &AnalysisPanel::refreshSensitivity);
+  connect(nav_, &QTreeWidget::itemActivated, this,
+          &AnalysisPanel::onNavItemActivated);
+  connect(nav_, &QTreeWidget::currentItemChanged, this,
+          &AnalysisPanel::onNavCurrentChanged);
+  connect(sensOverview_, &QTextBrowser::anchorClicked, this,
+          &AnalysisPanel::onOverviewAnchorClicked);
+  connect(inflOverview_, &QTextBrowser::anchorClicked, this,
+          &AnalysisPanel::onOverviewAnchorClicked);
+
+  connect(sensWrtInteractive_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+          this, &AnalysisPanel::refreshSensitivity);
+  connect(sensWrtGlobal_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+          this, &AnalysisPanel::refreshSensitivity);
   connect(sensSlider_, &QSlider::valueChanged, this, [this](int v) {
     if (updating_) return;
     updating_ = true;
@@ -200,10 +310,13 @@ AnalysisPanel::AnalysisPanel(Document* doc, QWidget* parent)
             updating_ = false;
             refreshSensitivity();
           });
-  connect(inflMode_, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-          &AnalysisPanel::onInfluenceModeChanged);
-  connect(inflWrt_, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+
+  connect(inflWrtRaw_, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
           &AnalysisPanel::refreshInfluence);
+  connect(inflWrtRank_, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+          &AnalysisPanel::refreshInfluence);
+  connect(inflWrtMarginal_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+          this, &AnalysisPanel::refreshInfluence);
   connect(inflDeltaUp_, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
           this, &AnalysisPanel::onInfluenceParamsChanged);
   connect(inflDeltaDown_, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
@@ -211,55 +324,152 @@ AnalysisPanel::AnalysisPanel(Document* doc, QWidget* parent)
   connect(inflDecimals_, QOverload<int>::of(&QSpinBox::valueChanged), this,
           &AnalysisPanel::onInfluenceParamsChanged);
 
-  onSensModeChanged(0);
-  onInfluenceModeChanged(0);
+  navigateTo(Page::Synthesis);
   refresh();
 }
 
+void AnalysisPanel::buildNavTree() {
+  nav_->clear();
+
+  synthItem_ = makeNavItem(nullptr, QStringLiteral("Synthesis"), Page::Synthesis);
+  nav_->addTopLevelItem(synthItem_);
+  makeNavItem(synthItem_, QStringLiteral("Unscaled Supermatrix"), Page::Synthesis,
+              QStringLiteral("unscaled"));
+  makeNavItem(synthItem_, QStringLiteral("Cluster matrix"), Page::Synthesis,
+              QStringLiteral("cluster"));
+  makeNavItem(synthItem_, QStringLiteral("Scaled Supermatrix"), Page::Synthesis,
+              QStringLiteral("scaled"));
+  makeNavItem(synthItem_, QStringLiteral("Global priorities"), Page::Synthesis,
+              QStringLiteral("global"));
+  subnetNavItem_ = makeNavItem(synthItem_, QStringLiteral("Subnetwork synthesis results"),
+                               Page::Synthesis, QStringLiteral("subnet"));
+  makeNavItem(synthItem_, QStringLiteral("Alternative Scores"), Page::Synthesis,
+              QStringLiteral("alts"));
+
+  auto* sensItem =
+      makeNavItem(nullptr, QStringLiteral("Sensitivity"), Page::SensOverview);
+  nav_->addTopLevelItem(sensItem);
+  makeNavItem(sensItem, QStringLiteral("Interactive"), Page::SensInteractive);
+  makeNavItem(sensItem, QStringLiteral("Global"), Page::SensGlobal);
+
+  auto* inflItem = makeNavItem(nullptr, QStringLiteral("Influence analysis"),
+                               Page::InflOverview);
+  nav_->addTopLevelItem(inflItem);
+  makeNavItem(inflItem, QStringLiteral("Raw"), Page::InflRaw);
+  makeNavItem(inflItem, QStringLiteral("Rank"), Page::InflRank);
+  makeNavItem(inflItem, QStringLiteral("Marginal"), Page::InflMarginal);
+
+  nav_->expandAll();
+}
+
+void AnalysisPanel::updateSubnetNavVisibility() {
+  if (!subnetNavItem_) return;
+  const bool show = doc_->network().has_subnet();
+  subnetNavItem_->setHidden(!show);
+  if (!show && synthAnchor_ == QStringLiteral("subnet")) {
+    synthAnchor_.clear();
+  }
+}
+
+void AnalysisPanel::selectNavForPage(Page page, const QString& anchor) {
+  navigating_ = true;
+  QTreeWidgetItemIterator it(nav_);
+  while (*it) {
+    QTreeWidgetItem* item = *it;
+    const auto itemPage =
+        static_cast<Page>(item->data(0, kRolePage).toInt());
+    const QString itemAnchor = item->data(0, kRoleAnchor).toString();
+    if (itemPage == page && itemAnchor == anchor && !item->isHidden()) {
+      nav_->setCurrentItem(item);
+      break;
+    }
+    ++it;
+  }
+  navigating_ = false;
+}
+
+void AnalysisPanel::navigateTo(Page page, const QString& anchor) {
+  stack_->setCurrentIndex(static_cast<int>(page));
+  if (page == Page::Synthesis) {
+    synthAnchor_ = anchor;
+    if (!anchor.isEmpty()) {
+      // Defer scroll until after layout/HTML paint.
+      QTimer::singleShot(0, this, [this, anchor]() {
+        synthBrowser_->scrollToAnchor(anchor);
+      });
+    }
+  } else {
+    synthAnchor_.clear();
+  }
+  selectNavForPage(page, anchor);
+}
+
+void AnalysisPanel::onNavItemActivated(QTreeWidgetItem* item, int /*column*/) {
+  if (!item || navigating_) return;
+  const auto page = static_cast<Page>(item->data(0, kRolePage).toInt());
+  const QString anchor = item->data(0, kRoleAnchor).toString();
+  navigateTo(page, anchor);
+}
+
+void AnalysisPanel::onNavCurrentChanged(QTreeWidgetItem* current,
+                                        QTreeWidgetItem* /*previous*/) {
+  if (!current || navigating_) return;
+  const auto page = static_cast<Page>(current->data(0, kRolePage).toInt());
+  const QString anchor = current->data(0, kRoleAnchor).toString();
+  navigateTo(page, anchor);
+}
+
+void AnalysisPanel::onOverviewAnchorClicked(const QUrl& url) {
+  if (url.scheme() != QStringLiteral("anp")) return;
+  const QString host = url.host();
+  if (host == QStringLiteral("SensInteractive")) {
+    navigateTo(Page::SensInteractive);
+  } else if (host == QStringLiteral("SensGlobal")) {
+    navigateTo(Page::SensGlobal);
+  } else if (host == QStringLiteral("InflRaw")) {
+    navigateTo(Page::InflRaw);
+  } else if (host == QStringLiteral("InflRank")) {
+    navigateTo(Page::InflRank);
+  } else if (host == QStringLiteral("InflMarginal")) {
+    navigateTo(Page::InflMarginal);
+  }
+}
+
 void AnalysisPanel::refresh() {
+  updateSubnetNavVisibility();
   rebuildSensWrtNodes();
   rebuildInfluenceWrtNodes();
   refreshSynthesisHtml();
   refreshSensitivity();
   refreshInfluence();
+  if (stack_->currentIndex() == static_cast<int>(Page::Synthesis) &&
+      !synthAnchor_.isEmpty()) {
+    QTimer::singleShot(0, this, [this]() {
+      synthBrowser_->scrollToAnchor(synthAnchor_);
+    });
+  }
+}
+
+void AnalysisPanel::fillWrtCombo(QComboBox* combo, const QString& prefer) {
+  combo->blockSignals(true);
+  combo->clear();
+  for (const auto& n : doc_->network().node_names()) {
+    combo->addItem(QString::fromStdString(n));
+  }
+  const int idx = combo->findText(prefer);
+  if (idx >= 0) combo->setCurrentIndex(idx);
+  combo->blockSignals(false);
 }
 
 void AnalysisPanel::rebuildSensWrtNodes() {
-  const QString cur = sensWrt_->currentText();
-  sensWrt_->blockSignals(true);
-  sensWrt_->clear();
-  for (const auto& n : doc_->network().node_names()) {
-    sensWrt_->addItem(QString::fromStdString(n));
-  }
-  const int idx = sensWrt_->findText(cur);
-  if (idx >= 0) sensWrt_->setCurrentIndex(idx);
-  sensWrt_->blockSignals(false);
+  fillWrtCombo(sensWrtInteractive_, sensWrtInteractive_->currentText());
+  fillWrtCombo(sensWrtGlobal_, sensWrtGlobal_->currentText());
 }
 
 void AnalysisPanel::rebuildInfluenceWrtNodes() {
-  const QString cur = inflWrt_->currentText();
-  inflWrt_->blockSignals(true);
-  inflWrt_->clear();
-  for (const auto& n : doc_->network().node_names()) {
-    inflWrt_->addItem(QString::fromStdString(n));
-  }
-  const int idx = inflWrt_->findText(cur);
-  if (idx >= 0) inflWrt_->setCurrentIndex(idx);
-  inflWrt_->blockSignals(false);
-}
-
-void AnalysisPanel::onSensModeChanged(int index) {
-  sensInteractiveHost_->setVisible(index == 0);
-  refreshSensitivity();
-}
-
-void AnalysisPanel::onSensPChanged() {
-  refreshSensitivity();
-}
-
-void AnalysisPanel::onInfluenceModeChanged(int index) {
-  inflRawParams_->setVisible(index == 0);
-  refreshInfluence();
+  fillWrtCombo(inflWrtRaw_, inflWrtRaw_->currentText());
+  fillWrtCombo(inflWrtRank_, inflWrtRank_->currentText());
+  fillWrtCombo(inflWrtMarginal_, inflWrtMarginal_->currentText());
 }
 
 void AnalysisPanel::onInfluenceParamsChanged() {
@@ -290,20 +500,20 @@ void AnalysisPanel::refreshSynthesisHtml() {
     const auto nodeNames = net.node_names();
     const auto clusterNames = net.cluster_names();
 
-    html += QStringLiteral("<h1>Unscaled Supermatrix</h1>");
+    html += QStringLiteral("<h1 id='unscaled'>Unscaled Supermatrix</h1>");
     html += matrixHtml(net.unscaled_supermatrix(), nodeNames, nodeNames);
 
-    html += QStringLiteral("<h1>Cluster matrix</h1>");
+    html += QStringLiteral("<h1 id='cluster'>Cluster matrix</h1>");
     html += matrixHtml(net.cluster_weight_matrix(), clusterNames, clusterNames);
 
-    html += QStringLiteral("<h1>Scaled Supermatrix</h1>");
+    html += QStringLiteral("<h1 id='scaled'>Scaled Supermatrix</h1>");
     html += matrixHtml(net.scaled_supermatrix(), nodeNames, nodeNames);
 
-    html += QStringLiteral("<h1>Global priorities</h1>");
+    html += QStringLiteral("<h1 id='global'>Global priorities</h1>");
     html += vectorHtml(net.global_priority(), nodeNames);
 
     if (net.has_subnet()) {
-      html += QStringLiteral("<h1>Subnetwork synthesis results</h1>");
+      html += QStringLiteral("<h1 id='subnet'>Subnetwork synthesis results</h1>");
       std::vector<anpcpp::AnpNode*> hosts;
       for (anpcpp::AnpNode* n : net.nodes()) {
         if (n->has_subnetwork()) hosts.push_back(n);
@@ -350,7 +560,7 @@ void AnalysisPanel::refreshSynthesisHtml() {
       html += QStringLiteral("</table>");
     }
 
-    html += QStringLiteral("<h1>Alternative Scores</h1>");
+    html += QStringLiteral("<h1 id='alts'>Alternative Scores</h1>");
     const auto alts = net.alt_names();
     const anpcpp::Vector scores = net.priority();
     html += QStringLiteral("<table border='1' cellspacing='0' cellpadding='4'>");
@@ -370,116 +580,132 @@ void AnalysisPanel::refreshSynthesisHtml() {
 }
 
 void AnalysisPanel::refreshSensitivity() {
-  if (sensWrt_->currentText().isEmpty()) {
-    sensChart_->setBarEntries({});
-    return;
-  }
-  const QString wrt = sensWrt_->currentText();
-  if (sensMode_->currentIndex() == 0) {
+  // Interactive bars
+  if (sensWrtInteractive_->currentText().isEmpty()) {
+    sensChartInteractive_->setBarEntries({});
+  } else {
+    const QString wrt = sensWrtInteractive_->currentText();
     const double p = sensPSpin_->value();
     const auto scores = altScoresAtP(wrt, p);
     QVector<std::pair<QString, double>> bars;
     for (const auto& s : scores) bars.push_back(s);
-    sensChart_->setBarEntries(bars);
-  } else {
-    QVector<double> xs;
-    for (int i = 1; i <= 100; ++i) xs.push_back(i / 100.0);
-    std::vector<std::pair<QString, double>> first = altScoresAtP(wrt, xs.first());
-    QVector<QString> names;
-    for (const auto& s : first) names.push_back(s.first);
-    QVector<QVector<double>> series(names.size());
-    for (int s = 0; s < series.size(); ++s) series[s].resize(xs.size());
-
-    for (int xi = 0; xi < xs.size(); ++xi) {
-      const auto scores = altScoresAtP(wrt, xs[xi]);
-      for (int s = 0; s < names.size(); ++s) {
-        double v = 0.0;
-        for (const auto& sc : scores) {
-          if (sc.first == names[s]) {
-            v = sc.second;
-            break;
-          }
-        }
-        series[s][xi] = v;
-      }
-    }
-    sensChart_->setLineSeries(names, xs, series);
+    sensChartInteractive_->setBarEntries(bars);
   }
+
+  // Global lines
+  if (sensWrtGlobal_->currentText().isEmpty()) {
+    sensChartGlobal_->setLineSeries({}, {}, {});
+    return;
+  }
+  const QString wrt = sensWrtGlobal_->currentText();
+  QVector<double> xs;
+  for (int i = 1; i <= 100; ++i) xs.push_back(i / 100.0);
+  std::vector<std::pair<QString, double>> first = altScoresAtP(wrt, xs.first());
+  QVector<QString> names;
+  for (const auto& s : first) names.push_back(s.first);
+  QVector<QVector<double>> series(names.size());
+  for (int s = 0; s < series.size(); ++s) series[s].resize(xs.size());
+
+  for (int xi = 0; xi < xs.size(); ++xi) {
+    const auto scores = altScoresAtP(wrt, xs[xi]);
+    for (int s = 0; s < names.size(); ++s) {
+      double v = 0.0;
+      for (const auto& sc : scores) {
+        if (sc.first == names[s]) {
+          v = sc.second;
+          break;
+        }
+      }
+      series[s][xi] = v;
+    }
+  }
+  sensChartGlobal_->setLineSeries(names, xs, series);
 }
 
 void AnalysisPanel::refreshInfluence() {
-  inflTable_->clear();
-  inflTable_->setRowCount(0);
-  inflTable_->setColumnCount(0);
-  if (inflWrt_->currentText().isEmpty()) return;
+  const int decimals = inflDecimals_->value();
+
+  auto clearTable = [](QTableWidget* table) {
+    table->clear();
+    table->setRowCount(0);
+    table->setColumnCount(0);
+  };
+
+  clearTable(inflTableRaw_);
+  clearTable(inflTableRank_);
+  clearTable(inflTableMarginal_);
 
   try {
     auto& net = doc_->network();
-    const std::string wrt = inflWrt_->currentText().toStdString();
-    const int mode = inflMode_->currentIndex();
-    const int decimals = inflDecimals_->value();
 
-    if (mode == 0) {
+    if (!inflWrtRaw_->currentText().isEmpty()) {
       const auto rows = net.influence_raw(
-          wrt, inflDeltaUp_->value(), inflDeltaDown_->value(), 0.5);
-      inflTable_->setColumnCount(3);
-      inflTable_->setHorizontalHeaderLabels(
+          inflWrtRaw_->currentText().toStdString(), inflDeltaUp_->value(),
+          inflDeltaDown_->value(), 0.5);
+      inflTableRaw_->setColumnCount(3);
+      inflTableRaw_->setHorizontalHeaderLabels(
           {QStringLiteral("Original"), QStringLiteral("Up"),
            QStringLiteral("Down")});
-      inflTable_->setRowCount(static_cast<int>(rows.size()));
+      inflTableRaw_->setRowCount(static_cast<int>(rows.size()));
       for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
         const auto& r = rows[static_cast<std::size_t>(i)];
-        inflTable_->setVerticalHeaderItem(
+        inflTableRaw_->setVerticalHeaderItem(
             i, new QTableWidgetItem(QString::fromStdString(r.name)));
         auto* o = new QTableWidgetItem(fmt(r.original, decimals));
         o->setData(Qt::UserRole, r.original);
-        inflTable_->setItem(i, 0, o);
+        inflTableRaw_->setItem(i, 0, o);
         const QString upTxt =
             fmt(r.up_score, decimals) + QStringLiteral(" [") +
             fmt(r.up_diff, decimals) + QStringLiteral("]");
         auto* u = new QTableWidgetItem(upTxt);
         u->setData(Qt::UserRole, r.up_score);
-        inflTable_->setItem(i, 1, u);
+        inflTableRaw_->setItem(i, 1, u);
         const QString downTxt =
             fmt(r.down_score, decimals) + QStringLiteral(" [") +
             fmt(r.down_diff, decimals) + QStringLiteral("]");
         auto* d = new QTableWidgetItem(downTxt);
         d->setData(Qt::UserRole, r.down_score);
-        inflTable_->setItem(i, 2, d);
+        inflTableRaw_->setItem(i, 2, d);
       }
-    } else if (mode == 1) {
-      const auto rows = net.influence_rank(wrt);
-      inflTable_->setColumnCount(2);
-      inflTable_->setHorizontalHeaderLabels(
+    }
+
+    if (!inflWrtRank_->currentText().isEmpty()) {
+      const auto rows =
+          net.influence_rank(inflWrtRank_->currentText().toStdString());
+      inflTableRank_->setColumnCount(2);
+      inflTableRank_->setHorizontalHeaderLabels(
           {QStringLiteral("Original Score"), QStringLiteral("Rank Influence")});
-      inflTable_->setRowCount(static_cast<int>(rows.size()));
+      inflTableRank_->setRowCount(static_cast<int>(rows.size()));
       for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
         const auto& r = rows[static_cast<std::size_t>(i)];
-        inflTable_->setVerticalHeaderItem(
+        inflTableRank_->setVerticalHeaderItem(
             i, new QTableWidgetItem(QString::fromStdString(r.name)));
         auto* o = new QTableWidgetItem(fmt(r.original, decimals));
         o->setData(Qt::UserRole, r.original);
-        inflTable_->setItem(i, 0, o);
+        inflTableRank_->setItem(i, 0, o);
         auto* s = new QTableWidgetItem(fmt(r.rank_influence, decimals));
         s->setData(Qt::UserRole, r.rank_influence);
-        inflTable_->setItem(i, 1, s);
+        inflTableRank_->setItem(i, 1, s);
       }
-    } else {
-      const auto rows = net.influence_marginal_smart(wrt);
-      inflTable_->setColumnCount(2);
-      inflTable_->setHorizontalHeaderLabels(
+    }
+
+    if (!inflWrtMarginal_->currentText().isEmpty()) {
+      const auto rows = net.influence_marginal_smart(
+          inflWrtMarginal_->currentText().toStdString());
+      inflTableMarginal_->setColumnCount(2);
+      inflTableMarginal_->setHorizontalHeaderLabels(
           {QStringLiteral("Marginal"), QStringLiteral("Smart p₀")});
-      inflTable_->setRowCount(static_cast<int>(rows.size()));
+      inflTableMarginal_->setRowCount(static_cast<int>(rows.size()));
       for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
         const auto& r = rows[static_cast<std::size_t>(i)];
-        inflTable_->setVerticalHeaderItem(
+        inflTableMarginal_->setVerticalHeaderItem(
             i, new QTableWidgetItem(QString::fromStdString(r.name)));
         auto* m = new QTableWidgetItem(fmt(r.marginal, decimals));
         m->setData(Qt::UserRole, r.marginal);
-        inflTable_->setItem(i, 0, m);
+        inflTableMarginal_->setItem(i, 0, m);
         auto* p0 = new QTableWidgetItem(fmt(r.smart_p0, decimals));
         p0->setData(Qt::UserRole, r.smart_p0);
-        inflTable_->setItem(i, 1, p0);
+        inflTableMarginal_->setItem(i, 1, p0);
       }
     }
   } catch (...) {

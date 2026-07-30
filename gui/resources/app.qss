@@ -163,6 +163,37 @@ QLabel#breadcrumbCurrent {
   padding: 4px 2px;
 }
 
+QTreeWidget#analysisNav {
+  background-color: #f8f9fa;
+  border: none;
+  border-right: 1px solid #dadce0;
+  padding: 8px 4px;
+  outline: none;
+  show-decoration-selected: 1;
+}
+
+QTreeWidget#analysisNav::item {
+  color: #1a73e8;
+  font-weight: 600;
+  padding: 4px 6px;
+  border-radius: 4px;
+  min-height: 22px;
+}
+
+QTreeWidget#analysisNav::item:hover {
+  background-color: #e8f0fe;
+  color: #1967d2;
+}
+
+QTreeWidget#analysisNav::item:selected {
+  background-color: #d2e3fc;
+  color: #174ea6;
+}
+
+QTreeWidget#analysisNav::branch {
+  background-color: transparent;
+}
+
 QPushButton#breadcrumbLink {
   background-color: transparent;
   border: none;
