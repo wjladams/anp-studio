@@ -36,6 +36,7 @@ public:
     InflRaw,
     InflRank,
     InflMarginal,
+    InflTotal,
   };
 
   explicit AnalysisPanel(Document* doc, QWidget* parent = nullptr);
@@ -91,11 +92,12 @@ private:
   QSpinBox* inflDecimals_ = nullptr;
   QTableWidget* inflTableRaw_ = nullptr;
 
-  QComboBox* inflWrtRank_ = nullptr;
   QTableWidget* inflTableRank_ = nullptr;
 
-  QComboBox* inflWrtMarginal_ = nullptr;
   QTableWidget* inflTableMarginal_ = nullptr;
+
+  QDoubleSpinBox* inflDeltaTotal_ = nullptr;
+  QTableWidget* inflTableTotal_ = nullptr;
 
   bool updating_ = false;
   bool navigating_ = false;

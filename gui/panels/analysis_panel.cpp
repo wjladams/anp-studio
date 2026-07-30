@@ -204,19 +204,23 @@ AnalysisPanel::AnalysisPanel(Document* doc, QWidget* parent)
       "<html><body style='font-family: sans-serif; max-width: 40em;'>"
       "<h1>Influence analysis</h1>"
       "<p>Influence analysis measures how alternative scores respond when a "
-      "chosen Wrt node's row weight is perturbed around the resting parameter "
+      "node's row weight is perturbed around the resting parameter "
       "<i>p</i><sub>0</sub>&nbsp;=&nbsp;0.5 (the value that recovers the "
       "original supermatrix).</p>"
       "<h2><a href='anp://InflRaw'>Raw</a></h2>"
-      "<p>Apply fixed Δ up and Δ down to <i>p</i>, resynthesize, and report "
-      "each alternative's original score plus the upward and downward scores "
-      "with differences.</p>"
+      "<p>Pick a Wrt node, apply fixed Δ up and Δ down to <i>p</i>, "
+      "resynthesize, and report each alternative's original score plus the "
+      "upward and downward scores with differences.</p>"
       "<h2><a href='anp://InflRank'>Rank</a></h2>"
-      "<p>Compute the rank influence score for each alternative relative to "
-      "the selected Wrt node.</p>"
+      "<p>For each node (row), compute that row's rank influence score: how "
+      "far <i>p</i> must move before alternative rankings change.</p>"
       "<h2><a href='anp://InflMarginal'>Marginal</a></h2>"
-      "<p>Compute the marginal influence score (and smart <i>p</i><sub>0</sub>) "
-      "for each alternative.</p>"
+      "<p>For each node (row), compute that row's smart-<i>p</i><sub>0</sub> "
+      "marginal influence (L1 of absolute alternative sensitivities).</p>"
+      "<h2><a href='anp://InflTotal'>Total</a></h2>"
+      "<p>For each node (row), apply a fixed Δ from <i>p</i><sub>0</sub> and "
+      "report total influence (sum of absolute alternative-score changes) and "
+      "max alt change, matching pyanp fixed influence.</p>"
       "</body></html>"));
   stack_->addWidget(inflOverview_);
 
@@ -257,11 +261,6 @@ AnalysisPanel::AnalysisPanel(Document* doc, QWidget* parent)
   // --- Influence Rank ---
   auto* inflRankPage = new QWidget(stack_);
   auto* inflRankLay = new QVBoxLayout(inflRankPage);
-  auto* inflRankTop = new QHBoxLayout;
-  inflRankTop->addWidget(new QLabel(QStringLiteral("Wrt:"), inflRankPage));
-  inflWrtRank_ = new QComboBox(inflRankPage);
-  inflRankTop->addWidget(inflWrtRank_, 1);
-  inflRankLay->addLayout(inflRankTop);
   inflTableRank_ = makeInfluenceTable(inflRankPage);
   inflRankLay->addWidget(inflTableRank_, 1);
   stack_->addWidget(inflRankPage);
@@ -269,14 +268,25 @@ AnalysisPanel::AnalysisPanel(Document* doc, QWidget* parent)
   // --- Influence Marginal ---
   auto* inflMargPage = new QWidget(stack_);
   auto* inflMargLay = new QVBoxLayout(inflMargPage);
-  auto* inflMargTop = new QHBoxLayout;
-  inflMargTop->addWidget(new QLabel(QStringLiteral("Wrt:"), inflMargPage));
-  inflWrtMarginal_ = new QComboBox(inflMargPage);
-  inflMargTop->addWidget(inflWrtMarginal_, 1);
-  inflMargLay->addLayout(inflMargTop);
   inflTableMarginal_ = makeInfluenceTable(inflMargPage);
   inflMargLay->addWidget(inflTableMarginal_, 1);
   stack_->addWidget(inflMargPage);
+
+  // --- Influence Total ---
+  auto* inflTotalPage = new QWidget(stack_);
+  auto* inflTotalLay = new QVBoxLayout(inflTotalPage);
+  auto* totalForm = new QHBoxLayout;
+  totalForm->addWidget(new QLabel(QStringLiteral("Δ:"), inflTotalPage));
+  inflDeltaTotal_ = new QDoubleSpinBox(inflTotalPage);
+  inflDeltaTotal_->setRange(0.01, 0.5);
+  inflDeltaTotal_->setSingleStep(0.01);
+  inflDeltaTotal_->setValue(0.25);
+  totalForm->addWidget(inflDeltaTotal_);
+  totalForm->addStretch();
+  inflTotalLay->addLayout(totalForm);
+  inflTableTotal_ = makeInfluenceTable(inflTotalPage);
+  inflTotalLay->addWidget(inflTableTotal_, 1);
+  stack_->addWidget(inflTotalPage);
 
   root->addWidget(stack_, 1);
 
@@ -313,13 +323,11 @@ AnalysisPanel::AnalysisPanel(Document* doc, QWidget* parent)
 
   connect(inflWrtRaw_, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
           &AnalysisPanel::refreshInfluence);
-  connect(inflWrtRank_, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
-          &AnalysisPanel::refreshInfluence);
-  connect(inflWrtMarginal_, QOverload<int>::of(&QComboBox::currentIndexChanged),
-          this, &AnalysisPanel::refreshInfluence);
   connect(inflDeltaUp_, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
           this, &AnalysisPanel::onInfluenceParamsChanged);
   connect(inflDeltaDown_, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+          this, &AnalysisPanel::onInfluenceParamsChanged);
+  connect(inflDeltaTotal_, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
           this, &AnalysisPanel::onInfluenceParamsChanged);
   connect(inflDecimals_, QOverload<int>::of(&QSpinBox::valueChanged), this,
           &AnalysisPanel::onInfluenceParamsChanged);
@@ -358,6 +366,7 @@ void AnalysisPanel::buildNavTree() {
   makeNavItem(inflItem, QStringLiteral("Raw"), Page::InflRaw);
   makeNavItem(inflItem, QStringLiteral("Rank"), Page::InflRank);
   makeNavItem(inflItem, QStringLiteral("Marginal"), Page::InflMarginal);
+  makeNavItem(inflItem, QStringLiteral("Total"), Page::InflTotal);
 
   nav_->expandAll();
 }
@@ -432,6 +441,8 @@ void AnalysisPanel::onOverviewAnchorClicked(const QUrl& url) {
     navigateTo(Page::InflRank);
   } else if (host == QStringLiteral("InflMarginal")) {
     navigateTo(Page::InflMarginal);
+  } else if (host == QStringLiteral("InflTotal")) {
+    navigateTo(Page::InflTotal);
   }
 }
 
@@ -468,8 +479,6 @@ void AnalysisPanel::rebuildSensWrtNodes() {
 
 void AnalysisPanel::rebuildInfluenceWrtNodes() {
   fillWrtCombo(inflWrtRaw_, inflWrtRaw_->currentText());
-  fillWrtCombo(inflWrtRank_, inflWrtRank_->currentText());
-  fillWrtCombo(inflWrtMarginal_, inflWrtMarginal_->currentText());
 }
 
 void AnalysisPanel::onInfluenceParamsChanged() {
@@ -634,6 +643,7 @@ void AnalysisPanel::refreshInfluence() {
   clearTable(inflTableRaw_);
   clearTable(inflTableRank_);
   clearTable(inflTableMarginal_);
+  clearTable(inflTableTotal_);
 
   try {
     auto& net = doc_->network();
@@ -669,9 +679,9 @@ void AnalysisPanel::refreshInfluence() {
       }
     }
 
-    if (!inflWrtRank_->currentText().isEmpty()) {
-      const auto rows =
-          net.influence_rank(inflWrtRank_->currentText().toStdString());
+    {
+      const auto rows = net.influence_rank();
+      inflTableRank_->setSortingEnabled(false);
       inflTableRank_->setColumnCount(2);
       inflTableRank_->setHorizontalHeaderLabels(
           {QStringLiteral("Original Score"), QStringLiteral("Rank Influence")});
@@ -687,11 +697,12 @@ void AnalysisPanel::refreshInfluence() {
         s->setData(Qt::UserRole, r.rank_influence);
         inflTableRank_->setItem(i, 1, s);
       }
+      inflTableRank_->setSortingEnabled(true);
     }
 
-    if (!inflWrtMarginal_->currentText().isEmpty()) {
-      const auto rows = net.influence_marginal_smart(
-          inflWrtMarginal_->currentText().toStdString());
+    {
+      const auto rows = net.influence_marginal_smart();
+      inflTableMarginal_->setSortingEnabled(false);
       inflTableMarginal_->setColumnCount(2);
       inflTableMarginal_->setHorizontalHeaderLabels(
           {QStringLiteral("Marginal"), QStringLiteral("Smart p₀")});
@@ -707,6 +718,28 @@ void AnalysisPanel::refreshInfluence() {
         p0->setData(Qt::UserRole, r.smart_p0);
         inflTableMarginal_->setItem(i, 1, p0);
       }
+      inflTableMarginal_->setSortingEnabled(true);
+    }
+
+    {
+      const auto rows = net.influence_total(inflDeltaTotal_->value());
+      inflTableTotal_->setSortingEnabled(false);
+      inflTableTotal_->setColumnCount(2);
+      inflTableTotal_->setHorizontalHeaderLabels(
+          {QStringLiteral("Total Influence"), QStringLiteral("Max Alt Change")});
+      inflTableTotal_->setRowCount(static_cast<int>(rows.size()));
+      for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
+        const auto& r = rows[static_cast<std::size_t>(i)];
+        inflTableTotal_->setVerticalHeaderItem(
+            i, new QTableWidgetItem(QString::fromStdString(r.name)));
+        auto* t = new QTableWidgetItem(fmt(r.total_influence, decimals));
+        t->setData(Qt::UserRole, r.total_influence);
+        inflTableTotal_->setItem(i, 0, t);
+        auto* m = new QTableWidgetItem(fmt(r.max_alt_change, decimals));
+        m->setData(Qt::UserRole, r.max_alt_change);
+        inflTableTotal_->setItem(i, 1, m);
+      }
+      inflTableTotal_->setSortingEnabled(true);
     }
   } catch (...) {
   }
