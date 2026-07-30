@@ -3,17 +3,17 @@
 #include "canvas/network_canvas.hpp"
 #include "commands/network_commands.hpp"
 #include "document.hpp"
+#include "panels/analysis_panel.hpp"
 #include "panels/inspector_panel.hpp"
 #include "panels/judgment_nav_panel.hpp"
 #include "panels/judgment_priorities_panel.hpp"
 #include "panels/pairwise_panel.hpp"
 #include "panels/ratings_panel.hpp"
-#include "panels/results_panel.hpp"
-#include "panels/synthesis_summary_panel.hpp"
 
 #include <QAction>
 #include <QButtonGroup>
 #include <QCloseEvent>
+#include <QComboBox>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
@@ -53,7 +53,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   };
   addStageBtn(QStringLiteral("Structure"), Stage::Structure);
   addStageBtn(QStringLiteral("Judgments"), Stage::Judgments);
-  addStageBtn(QStringLiteral("Synthesis"), Stage::Synthesis);
+  addStageBtn(QStringLiteral("Analysis"), Stage::Analysis);
   stageRow->addStretch();
   rootLay->addLayout(stageRow);
 
@@ -89,8 +89,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
           &MainWindow::onJudgmentNodeSelected);
   connect(judgmentNav_, &JudgmentNavPanel::clusterJudgmentSelected, this,
           &MainWindow::onJudgmentClusterSelected);
-  connect(results_, &ResultsPanel::alternativesUpdated, synthesisSummary_,
-          &SynthesisSummaryPanel::setAlternatives);
 
   auto* fileMenu = menuBar()->addMenu(QStringLiteral("&File"));
   fileMenu->addAction(QStringLiteral("&New"), this, &MainWindow::newFile,
@@ -125,8 +123,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
                      &Document::popToRoot);
 
   auto* computeMenu = menuBar()->addMenu(QStringLiteral("&Compute"));
-  computeMenu->addAction(QStringLiteral("Calculate"), this,
-                         &MainWindow::calculate, QKeySequence(Qt::Key_F5));
+  computeMenu->addAction(QStringLiteral("Show Analysis"), this, [this]() {
+    setStage(Stage::Analysis);
+  }, QKeySequence(Qt::Key_F5));
 
   auto* tb = addToolBar(QStringLiteral("Main"));
   tb->addAction(QStringLiteral("New"), this, &MainWindow::newFile);
@@ -136,7 +135,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   tb->addAction(doc_->undoStack()->createUndoAction(this));
   tb->addAction(doc_->undoStack()->createRedoAction(this));
   tb->addSeparator();
-  tb->addAction(QStringLiteral("Calculate"), this, &MainWindow::calculate);
+  tb->addAction(QStringLiteral("Analysis"), this, [this]() {
+    setStage(Stage::Analysis);
+  });
 
   connect(doc_, &Document::dirtyChanged, this, [this](bool) { updateTitle(); });
   connect(doc_, &Document::pathChanged, this, [this](const QString&) {
@@ -151,7 +152,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   updateTitle();
   updateBreadcrumb();
   statusBar()->showMessage(
-      QStringLiteral("Structure → Judgments → Synthesis"));
+      QStringLiteral("Structure → Judgments → Analysis"));
 }
 
 void MainWindow::buildStagePages() {
@@ -190,31 +191,9 @@ void MainWindow::buildStagePages() {
   jLay->addWidget(jSplit, 1);
   stages_->addWidget(judgmentsPage);
 
-  // Synthesis: calc controls | matrices | summary
-  results_ = new ResultsPanel(doc_, this);
-  synthesisSummary_ = new SynthesisSummaryPanel(doc_, this);
-  auto* synthesisPage = new QWidget(stages_);
-  auto* ySplit = new QSplitter(Qt::Horizontal, synthesisPage);
-  auto* leftCalc = new QWidget(ySplit);
-  auto* leftLay = new QVBoxLayout(leftCalc);
-  leftLay->addWidget(new QLabel(QStringLiteral("Calculate"), leftCalc));
-  auto* calcBtn = new QPushButton(QStringLiteral("Calculate (F5)"), leftCalc);
-  calcBtn->setObjectName(QStringLiteral("primaryButton"));
-  calcBtn->setCursor(Qt::PointingHandCursor);
-  connect(calcBtn, &QPushButton::clicked, this, &MainWindow::calculate);
-  leftLay->addWidget(calcBtn);
-  leftLay->addWidget(results_->staleLabel());
-  leftLay->addStretch();
-  ySplit->addWidget(leftCalc);
-  ySplit->addWidget(results_);
-  ySplit->addWidget(synthesisSummary_);
-  ySplit->setStretchFactor(0, 1);
-  ySplit->setStretchFactor(1, 3);
-  ySplit->setStretchFactor(2, 1);
-  auto* yLay = new QVBoxLayout(synthesisPage);
-  yLay->setContentsMargins(0, 0, 0, 0);
-  yLay->addWidget(ySplit);
-  stages_->addWidget(synthesisPage);
+  // Analysis: left-tabbed Synthesis / Sensitivity / Influence
+  analysis_ = new AnalysisPanel(doc_, this);
+  stages_->addWidget(analysis_);
 }
 
 void MainWindow::setStage(Stage stage) {
@@ -278,6 +257,16 @@ void MainWindow::updateBreadcrumb() {
   caption->setObjectName(QStringLiteral("breadcrumbCaption"));
   breadcrumbLay_->addWidget(caption);
 
+  networkPathCombo_ = new QComboBox(breadcrumbBar_);
+  networkPathCombo_->setMinimumWidth(220);
+  const QStringList options = doc_->networkPathOptions();
+  networkPathCombo_->addItems(options);
+  const int curIdx = networkPathCombo_->findText(doc_->currentNetworkPath());
+  if (curIdx >= 0) networkPathCombo_->setCurrentIndex(curIdx);
+  connect(networkPathCombo_, QOverload<int>::of(&QComboBox::activated), this,
+          &MainWindow::onNetworkPathChosen);
+  breadcrumbLay_->addWidget(networkPathCombo_);
+
   for (int i = 0; i < parts.size(); ++i) {
     if (i > 0) {
       auto* sep = new QLabel(QStringLiteral("/"), breadcrumbBar_);
@@ -294,7 +283,6 @@ void MainWindow::updateBreadcrumb() {
       link->setObjectName(QStringLiteral("breadcrumbLink"));
       link->setFlat(true);
       link->setCursor(Qt::PointingHandCursor);
-      // Index i → stack depth i+1 (Root is depth 1).
       const int depth = i + 1;
       connect(link, &QPushButton::clicked, this, [this, depth]() {
         doc_->popToDepth(depth);
@@ -303,6 +291,11 @@ void MainWindow::updateBreadcrumb() {
     }
   }
   breadcrumbLay_->addStretch();
+}
+
+void MainWindow::onNetworkPathChosen(int index) {
+  if (networkPathCombo_ == nullptr || index < 0) return;
+  doc_->navigateToNetworkPath(networkPathCombo_->itemText(index));
 }
 
 void MainWindow::updateTitle() {
@@ -444,11 +437,6 @@ void MainWindow::clearRecentFiles() {
   QSettings settings;
   settings.remove(QStringLiteral("recentFiles"));
   rebuildRecentMenu();
-}
-
-void MainWindow::calculate() {
-  setStage(Stage::Synthesis);
-  results_->calculate();
 }
 
 bool MainWindow::maybeSave() {

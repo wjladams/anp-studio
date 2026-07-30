@@ -2,6 +2,8 @@
 
 #include "anpcpp/json_io.hpp"
 
+#include <functional>
+
 Document::Document(QObject* parent) : QObject(parent) {
   newNetwork(true);
   connect(&undo_, &QUndoStack::indexChanged, this, [this](int) {
@@ -148,6 +150,68 @@ QStringList Document::breadcrumb() const {
     parts << stack_[i].hostNode;
   }
   return parts;
+}
+
+QString Document::currentNetworkPath() const {
+  return breadcrumb().join(QStringLiteral(" / "));
+}
+
+QStringList Document::networkPathOptions() const {
+  QStringList out;
+  out << QStringLiteral("Root");
+
+  std::function<void(const anpcpp::AnpNetwork&, const QString&)> walk;
+  walk = [&](const anpcpp::AnpNetwork& net, const QString& prefix) {
+    for (const anpcpp::AnpNode* n : net.nodes()) {
+      if (!n->has_subnetwork()) continue;
+      const QString path =
+          prefix + QStringLiteral(" / ") + QString::fromStdString(n->name());
+      out << path;
+      walk(*n->subnetwork(), path);
+    }
+  };
+  walk(*root_, QStringLiteral("Root"));
+  return out;
+}
+
+bool Document::navigateToNetworkPath(const QString& path) {
+  const QStringList parts = path.split(QStringLiteral(" / "), Qt::SkipEmptyParts);
+  if (parts.isEmpty() || parts.first() != QStringLiteral("Root")) {
+    return false;
+  }
+
+  // Rebuild stack from root along host names.
+  std::vector<Frame> neu;
+  neu.push_back(Frame{root_.get(), {}});
+  anpcpp::AnpNetwork* cur = root_.get();
+  for (int i = 1; i < parts.size(); ++i) {
+    anpcpp::AnpNode* node = cur->find_node(parts[i].toStdString());
+    if (node == nullptr || !node->has_subnetwork()) {
+      return false;
+    }
+    anpcpp::AnpNetwork* sub = node->subnetwork();
+    neu.push_back(Frame{sub, parts[i]});
+    cur = sub;
+  }
+
+  if (neu.size() == stack_.size()) {
+    bool same = true;
+    for (std::size_t i = 0; i < neu.size(); ++i) {
+      if (neu[i].net != stack_[i].net || neu[i].hostNode != stack_[i].hostNode) {
+        same = false;
+        break;
+      }
+    }
+    if (same) return true;
+  }
+
+  stack_ = std::move(neu);
+  selectedCluster_.clear();
+  selectedNode_.clear();
+  emit selectionChanged(selectedCluster_, selectedNode_);
+  emit viewNetworkChanged();
+  notifyChanged();
+  return true;
 }
 
 void Document::notifyChanged() {

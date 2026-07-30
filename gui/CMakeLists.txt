@@ -20,6 +20,8 @@ add_executable(anpstudio
   panels/ratings_panel.cpp
   panels/session_stub_panel.cpp
   panels/synthesis_summary_panel.cpp
+  panels/analysis_panel.cpp
+  panels/sensitivity_chart_widget.cpp
   commands/network_commands.cpp
   resources.qrc
 )

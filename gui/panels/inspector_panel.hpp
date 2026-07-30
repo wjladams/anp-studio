@@ -12,6 +12,7 @@ class QLineEdit;
 class QCheckBox;
 class QLabel;
 class QPushButton;
+class QComboBox;
 
 /**
  * @brief Property inspector for the selected cluster or node.
@@ -28,6 +29,9 @@ private:
   void onInvertToggled(bool checked);
   void onSetAlternatives();
   void onOpenSubnet();
+  void onSynthesisKindChanged(int index);
+  void onCustomExprEdited();
+  void refreshSynthesisControls();
 
   Document* doc_ = nullptr;
   QLabel* title_ = nullptr;
@@ -35,5 +39,8 @@ private:
   QCheckBox* invert_ = nullptr;
   QPushButton* setAlts_ = nullptr;
   QPushButton* openSubnet_ = nullptr;
+  QLabel* formulaLabel_ = nullptr;
+  QComboBox* synthKind_ = nullptr;
+  QLineEdit* customExpr_ = nullptr;
   bool updating_ = false;
 };

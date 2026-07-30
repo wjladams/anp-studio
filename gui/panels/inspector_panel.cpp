@@ -4,7 +4,9 @@
 #include "document.hpp"
 
 #include <QCheckBox>
+#include <QComboBox>
 #include <QLabel>
+#include <QLineEdit>
 #include <QPushButton>
 #include <QVBoxLayout>
 
@@ -22,15 +24,43 @@ InspectorPanel::InspectorPanel(Document* doc, QWidget* parent)
   layout->addWidget(setAlts_);
   openSubnet_ = new QPushButton(QStringLiteral("Open Subnetwork"), this);
   layout->addWidget(openSubnet_);
+
+  formulaLabel_ = new QLabel(QStringLiteral("Formula"), this);
+  formulaLabel_->setStyleSheet(QStringLiteral("font-weight: bold; margin-top: 12px;"));
+  layout->addWidget(formulaLabel_);
+  synthKind_ = new QComboBox(this);
+  synthKind_->addItem(QStringLiteral("Additive"),
+                      static_cast<int>(anpcpp::SynthesisKind::Additive));
+  synthKind_->addItem(QStringLiteral("Multiplicative"),
+                      static_cast<int>(anpcpp::SynthesisKind::Multiplicative));
+  synthKind_->addItem(QStringLiteral("Custom"),
+                      static_cast<int>(anpcpp::SynthesisKind::Custom));
+  layout->addWidget(synthKind_);
+  customExpr_ = new QLineEdit(this);
+  customExpr_->setPlaceholderText(QStringLiteral("e.g. Benefits / Costs"));
+  layout->addWidget(customExpr_);
+
   layout->addStretch();
 
   connect(invert_, &QCheckBox::toggled, this, &InspectorPanel::onInvertToggled);
   connect(setAlts_, &QPushButton::clicked, this, &InspectorPanel::onSetAlternatives);
   connect(openSubnet_, &QPushButton::clicked, this, &InspectorPanel::onOpenSubnet);
+  connect(synthKind_, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
+          &InspectorPanel::onSynthesisKindChanged);
+  connect(customExpr_, &QLineEdit::editingFinished, this,
+          &InspectorPanel::onCustomExprEdited);
   connect(doc_, &Document::selectionChanged, this, &InspectorPanel::refresh);
   connect(doc_, &Document::modelChanged, this, &InspectorPanel::refresh);
   connect(doc_, &Document::viewNetworkChanged, this, &InspectorPanel::refresh);
   refresh();
+}
+
+void InspectorPanel::refreshSynthesisControls() {
+  const auto& opt = doc_->network().synthesis_options();
+  const int idx = synthKind_->findData(static_cast<int>(opt.kind));
+  if (idx >= 0) synthKind_->setCurrentIndex(idx);
+  customExpr_->setText(QString::fromStdString(opt.custom_expr));
+  customExpr_->setEnabled(opt.kind == anpcpp::SynthesisKind::Custom);
 }
 
 void InspectorPanel::refresh() {
@@ -57,6 +87,7 @@ void InspectorPanel::refresh() {
   } else {
     nameLabel_->setText(QStringLiteral("Nothing selected"));
   }
+  refreshSynthesisControls();
   updating_ = false;
 }
 
@@ -82,4 +113,24 @@ void InspectorPanel::onOpenSubnet() {
   if (node.isEmpty()) return;
   doc_->undoStack()->push(new EnsureSubnetCmd(doc_, node));
   doc_->pushSubnet(node);
+}
+
+void InspectorPanel::onSynthesisKindChanged(int) {
+  if (updating_) return;
+  anpcpp::SynthesisOptions neu = doc_->network().synthesis_options();
+  neu.kind = static_cast<anpcpp::SynthesisKind>(synthKind_->currentData().toInt());
+  neu.custom_expr = customExpr_->text().toStdString();
+  const auto old = doc_->network().synthesis_options();
+  if (neu.kind == old.kind && neu.custom_expr == old.custom_expr) return;
+  doc_->undoStack()->push(new SetSynthesisOptionsCmd(doc_, neu, old));
+  customExpr_->setEnabled(neu.kind == anpcpp::SynthesisKind::Custom);
+}
+
+void InspectorPanel::onCustomExprEdited() {
+  if (updating_) return;
+  anpcpp::SynthesisOptions neu = doc_->network().synthesis_options();
+  neu.custom_expr = customExpr_->text().toStdString();
+  const auto old = doc_->network().synthesis_options();
+  if (neu.custom_expr == old.custom_expr) return;
+  doc_->undoStack()->push(new SetSynthesisOptionsCmd(doc_, neu, old));
 }

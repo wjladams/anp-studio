@@ -81,6 +81,18 @@ public:
   /** @return Breadcrumb trail of host node names for the current view. */
   [[nodiscard]] QStringList breadcrumb() const;
 
+  /**
+   * @return All reachable network paths ("Root", "Root / Host", …).
+   */
+  [[nodiscard]] QStringList networkPathOptions() const;
+  /** @return Current path joined with " / ". */
+  [[nodiscard]] QString currentNetworkPath() const;
+  /**
+   * @brief Navigates the subnet stack to @p path.
+   * @return False if the path is invalid.
+   */
+  bool navigateToNetworkPath(const QString& path);
+
   /** @brief Marks the document dirty and emits @ref modelChanged. */
   void notifyChanged();
 

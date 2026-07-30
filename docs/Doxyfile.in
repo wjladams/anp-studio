@@ -14,6 +14,8 @@ INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@/gui/document.hpp \
                          @CMAKE_CURRENT_SOURCE_DIR@/gui/panels/judgment_priorities_panel.hpp \
                          @CMAKE_CURRENT_SOURCE_DIR@/gui/panels/pairwise_panel.hpp \
                          @CMAKE_CURRENT_SOURCE_DIR@/gui/panels/ratings_panel.hpp \
+                         @CMAKE_CURRENT_SOURCE_DIR@/gui/panels/analysis_panel.hpp \
+                         @CMAKE_CURRENT_SOURCE_DIR@/gui/panels/sensitivity_chart_widget.hpp \
                          @CMAKE_CURRENT_SOURCE_DIR@/gui/panels/results_panel.hpp \
                          @CMAKE_CURRENT_SOURCE_DIR@/gui/panels/synthesis_summary_panel.hpp \
                          @CMAKE_CURRENT_SOURCE_DIR@/docs/mainpage.md
