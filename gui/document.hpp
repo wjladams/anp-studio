@@ -27,6 +27,7 @@ public:
    * @param parent Optional Qt parent object.
    */
   explicit Document(QObject* parent = nullptr);
+  ~Document() override;
 
   /** @return The network currently being edited (may be a subnetwork). */
   [[nodiscard]] anpcpp::AnpNetwork& network();

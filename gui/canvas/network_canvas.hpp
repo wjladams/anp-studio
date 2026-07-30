@@ -34,6 +34,7 @@ public:
    * @param parent Optional parent widget.
    */
   explicit NetworkCanvas(Document* doc, QWidget* parent = nullptr);
+  ~NetworkCanvas() override;
 
   /** @brief Rebuilds scene items from the current network. */
   void rebuild();

@@ -10,6 +10,14 @@ Document::Document(QObject* parent) : QObject(parent) {
   });
 }
 
+Document::~Document() {
+  // ~QUndoStack::clear() emits indexChanged. That would call notifyChanged()
+  // while MainWindow children (breadcrumb, canvas, panels) may already be
+  // destroyed — disconnect before the undo stack member is torn down.
+  disconnect(&undo_, nullptr, this, nullptr);
+  blockSignals(true);
+}
+
 anpcpp::AnpNetwork& Document::network() {
   return *stack_.back().net;
 }

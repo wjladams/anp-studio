@@ -80,6 +80,10 @@ NetworkCanvas::NetworkCanvas(Document* doc, QWidget* parent)
   positionAddClusterButton();
 }
 
+NetworkCanvas::~NetworkCanvas() {
+  cancelInlineRename();
+}
+
 void NetworkCanvas::setConnectMode(bool on) {
   connectMode_ = on;
   connectSrc_.clear();
