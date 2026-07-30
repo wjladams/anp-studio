@@ -26,7 +26,6 @@
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QStatusBar>
-#include <QToolBar>
 #include <QUndoStack>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -126,18 +125,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   computeMenu->addAction(QStringLiteral("Show Analysis"), this, [this]() {
     setStage(Stage::Analysis);
   }, QKeySequence(Qt::Key_F5));
-
-  auto* tb = addToolBar(QStringLiteral("Main"));
-  tb->addAction(QStringLiteral("New"), this, &MainWindow::newFile);
-  tb->addAction(QStringLiteral("Open"), this, &MainWindow::openFile);
-  tb->addAction(QStringLiteral("Save"), this, &MainWindow::saveFile);
-  tb->addSeparator();
-  tb->addAction(doc_->undoStack()->createUndoAction(this));
-  tb->addAction(doc_->undoStack()->createRedoAction(this));
-  tb->addSeparator();
-  tb->addAction(QStringLiteral("Analysis"), this, [this]() {
-    setStage(Stage::Analysis);
-  });
 
   connect(doc_, &Document::dirtyChanged, this, [this](bool) { updateTitle(); });
   connect(doc_, &Document::pathChanged, this, [this](const QString&) {
