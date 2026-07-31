@@ -23,6 +23,9 @@ add_executable(anpstudio
   panels/analysis_panel.cpp
   panels/sensitivity_chart_widget.cpp
   commands/network_commands.cpp
+  ratings/rating_preset.cpp
+  ratings/rating_preset_store.cpp
+  ratings/rating_preset_dialogs.cpp
   resources.qrc
 )
 

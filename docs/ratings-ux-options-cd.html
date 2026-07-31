@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ratings UX — options C and D</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --ink: #1c1b19;
+      --muted: #5c574e;
+      --line: #d4cfc4;
+      --panel: #fffdf8;
+      --accent: #2f5d50;
+      --accent-soft: #e4efe9;
+      --select: #c8ddd4;
+      --chrome: #ebe6dc;
+      --blue: #1a73e8;
+      --blue-soft: #e8f0fe;
+      --nav: #f8f9fa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.45 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    header {
+      padding: 1.75rem 2rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+    header h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.65rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      margin: 0;
+      max-width: 46rem;
+      color: var(--muted);
+    }
+    .constraint {
+      margin-top: 0.85rem;
+      padding: 0.7rem 0.9rem;
+      border-left: 3px solid var(--accent);
+      background: var(--accent-soft);
+      max-width: 46rem;
+      font-size: 0.95rem;
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      padding: 1rem 2rem 0;
+    }
+    .tabs button {
+      font: inherit;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      padding: 0.45rem 0.85rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .tabs button[aria-selected="true"] {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    main { padding: 1rem 2rem 3rem; }
+    article { display: none; }
+    article.active { display: block; }
+    .meta {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+      max-width: 1100px;
+    }
+    @media (max-width: 860px) {
+      .meta { grid-template-columns: 1fr; }
+    }
+    .meta h2 {
+      margin: 0 0 0.4rem;
+      font-size: 1.25rem;
+    }
+    .meta p, .meta li { color: var(--muted); }
+    .meta ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+    .pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--select);
+      background: var(--accent-soft);
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      margin-bottom: 0.5rem;
+    }
+    .wire {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      overflow: hidden;
+      max-width: 1100px;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-size: 12px;
+      position: relative;
+    }
+    .stage-strip {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.55rem 0.75rem;
+      background: var(--chrome);
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .stage-strip strong { color: var(--ink); }
+    .body {
+      display: grid;
+      grid-template-columns: 210px 1fr 200px;
+      min-height: 380px;
+    }
+    .col {
+      border-right: 1px solid var(--line);
+      padding: 0.65rem;
+      background: var(--panel);
+    }
+    .col:last-child { border-right: none; }
+    .col.nav { background: var(--nav); }
+    .col h3 {
+      margin: 0 0 0.45rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--blue);
+      font-weight: 600;
+    }
+    .sec { margin-bottom: 0.85rem; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+    .chip {
+      border: 1px solid var(--line);
+      padding: 0.22rem 0.5rem;
+      border-radius: 3px;
+      background: #fff;
+      color: var(--muted);
+    }
+    .chip.on {
+      background: var(--blue-soft);
+      border-color: #93c5fd;
+      color: #1e3a5f;
+      font-weight: 600;
+    }
+    .fake-select {
+      border: 1px solid #dadce0;
+      background: #fff;
+      border-radius: 4px;
+      padding: 0.35rem 0.5rem;
+      color: var(--ink);
+      margin-top: 0.25rem;
+    }
+    .center-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem;
+      margin-bottom: 0.65rem;
+      padding-bottom: 0.55rem;
+      border-bottom: 1px dashed var(--line);
+    }
+    .center-head .title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-right: auto;
+    }
+    .btn {
+      border: 1px solid #dadce0;
+      background: #fff;
+      border-radius: 4px;
+      padding: 0.3rem 0.65rem;
+      color: var(--ink);
+      cursor: default;
+    }
+    .btn.primary {
+      background: var(--blue-soft);
+      border-color: #93c5fd;
+      color: #1967d2;
+      font-weight: 600;
+    }
+    .btn.ghost {
+      background: transparent;
+      border-color: transparent;
+      color: var(--blue);
+      text-decoration: underline;
+      padding-left: 0.2rem;
+    }
+    .scale-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      align-items: center;
+      color: var(--muted);
+      margin-bottom: 0.65rem;
+      font-size: 0.85rem;
+    }
+    .tag {
+      background: var(--blue-soft);
+      color: #1967d2;
+      border-radius: 999px;
+      padding: 0.12rem 0.5rem;
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+    table.votes {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+    }
+    table.votes th,
+    table.votes td {
+      border: 1px solid #dadce0;
+      padding: 0.45rem 0.55rem;
+      text-align: left;
+    }
+    table.votes th {
+      background: #f8f9fa;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .dd {
+      border: 1px solid #dadce0;
+      border-radius: 3px;
+      padding: 0.25rem 0.4rem;
+      background: #fff;
+      display: inline-block;
+      min-width: 7rem;
+    }
+    .bars { display: flex; flex-direction: column; gap: 0.55rem; margin-top: 0.35rem; }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 36px 1fr 36px;
+      gap: 0.35rem;
+      align-items: center;
+    }
+    .bar-track {
+      height: 12px;
+      background: var(--blue-soft);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .bar {
+      height: 100%;
+      background: var(--blue);
+      border-radius: 4px;
+    }
+    .note {
+      margin-top: 1rem;
+      padding: 0.75rem 0.9rem;
+      border-left: 3px solid var(--accent);
+      background: var(--accent-soft);
+      max-width: 1100px;
+      color: var(--ink);
+    }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(28, 27, 25, 0.32);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 2;
+    }
+    .sheet {
+      width: min(480px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 14px 36px rgba(0,0,0,0.2);
+      overflow: hidden;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    }
+    .sheet .sheet-h {
+      padding: 0.75rem 0.95rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--chrome);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .sheet .sheet-h h4 {
+      margin: 0;
+      font-size: 0.95rem;
+      flex: 1;
+    }
+    .sheet .sheet-b { padding: 0.85rem 0.95rem; }
+    .preset-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      margin: 0.5rem 0 0.85rem;
+    }
+    .preset {
+      border: 1px solid #dadce0;
+      border-radius: 6px;
+      padding: 0.55rem 0.7rem;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+    .preset.sel {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+    }
+    .preset strong { color: var(--ink); }
+    .preset span { color: var(--muted); font-size: 0.8rem; }
+    .field-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .adv {
+      margin-top: 0.75rem;
+      border-top: 1px dashed var(--line);
+      padding-top: 0.65rem;
+      color: var(--muted);
+    }
+    .adv summary {
+      cursor: pointer;
+      color: var(--blue);
+      font-weight: 600;
+    }
+    .mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.45rem;
+      font-size: 0.8rem;
+    }
+    .mini-table th, .mini-table td {
+      border: 1px solid #dadce0;
+      padding: 0.25rem 0.4rem;
+    }
+    .mini-table th { background: #f8f9fa; color: var(--muted); }
+    .inline-preset {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      position: relative;
+      width: 100%;
+    }
+    .inline-preset .fake-select { min-width: 14rem; margin-top: 0; }
+    .kind-hint {
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-style: italic;
+      padding: 0 0.15rem;
+      user-select: none;
+    }
+    .scale-block {
+      border: 1px solid #c5cad1;
+      border-radius: 8px;
+      background: #eef1f4;
+      margin-bottom: 1rem;
+      position: relative;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      overflow: visible;
+    }
+    .scale-block .inline-preset {
+      margin-bottom: 0;
+      padding: 0.55rem 0.7rem;
+      background: #fff;
+      border-radius: 7px;
+    }
+    .scale-block.open .inline-preset {
+      border-radius: 7px 7px 0 0;
+      border-bottom: 1px solid #dadce0;
+    }
+    .scale-block .adv-pop {
+      margin: 0;
+      padding: 0.7rem 0.75rem 0.8rem;
+      background: #fff;
+      border-radius: 0 0 7px 7px;
+      border-top: 2px solid var(--blue);
+      box-shadow: 0 6px 16px rgba(28, 27, 25, 0.08);
+    }
+    .scale-block .adv-pop::before {
+      content: "";
+      position: absolute;
+      /* caret pointing up toward Advanced control — decorative attachment */
+      display: none;
+    }
+    .votes-section {
+      margin-top: 0.15rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid var(--line);
+    }
+    .votes-section .votes-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    .menu-pop {
+      position: absolute;
+      top: 100%;
+      left: 2.6rem;
+      margin-top: 0.25rem;
+      min-width: 17rem;
+      background: #fff;
+      border: 1px solid #dadce0;
+      border-radius: 6px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+      z-index: 3;
+      padding: 0.3rem 0;
+    }
+    .menu-pop .group {
+      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+      padding: 0.4rem 0.75rem 0.2rem;
+    }
+    .menu-pop .item {
+      padding: 0.4rem 0.75rem;
+      color: var(--ink);
+    }
+    .menu-pop .item.sel {
+      background: var(--blue-soft);
+      color: #1967d2;
+      font-weight: 600;
+    }
+    .menu-pop .item.muted { color: var(--muted); }
+    .menu-pop .sep {
+      border-top: 1px solid #dadce0;
+      margin: 0.3rem 0;
+    }
+    .preset-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.35rem;
+      align-items: start;
+    }
+    .preset-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .preset-actions .btn { padding: 0.15rem 0.4rem; font-size: 0.75rem; }
+    .search {
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      padding: 0.4rem 0.55rem;
+      background: #fff;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-radius: 3px;
+      padding: 0.1rem 0.35rem;
+      margin-left: 0.35rem;
+      font-weight: 700;
+    }
+    .badge.built { background: #e8f0fe; color: #1967d2; }
+    .badge.mine { background: #e6f4ea; color: #137333; }
+    .sheet.wide { width: min(560px, 100%); }
+    .form-grid {
+      display: grid;
+      gap: 0.55rem;
+      margin-top: 0.5rem;
+    }
+    .form-grid input, .form-grid .fake-input {
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      padding: 0.4rem 0.5rem;
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Ratings UX — options C and D</h1>
+    <p>
+      Sketches for simplifying Judgments ratings while keeping the
+      <strong>right panel as resulting priorities</strong>.
+      <strong>Option D shipped</strong> in the app (preset-first Scale, Advanced
+      popout, My scales in AppData). This file remains a design archive.
+    </p>
+    <div class="constraint">
+      Constraint: do not put scale definition in the right panel — that stays
+      priority bars. Issue
+      <a href="https://github.com/wjladams/anp-studio/issues/7">#7</a>.
+      Presets split into <strong>Built-in</strong> (shipped) and
+      <strong>My scales</strong> (user-added).
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" aria-selected="true" data-tab="c">C · Votes + Edit scale</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="c2">C · Pick from library</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="c3">C · Save as preset</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="d">D · Preset menu</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="d2">D · Save from Advanced</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="d3">D · Numeric Advanced</button>
+  </div>
+
+  <main>
+    <!-- C closed -->
+    <article id="c" class="active">
+      <div class="meta">
+        <div>
+          <div class="pill">Votes first</div>
+          <h2>C — Scale as setup sheet</h2>
+          <p>
+            Center is only voting. Active scale shows as a short summary with
+            <em>Edit scale…</em>. Scale definition (presets + custom) lives in a
+            modal sheet — not in the priorities column.
+          </p>
+          <ul>
+            <li>Pros: quiet main surface; presets fit cleanly in the sheet</li>
+            <li>Cons: one extra click to change the scale</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">What moves</h2>
+          <ul>
+            <li>Mode / categories / interpreter → Edit scale sheet</li>
+            <li>Votes stay center (dropdowns by label)</li>
+            <li>Priorities stay right</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis</div>
+        <div class="body">
+          <div class="col nav">
+            <div class="sec">
+              <h3>Compare</h3>
+              <div class="chip-row">
+                <span class="chip on">Node</span>
+                <span class="chip">Cluster</span>
+              </div>
+            </div>
+            <div class="sec">
+              <h3>Wrt</h3>
+              <div class="fake-select">Price ▾</div>
+            </div>
+            <div class="sec">
+              <h3>Other cluster</h3>
+              <div class="fake-select">Alternatives ▾</div>
+            </div>
+            <div class="sec">
+              <h3>Method</h3>
+              <div class="chip-row">
+                <span class="chip">Pairwise</span>
+                <span class="chip on">Ratings</span>
+              </div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="center-head">
+              <span class="title">Price → Alternatives</span>
+              <span class="btn">Edit scale…</span>
+            </div>
+            <div class="scale-summary">
+              <span class="tag">Scale</span>
+              High / Medium / Low
+              <span style="color:#dadce0">·</span>
+              Categorical
+            </div>
+            <table class="votes">
+              <thead>
+                <tr><th>Alternative</th><th>Rating</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>A</td><td><span class="dd">High ▾</span></td></tr>
+                <tr><td>B</td><td><span class="dd">Medium ▾</span></td></tr>
+                <tr><td>C</td><td><span class="dd">Low ▾</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="col">
+            <h3>Priorities</h3>
+            <div class="bars">
+              <div class="bar-row"><span>A</span><div class="bar-track"><div class="bar" style="width:70%"></div></div><span>0.50</span></div>
+              <div class="bar-row"><span>B</span><div class="bar-track"><div class="bar" style="width:42%"></div></div><span>0.30</span></div>
+              <div class="bar-row"><span>C</span><div class="bar-track"><div class="bar" style="width:28%"></div></div><span>0.20</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Scale library grows in the Edit scale sheet (next tabs): pick built-in
+        or My scales, or save a custom scale as a new preset for reuse across links.
+      </p>
+    </article>
+
+    <!-- C pick from library -->
+    <article id="c2">
+      <div class="meta">
+        <div>
+          <div class="pill">Growing the catalog</div>
+          <h2>C — Pick from library</h2>
+          <p>
+            Edit scale opens a searchable library. Built-in presets ship with the
+            app; <strong>My scales</strong> are ones you (or your team) added.
+            Selecting one previews categories; Apply binds that scale to this link.
+          </p>
+          <ul>
+            <li>Add more later = more cards under Built-in or My scales</li>
+            <li>Search keeps a long list usable</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">How you add more</h2>
+          <ul>
+            <li>Ship new Built-in entries in the product</li>
+            <li>User: Save as preset… (see next tab)</li>
+            <li>Optional later: import preset JSON</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis</div>
+        <div class="body" style="filter:blur(1.5px);opacity:0.55;">
+          <div class="col nav"><h3>Nav</h3><div class="fake-select">Price</div></div>
+          <div class="col">
+            <div class="center-head">
+              <span class="title">Price → Alternatives</span>
+              <span class="btn">Edit scale…</span>
+            </div>
+            <table class="votes">
+              <thead><tr><th>Alternative</th><th>Rating</th></tr></thead>
+              <tbody>
+                <tr><td>A</td><td><span class="dd">High ▾</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="col"><h3>Priorities</h3></div>
+        </div>
+        <div class="overlay">
+          <div class="sheet wide">
+            <div class="sheet-h">
+              <h4>Edit scale</h4>
+              <span class="btn">Manage…</span>
+              <span class="btn">Close</span>
+            </div>
+            <div class="sheet-b">
+              <div class="search">Search scales…</div>
+              <div class="field-label">Built-in</div>
+              <div class="preset-list">
+                <div class="preset sel">
+                  <div class="preset-row">
+                    <div>
+                      <strong>High / Medium / Low</strong><span class="badge built">Built-in</span>
+                      <span>3 categories · 1.0 / 0.5 / 0.2</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="preset">
+                  <strong>Verbal 1–9</strong><span class="badge built">Built-in</span>
+                  <span>Equal → Extreme · Saaty-style intensities</span>
+                </div>
+                <div class="preset">
+                  <strong>Likert 5-point</strong><span class="badge built">Built-in</span>
+                  <span>Strongly disagree → Strongly agree</span>
+                </div>
+                <div class="preset">
+                  <strong>Percent (0–100)</strong><span class="badge built">Built-in</span>
+                  <span>Numeric · divide by 100</span>
+                </div>
+              </div>
+              <div class="field-label">My scales</div>
+              <div class="preset-list">
+                <div class="preset">
+                  <div class="preset-row">
+                    <div>
+                      <strong>Supplier quality</strong><span class="badge mine">Mine</span>
+                      <span>Excellent / Acceptable / Reject</span>
+                    </div>
+                    <div class="preset-actions">
+                      <span class="btn">Edit</span>
+                      <span class="btn">Delete</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="preset">
+                  <div class="preset-row">
+                    <div>
+                      <strong>Campus parking</strong><span class="badge mine">Mine</span>
+                      <span>Walk / Shuttle / Drive</span>
+                    </div>
+                    <div class="preset-actions">
+                      <span class="btn">Edit</span>
+                      <span class="btn">Delete</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.35rem;">
+                <span class="btn">+ New custom scale…</span>
+                <span class="btn">Import…</span>
+                <span style="flex:1"></span>
+                <span class="btn">Cancel</span>
+                <span class="btn primary">Apply scale</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Built-in list grows with product releases; My scales grows when users
+        save or import. Vote UI and priorities panel stay untouched.
+      </p>
+    </article>
+
+    <!-- C save as preset -->
+    <article id="c3">
+      <div class="meta">
+        <div>
+          <div class="pill">User-authored presets</div>
+          <h2>C — Save as preset</h2>
+          <p>
+            From a custom scale (or after tweaking a built-in),
+            <strong>Save as preset…</strong> names it and adds it under My scales.
+            That is the main “add more” path for end users without shipping code.
+          </p>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">Flow</h2>
+          <ul>
+            <li>Edit categories / values on Custom</li>
+            <li>Save as preset → name + optional description</li>
+            <li>Appears under My scales for every ratings link</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis</div>
+        <div class="body" style="filter:blur(1.5px);opacity:0.55;">
+          <div class="col nav"><h3>Nav</h3></div>
+          <div class="col"><span class="title">Custom scale editor…</span></div>
+          <div class="col"><h3>Priorities</h3></div>
+        </div>
+        <div class="overlay">
+          <div class="sheet">
+            <div class="sheet-h">
+              <h4>Save as preset</h4>
+              <span class="btn">Close</span>
+            </div>
+            <div class="sheet-b">
+              <div class="field-label">Name</div>
+              <div class="fake-input form-grid" style="display:block;padding:0.4rem 0.5rem;border:1px solid #dadce0;border-radius:4px;background:#fff;">
+                Risk tolerance
+              </div>
+              <div class="field-label" style="margin-top:0.65rem">Description (optional)</div>
+              <div class="fake-input" style="padding:0.4rem 0.5rem;border:1px solid #dadce0;border-radius:4px;background:#fff;color:var(--muted);min-height:2.4rem;">
+                Conservative / Moderate / Aggressive
+              </div>
+              <div class="field-label" style="margin-top:0.65rem">Will save</div>
+              <table class="mini-table">
+                <thead><tr><th>Id</th><th>Label</th><th>Value</th></tr></thead>
+                <tbody>
+                  <tr><td>C</td><td>Conservative</td><td>0.25</td></tr>
+                  <tr><td>M</td><td>Moderate</td><td>0.55</td></tr>
+                  <tr><td>A</td><td>Aggressive</td><td>1.00</td></tr>
+                </tbody>
+              </table>
+              <div style="display:flex;gap:0.4rem;justify-content:flex-end;margin-top:0.85rem;">
+                <span class="btn">Cancel</span>
+                <span class="btn primary">Save to My scales</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Same Save-as-preset dialog can be reached from D’s Advanced section —
+        one library model shared by both layouts.
+      </p>
+    </article>
+
+    <!-- D preset menu -->
+    <article id="d">
+      <div class="meta">
+        <div>
+          <div class="pill">Preset as primary control</div>
+          <h2>D — Preset menu (expanded)</h2>
+          <p>
+            Scale dropdown lists Built-in and My scales, plus actions to grow the
+            library: <em>Save current as preset…</em>, <em>Manage scales…</em>,
+            <em>Import…</em>. Votes stay below; priorities stay right.
+          </p>
+          <ul>
+            <li>Pros: adding presets is visible next to the control that uses them</li>
+            <li>Cons: long menus need groups + Manage for edit/delete</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">Add more via</h2>
+          <ul>
+            <li>New Built-in entries in releases</li>
+            <li>Save current as preset…</li>
+            <li>Manage scales… / Import…</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis</div>
+        <div class="body">
+          <div class="col nav">
+            <div class="sec">
+              <h3>Compare</h3>
+              <div class="chip-row">
+                <span class="chip on">Node</span>
+                <span class="chip">Cluster</span>
+              </div>
+            </div>
+            <div class="sec">
+              <h3>Wrt</h3>
+              <div class="fake-select">Price ▾</div>
+            </div>
+            <div class="sec">
+              <h3>Other cluster</h3>
+              <div class="fake-select">Alternatives ▾</div>
+            </div>
+            <div class="sec">
+              <h3>Method</h3>
+              <div class="chip-row">
+                <span class="chip">Pairwise</span>
+                <span class="chip on">Ratings</span>
+              </div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="center-head">
+              <span class="title">Price → Alternatives</span>
+            </div>
+            <div class="scale-block">
+              <div class="inline-preset">
+                <span class="field-label" style="margin:0">Scale</span>
+                <span class="fake-select" style="border-color:var(--blue)">High / Medium / Low ▾</span>
+                <span class="kind-hint">Categorical</span>
+                <span style="flex:1"></span>
+                <span class="btn ghost" style="text-decoration:none;color:var(--blue);font-weight:600;">Advanced ▾</span>
+                <div class="menu-pop" aria-hidden="true">
+                  <div class="group">Built-in</div>
+                  <div class="item sel">High / Medium / Low</div>
+                  <div class="item">Verbal 1–9</div>
+                  <div class="item">Likert 5-point</div>
+                  <div class="item">Percent (0–100)</div>
+                  <div class="group">My scales</div>
+                  <div class="item">Supplier quality</div>
+                  <div class="item">Campus parking</div>
+                  <div class="sep"></div>
+                  <div class="item muted">Save current as preset…</div>
+                  <div class="item muted">Manage scales…</div>
+                  <div class="item muted">Import…</div>
+                  <div class="item muted">Custom…</div>
+                </div>
+              </div>
+            </div>
+            <div class="votes-section" style="margin-top:10.5rem">
+              <div class="votes-label">Ratings</div>
+              <table class="votes" style="margin-top:0">
+                <thead>
+                  <tr><th>Alternative</th><th>Rating</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>A</td><td><span class="dd">High ▾</span></td></tr>
+                  <tr><td>B</td><td><span class="dd">Medium ▾</span></td></tr>
+                  <tr><td>C</td><td><span class="dd">Low ▾</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="col">
+            <h3>Priorities</h3>
+            <div class="bars">
+              <div class="bar-row"><span>A</span><div class="bar-track"><div class="bar" style="width:70%"></div></div><span>0.50</span></div>
+              <div class="bar-row"><span>B</span><div class="bar-track"><div class="bar" style="width:42%"></div></div><span>0.30</span></div>
+              <div class="bar-row"><span>C</span><div class="bar-track"><div class="bar" style="width:28%"></div></div><span>0.20</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Dropdown footer actions are the growth hooks. Manage scales… can open
+        the same library sheet as option C.
+      </p>
+    </article>
+
+    <!-- D save from advanced -->
+    <article id="d2">
+      <div class="meta">
+        <div>
+          <div class="pill">Customize then promote</div>
+          <h2>D — Save from Advanced</h2>
+          <p>
+            Power users expand Advanced, edit Id/Label/Value (or numeric
+            interpreter), then <strong>Save as preset…</strong> so the next link
+            can pick it from the Scale menu without re-entering categories.
+            Scale edits <strong>auto-apply when Advanced is collapsed</strong>
+            (no separate Apply button).
+          </p>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">Shared with C</h2>
+          <ul>
+            <li>Same Save as preset dialog</li>
+            <li>Same My scales store</li>
+            <li>Only the chrome differs (inline vs sheet)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis</div>
+        <div class="body">
+          <div class="col nav">
+            <div class="sec"><h3>Method</h3>
+              <div class="chip-row">
+                <span class="chip">Pairwise</span>
+                <span class="chip on">Ratings</span>
+              </div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="center-head">
+              <span class="title">Price → Alternatives</span>
+            </div>
+            <div class="scale-block open">
+              <div class="inline-preset">
+                <span class="field-label" style="margin:0">Scale</span>
+                <span class="fake-select">Custom (unsaved) ▾</span>
+                <span class="kind-hint">Categorical</span>
+                <span style="flex:1"></span>
+                <span class="btn ghost" style="text-decoration:none;color:var(--blue);font-weight:600;">Advanced ▴</span>
+              </div>
+              <div class="adv-pop">
+                <div class="chip-row" style="margin-bottom:0.45rem;">
+                  <span class="chip on">Categorical</span>
+                  <span class="chip">Numeric</span>
+                </div>
+                <table class="mini-table">
+                  <thead><tr><th>Id</th><th>Label</th><th>Value</th></tr></thead>
+                  <tbody>
+                    <tr><td>C</td><td>Conservative</td><td>0.25</td></tr>
+                    <tr><td>M</td><td>Moderate</td><td>0.55</td></tr>
+                    <tr><td>A</td><td>Aggressive</td><td>1.00</td></tr>
+                  </tbody>
+                </table>
+                <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;margin-top:0.55rem;">
+                  <span class="btn">Add category</span>
+                  <span class="btn">Save as preset…</span>
+                  <span style="flex:1"></span>
+                  <span class="kind-hint">Applies when you close Advanced</span>
+                </div>
+              </div>
+            </div>
+            <div class="votes-section">
+              <div class="votes-label">Ratings</div>
+              <table class="votes">
+                <thead>
+                  <tr><th>Alternative</th><th>Rating</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>A</td><td><span class="dd">Conservative ▾</span></td></tr>
+                  <tr><td>B</td><td><span class="dd">Moderate ▾</span></td></tr>
+                  <tr><td>C</td><td><span class="dd">Aggressive ▾</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="col">
+            <h3>Priorities</h3>
+            <div class="bars">
+              <div class="bar-row"><span>A</span><div class="bar-track"><div class="bar" style="width:35%"></div></div><span>0.25</span></div>
+              <div class="bar-row"><span>B</span><div class="bar-track"><div class="bar" style="width:55%"></div></div><span>0.39</span></div>
+              <div class="bar-row"><span>C</span><div class="bar-track"><div class="bar" style="width:70%"></div></div><span>0.36</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Pattern: customize in Advanced → close Advanced (auto-applies to this
+        link) → optionally Save as preset → reuse from the Scale menu elsewhere.
+      </p>
+    </article>
+
+    <!-- D numeric advanced -->
+    <article id="d3">
+      <div class="meta">
+        <div>
+          <div class="pill">Numeric scale config</div>
+          <h2>D — Numeric Advanced</h2>
+          <p>
+            Same shell as categorical Advanced: Scale chooser + right-aligned
+            Advanced. Inside the attached popout, Mode is Numeric — interpreter,
+            constant / knots as needed — then votes are raw numbers (not label
+            dropdowns).
+          </p>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">Numeric affordances</h2>
+          <ul>
+            <li>Interpreter: Identity, Divide by max/constant, Min–max, Piecewise</li>
+            <li>Constant / knot table only when relevant</li>
+            <li>Preset menu can still pick “Percent (0–100)” etc.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis</div>
+        <div class="body">
+          <div class="col nav">
+            <div class="sec">
+              <h3>Compare</h3>
+              <div class="chip-row">
+                <span class="chip on">Node</span>
+                <span class="chip">Cluster</span>
+              </div>
+            </div>
+            <div class="sec">
+              <h3>Wrt</h3>
+              <div class="fake-select">Battery ▾</div>
+            </div>
+            <div class="sec">
+              <h3>Other cluster</h3>
+              <div class="fake-select">Phones ▾</div>
+            </div>
+            <div class="sec">
+              <h3>Method</h3>
+              <div class="chip-row">
+                <span class="chip">Pairwise</span>
+                <span class="chip on">Ratings</span>
+              </div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="center-head">
+              <span class="title">Battery → Phones</span>
+            </div>
+            <div class="scale-block open">
+              <div class="inline-preset">
+                <span class="field-label" style="margin:0">Scale</span>
+                <span class="fake-select">Percent (0–100) ▾</span>
+                <span class="kind-hint">Numeric</span>
+                <span style="flex:1"></span>
+                <span class="btn ghost" style="text-decoration:none;color:var(--blue);font-weight:600;">Advanced ▴</span>
+              </div>
+              <div class="adv-pop">
+                <div class="chip-row" style="margin-bottom:0.55rem;">
+                  <span class="chip">Categorical</span>
+                  <span class="chip on">Numeric</span>
+                </div>
+                <div class="field-label">Interpreter</div>
+                <div class="fake-select" style="margin-bottom:0.55rem;">Divide by constant ▾</div>
+                <div class="field-label">Constant</div>
+                <div class="fake-input" style="display:inline-block;min-width:6rem;padding:0.35rem 0.5rem;border:1px solid #dadce0;border-radius:4px;background:#fff;margin-bottom:0.55rem;">
+                  100
+                </div>
+                <div style="color:var(--muted);font-size:0.8rem;margin-bottom:0.55rem;">
+                  Score = value ÷ 100 → [0, 1], then normalize to priorities.
+                </div>
+                <details style="margin-bottom:0.55rem;color:var(--muted);">
+                  <summary style="color:var(--blue);font-weight:600;cursor:pointer;">Piecewise knots (hidden unless interpreter needs them)</summary>
+                  <table class="mini-table">
+                    <thead><tr><th>x (raw)</th><th>y (score)</th></tr></thead>
+                    <tbody>
+                      <tr><td>0</td><td>0.00</td></tr>
+                      <tr><td>50</td><td>0.50</td></tr>
+                      <tr><td>100</td><td>1.00</td></tr>
+                    </tbody>
+                  </table>
+                </details>
+                <div style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center;margin-top:0.35rem;">
+                  <span class="btn">Save as preset…</span>
+                  <span style="flex:1"></span>
+                  <span class="kind-hint">Applies when you close Advanced</span>
+                </div>
+              </div>
+            </div>
+            <div class="votes-section">
+              <div class="votes-label">Ratings (raw values)</div>
+              <table class="votes">
+                <thead>
+                  <tr><th>Alternative</th><th>Value</th><th>Score</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Phone A</td>
+                    <td><span class="fake-input" style="display:inline-block;padding:0.25rem 0.45rem;border:1px solid #dadce0;border-radius:3px;background:#fff;min-width:3.5rem;">92</span></td>
+                    <td style="color:var(--muted)">0.92</td>
+                  </tr>
+                  <tr>
+                    <td>Phone B</td>
+                    <td><span class="fake-input" style="display:inline-block;padding:0.25rem 0.45rem;border:1px solid #dadce0;border-radius:3px;background:#fff;min-width:3.5rem;">78</span></td>
+                    <td style="color:var(--muted)">0.78</td>
+                  </tr>
+                  <tr>
+                    <td>Phone C</td>
+                    <td><span class="fake-input" style="display:inline-block;padding:0.25rem 0.45rem;border:1px solid #dadce0;border-radius:3px;background:#fff;min-width:3.5rem;">65</span></td>
+                    <td style="color:var(--muted)">0.65</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="col">
+            <h3>Priorities</h3>
+            <div class="bars">
+              <div class="bar-row"><span>A</span><div class="bar-track"><div class="bar" style="width:70%"></div></div><span>0.39</span></div>
+              <div class="bar-row"><span>B</span><div class="bar-track"><div class="bar" style="width:55%"></div></div><span>0.33</span></div>
+              <div class="bar-row"><span>C</span><div class="bar-track"><div class="bar" style="width:45%"></div></div><span>0.28</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Switching interpreter to Piecewise would show the knot table expanded
+        instead of Constant. Identity / Divide by max hide the constant field.
+        Closing Advanced (▴) commits the numeric scale to this link automatically.
+      </p>
+    </article>
+  </main>
+
+  <script>
+    const tabs = document.querySelectorAll(".tabs button");
+    const articles = document.querySelectorAll("article");
+    tabs.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.tab;
+        tabs.forEach((b) => b.setAttribute("aria-selected", b === btn ? "true" : "false"));
+        articles.forEach((a) => a.classList.toggle("active", a.id === id));
+      });
+    });
+  </script>
+</body>
+</html>

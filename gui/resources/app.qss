@@ -695,3 +695,69 @@ QFileDialog {
   background-color: #ffffff;
   color: #202124;
 }
+
+/* —— Ratings Option D scale block —— */
+QFrame#ratingsScaleBlock {
+  background-color: #eef1f4;
+  border: 1px solid #c5cad1;
+  border-radius: 8px;
+}
+
+QWidget#ratingsScaleRow {
+  background-color: #ffffff;
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
+  border-bottom-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+}
+
+QFrame#ratingsScaleBlock[advancedOpen="true"] QWidget#ratingsScaleRow {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: 1px solid #dadce0;
+}
+
+QWidget#ratingsAdvancedPop {
+  background-color: #ffffff;
+  border-top: 2px solid #1a73e8;
+  border-bottom-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+}
+
+QLabel#ratingsModeHint {
+  color: #5f6368;
+  font-style: italic;
+  font-size: 12px;
+  background: transparent;
+  border: none;
+  padding: 0 2px;
+}
+
+QLabel#ratingsFieldLabel,
+QLabel#ratingsVotesLabel {
+  color: #5f6368;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: transparent;
+}
+
+QToolButton#ratingsAdvancedBtn {
+  color: #1a73e8;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  padding: 4px 6px;
+}
+
+QToolButton#ratingsAdvancedBtn:hover {
+  background-color: #e8f0fe;
+  border-radius: 4px;
+}
+
+QLabel#ratingsHeader {
+  font-weight: 600;
+  font-size: 14px;
+  color: #202124;
+}

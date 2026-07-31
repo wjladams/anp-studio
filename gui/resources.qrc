@@ -12,4 +12,7 @@
   <qresource prefix="/styles">
     <file alias="app.qss">resources/app.qss</file>
   </qresource>
+  <qresource prefix="/presets">
+    <file alias="rating_presets_builtin.json">resources/rating_presets_builtin.json</file>
+  </qresource>
 </RCC>

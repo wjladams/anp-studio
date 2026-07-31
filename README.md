@@ -45,6 +45,10 @@ for the catalog (Hamburger market share, classic AHP hierarchies, BCR/BOCR
 subnetworks, ratings examples, and more). Regenerate with libanpcpp’s
 `export_sample_models` example.
 
+Under **Judgments → Ratings**, pick a scale preset (built-in or My scales), cast
+votes with label dropdowns, and use **Advanced** to customize; changes apply
+when Advanced closes.
+
 ## Architecture
 
 ```text

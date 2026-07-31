@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "presets": [
+    {
+      "id": "high-medium-low",
+      "name": "High / Medium / Low",
+      "description": "3 categories · values 1.0 / 0.5 / 0.2",
+      "mode": "categorical",
+      "categories": [
+        {"id": "H", "label": "High", "value": 1.0},
+        {"id": "M", "label": "Medium", "value": 0.5},
+        {"id": "L", "label": "Low", "value": 0.2}
+      ]
+    },
+    {
+      "id": "verbal-1-9",
+      "name": "Verbal 1–9",
+      "description": "Equal → Extreme · Saaty-style intensities",
+      "mode": "categorical",
+      "categories": [
+        {"id": "1", "label": "Equal", "value": 0.111},
+        {"id": "2", "label": "Weak", "value": 0.222},
+        {"id": "3", "label": "Moderate", "value": 0.333},
+        {"id": "4", "label": "Moderate+", "value": 0.444},
+        {"id": "5", "label": "Strong", "value": 0.556},
+        {"id": "6", "label": "Strong+", "value": 0.667},
+        {"id": "7", "label": "Very strong", "value": 0.778},
+        {"id": "8", "label": "Very strong+", "value": 0.889},
+        {"id": "9", "label": "Extreme", "value": 1.0}
+      ]
+    },
+    {
+      "id": "likert-5",
+      "name": "Likert 5-point",
+      "description": "Strongly disagree → Strongly agree",
+      "mode": "categorical",
+      "categories": [
+        {"id": "SD", "label": "Strongly disagree", "value": 0.0},
+        {"id": "D", "label": "Disagree", "value": 0.25},
+        {"id": "N", "label": "Neutral", "value": 0.5},
+        {"id": "A", "label": "Agree", "value": 0.75},
+        {"id": "SA", "label": "Strongly agree", "value": 1.0}
+      ]
+    },
+    {
+      "id": "percent-0-100",
+      "name": "Percent (0–100)",
+      "description": "Numeric · divide by 100",
+      "mode": "numeric",
+      "interpreter": {
+        "type": "divide_by_constant",
+        "constant": 100.0
+      }
+    }
+  ]
+}
