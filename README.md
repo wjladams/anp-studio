@@ -10,7 +10,7 @@ calculating, and studying Analytic Network Process (ANP) decision models.
 ## Download
 
 Get the latest prebuilt binaries from the
-**[Releases](https://github.com/wjadams/anp-studio/releases/latest)** page.
+**[Releases](https://github.com/wjladams/anp-studio/releases/latest)** page.
 
 | Platform | Asset |
 |---|---|
@@ -27,7 +27,7 @@ To build from source instead, see [Build the GUI](#build-the-gui) below.
 
 The computational library (matrices, networks, pairwise judgments, limit
 matrix, synthesis, JSON I/O) lives in a separate repository:
-**[libanpcpp](https://github.com/wjadams/libanpcpp)** (CMake target
+**[libanpcpp](https://github.com/wjladams/libanpcpp)** (CMake target
 `anpcpp::anpcpp`, C++ namespace `anpcpp`). Model files use JSON format
 `anpcpp` (v1).
 
@@ -56,7 +56,7 @@ anpstudio                    Qt 6 Widgets desktop application (this repo)
 |---|---|
 | Build | CMake 3.20+ |
 | Language | C++20 |
-| ANP library | [libanpcpp](https://github.com/wjadams/libanpcpp) via FetchContent (or sibling checkout) |
+| ANP library | [libanpcpp](https://github.com/wjladams/libanpcpp) via FetchContent (or sibling checkout) |
 | GUI | Qt 6 Widgets |
 
 ## Build the GUI
