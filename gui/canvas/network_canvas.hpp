@@ -7,6 +7,7 @@
 
 #include <QGraphicsView>
 #include <QHash>
+#include <QSet>
 #include <QString>
 
 #include <functional>
@@ -23,8 +24,8 @@ class QKeyEvent;
 /**
  * @brief Visual editor for clusters, nodes, and connections.
  *
- * Supports connect mode for drawing links and persists layout positions
- * back to the @ref Document model.
+ * Supports Connection mode for multi-source link editing and persists layout
+ * positions back to the @ref Document model.
  */
 class NetworkCanvas : public QGraphicsView {
   Q_OBJECT
@@ -38,9 +39,9 @@ public:
 
   /** @brief Rebuilds scene items from the current network. */
   void rebuild();
-  /** @brief Enables or disables click-to-connect link mode. */
+  /** @brief Enables or disables Connection mode. */
   void setConnectMode(bool on);
-  /** @return True when connect mode is active. */
+  /** @return True when Connection mode is active. */
   [[nodiscard]] bool connectMode() const { return connectMode_; }
   /** @brief Highlights a cluster/node from Document selection. */
   void select(const QString& cluster, const QString& node);
@@ -50,11 +51,13 @@ signals:
   void nodeActivated(const QString& name);
   /** @brief Emitted when the user selects a cluster or node on the canvas. */
   void selectionChanged(const QString& cluster, const QString& node);
+  /** @brief Emitted when Connection mode is entered or left. */
+  void connectModeChanged(bool on);
 
 protected:
-  /** @brief Shows context menu for add/connect operations. */
+  /** @brief Shows context menu for add/connect operations (Normal mode only). */
   void contextMenuEvent(QContextMenuEvent* event) override;
-  /** @brief Handles node selection and connect-mode clicks. */
+  /** @brief Handles Connection-mode clicks and Normal-mode interaction. */
   void mousePressEvent(QMouseEvent* event) override;
   void keyPressEvent(QKeyEvent* event) override;
   void resizeEvent(QResizeEvent* event) override;
@@ -76,7 +79,19 @@ private:
                          std::function<void()> onHide,
                          std::function<void(const QString&)> onCommit);
   void cancelInlineRename();
-  NodeItem* nodeItemAt(const QPoint& viewPos) const;
+
+  [[nodiscard]] NodeItem* nodeItemAt(const QPoint& viewPos) const;
+  [[nodiscard]] ClusterItem* clusterItemAt(const QPoint& viewPos) const;
+
+  void clearConnectionSources();
+  void setSoleConnectionSource(const QString& node);
+  void toggleConnectionSource(const QString& node);
+  void setConnectionSourcesFromCluster(ClusterItem* cluster, bool unionWith);
+  void refreshConnectionVisuals();
+  void syncDocumentSelectionFromSources();
+  void batchToggleToDestinations(const QList<QString>& dests);
+  void handleConnectionLeftClick(QMouseEvent* event);
+  void handleConnectionRightClick(QMouseEvent* event);
 
   Document* doc_ = nullptr;
   QGraphicsScene* scene_ = nullptr;
@@ -85,7 +100,9 @@ private:
   QHash<QString, NodeItem*> nodes_;
   QList<LinkItem*> links_;
   bool connectMode_ = false;
-  QString connectSrc_;
+  bool rebuilding_ = false;
+  QSet<QString> connectionSources_;
+  QString connectionPrimary_;
   QGraphicsProxyWidget* renameProxy_ = nullptr;
   std::function<void()> renameHideCb_;
   bool renameClosing_ = false;

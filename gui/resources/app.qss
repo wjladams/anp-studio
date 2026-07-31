@@ -313,6 +313,50 @@ QToolButton#canvasAddClusterBtn:pressed {
   background-color: #1557b0;
 }
 
+/* —— Structure Normal | Connection mode bar —— */
+QWidget#structureModeBar {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dadce0;
+}
+
+QPushButton#structureModeBtnNormal,
+QPushButton#structureModeBtnConnection {
+  background-color: #ffffff;
+  border: 1px solid #dadce0;
+  padding: 5px 16px;
+  min-height: 22px;
+  color: #5f6368;
+  font-weight: 600;
+}
+
+QPushButton#structureModeBtnNormal {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+QPushButton#structureModeBtnConnection {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+  margin-left: -1px;
+}
+
+QPushButton#structureModeBtnNormal:hover,
+QPushButton#structureModeBtnConnection:hover {
+  background-color: #f1f3f4;
+  color: #202124;
+}
+
+QPushButton#structureModeBtnNormal:checked,
+QPushButton#structureModeBtnConnection:checked {
+  background-color: #e8f0fe;
+  border-color: #1a73e8;
+  color: #1967d2;
+}
+
 /* —— Buttons —— */
 QPushButton {
   background-color: #ffffff;

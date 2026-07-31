@@ -74,6 +74,7 @@ private:
   QHBoxLayout* breadcrumbLay_ = nullptr;
   QComboBox* networkPathCombo_ = nullptr;
   QAction* connectModeAction_ = nullptr;
+  QButtonGroup* structureModeButtons_ = nullptr;
   QMenu* recentMenu_ = nullptr;
 
   NetworkCanvas* canvas_ = nullptr;

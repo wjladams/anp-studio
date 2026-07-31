@@ -40,6 +40,10 @@ public:
   /** @brief Shows or hides the painted label (e.g. while editing). */
   void setLabelVisible(bool visible);
 
+  /** @brief Marks this node as a Connection-mode source (multi-select highlight). */
+  void setConnectionSource(bool on);
+  [[nodiscard]] bool isConnectionSource() const { return connectionSource_; }
+
 protected:
   void paint(QPainter* painter,
              const QStyleOptionGraphicsItem* option,
@@ -59,6 +63,7 @@ private:
   QGraphicsSimpleTextItem* label_ = nullptr;
   bool hasSubnet_ = false;
   bool invert_ = false;
+  bool connectionSource_ = false;
   std::function<void()> linkUpdate_;
   std::function<void(const QString&, int, int)> reorderCb_;
   std::function<void(const QString&)> renameCb_;

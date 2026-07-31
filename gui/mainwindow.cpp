@@ -113,9 +113,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 
   auto* netMenu = menuBar()->addMenu(QStringLiteral("&Network"));
   connectModeAction_ =
-      netMenu->addAction(QStringLiteral("Connect Mode"), this, [this]() {
-        canvas_->setConnectMode(!canvas_->connectMode());
+      netMenu->addAction(QStringLiteral("Connection Mode"), this, [this]() {
+        canvas_->setConnectMode(connectModeAction_->isChecked());
       });
+  connectModeAction_->setCheckable(true);
   netMenu->addAction(QStringLiteral("Up Subnetwork"), doc_,
                      &Document::popSubnet);
   netMenu->addAction(QStringLiteral("Root Network"), doc_,
@@ -143,7 +144,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 }
 
 void MainWindow::buildStagePages() {
-  // Structure: canvas | inspector
+  // Structure: mode strip | canvas | inspector
   canvas_ = new NetworkCanvas(doc_, this);
   inspector_ = new InspectorPanel(doc_, this);
   auto* structurePage = new QWidget(stages_);
@@ -152,9 +153,59 @@ void MainWindow::buildStagePages() {
   sSplit->addWidget(inspector_);
   sSplit->setStretchFactor(0, 4);
   sSplit->setStretchFactor(1, 1);
+
+  auto* modeBar = new QWidget(structurePage);
+  modeBar->setObjectName(QStringLiteral("structureModeBar"));
+  auto* modeLay = new QHBoxLayout(modeBar);
+  modeLay->setContentsMargins(8, 6, 8, 6);
+  modeLay->setSpacing(0);
+  modeLay->addStretch();
+  structureModeButtons_ = new QButtonGroup(modeBar);
+  structureModeButtons_->setExclusive(true);
+  auto* normalBtn = new QPushButton(QStringLiteral("Normal"), modeBar);
+  normalBtn->setObjectName(QStringLiteral("structureModeBtnNormal"));
+  normalBtn->setCheckable(true);
+  normalBtn->setChecked(true);
+  normalBtn->setCursor(Qt::PointingHandCursor);
+  auto* connectionBtn = new QPushButton(QStringLiteral("Connection"), modeBar);
+  connectionBtn->setObjectName(QStringLiteral("structureModeBtnConnection"));
+  connectionBtn->setCheckable(true);
+  connectionBtn->setCursor(Qt::PointingHandCursor);
+  structureModeButtons_->addButton(normalBtn, 0);
+  structureModeButtons_->addButton(connectionBtn, 1);
+  modeLay->addWidget(normalBtn);
+  modeLay->addWidget(connectionBtn);
+  modeLay->addStretch();
+
+  connect(structureModeButtons_, &QButtonGroup::idClicked, this,
+          [this](int id) {
+            canvas_->setConnectMode(id == 1);
+          });
+  connect(canvas_, &NetworkCanvas::connectModeChanged, this,
+          [this](bool on) {
+            if (structureModeButtons_ != nullptr) {
+              if (auto* b = structureModeButtons_->button(on ? 1 : 0)) {
+                b->setChecked(true);
+              }
+            }
+            if (connectModeAction_ != nullptr) {
+              connectModeAction_->setChecked(on);
+            }
+            if (on) {
+              statusBar()->showMessage(
+                  QStringLiteral("Connection mode: click source(s), "
+                                 "right-click destination(s). Esc = Normal."));
+            } else if (stage_ == Stage::Structure) {
+              statusBar()->showMessage(
+                  QStringLiteral("Structure → Judgments → Analysis"));
+            }
+          });
+
   auto* sLay = new QVBoxLayout(structurePage);
   sLay->setContentsMargins(0, 0, 0, 0);
-  sLay->addWidget(sSplit);
+  sLay->setSpacing(0);
+  sLay->addWidget(modeBar);
+  sLay->addWidget(sSplit, 1);
   stages_->addWidget(structurePage);
 
   // Judgments: left config dock | pairwise/ratings | priorities chart
@@ -193,6 +244,9 @@ void MainWindow::setStage(Stage stage) {
   }
   if (connectModeAction_ != nullptr) {
     connectModeAction_->setEnabled(stage == Stage::Structure);
+  }
+  if (stage != Stage::Structure && canvas_ != nullptr && canvas_->connectMode()) {
+    canvas_->setConnectMode(false);
   }
   if (stage == Stage::Structure) {
     canvas_->select(doc_->selectedCluster(), doc_->selectedNode());

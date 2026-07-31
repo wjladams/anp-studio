@@ -17,8 +17,13 @@
 #include <QPainter>
 #include <QPointer>
 #include <QResizeEvent>
+#include <QShortcut>
 #include <QTimer>
 #include <QToolButton>
+#include <QUndoStack>
+#include <QVector>
+
+#include <anpcpp/network.hpp>
 
 namespace {
 
@@ -50,6 +55,7 @@ NetworkCanvas::NetworkCanvas(Document* doc, QWidget* parent)
   setRenderHint(QPainter::Antialiasing, true);
   setDragMode(QGraphicsView::RubberBandDrag);
   setMinimumSize(400, 300);
+  setFocusPolicy(Qt::StrongFocus);
 
   addClusterBtn_ = new QToolButton(this);
   addClusterBtn_->setObjectName(QStringLiteral("canvasAddClusterBtn"));
@@ -61,9 +67,17 @@ NetworkCanvas::NetworkCanvas(Document* doc, QWidget* parent)
   connect(addClusterBtn_, &QToolButton::clicked, this,
           &NetworkCanvas::promptAddCluster);
 
+  auto* esc = new QShortcut(QKeySequence(Qt::Key_Escape), this);
+  esc->setContext(Qt::WidgetWithChildrenShortcut);
+  connect(esc, &QShortcut::activated, this, [this]() {
+    if (renameProxy_ != nullptr) return;
+    if (connectMode_) setConnectMode(false);
+  });
+
   connect(doc_, &Document::modelChanged, this, &NetworkCanvas::rebuild);
   connect(doc_, &Document::viewNetworkChanged, this, &NetworkCanvas::rebuild);
   connect(scene_, &QGraphicsScene::selectionChanged, this, [this]() {
+    if (connectMode_) return;
     const auto items = scene_->selectedItems();
     if (items.isEmpty()) {
       emit selectionChanged({}, {});
@@ -85,9 +99,16 @@ NetworkCanvas::~NetworkCanvas() {
 }
 
 void NetworkCanvas::setConnectMode(bool on) {
+  if (connectMode_ == on) {
+    if (on) setFocus(Qt::OtherFocusReason);
+    return;
+  }
   connectMode_ = on;
-  connectSrc_.clear();
+  clearConnectionSources();
   setCursor(on ? Qt::CrossCursor : Qt::ArrowCursor);
+  setDragMode(on ? QGraphicsView::NoDrag : QGraphicsView::RubberBandDrag);
+  if (on) setFocus(Qt::OtherFocusReason);
+  emit connectModeChanged(on);
 }
 
 void NetworkCanvas::select(const QString& cluster, const QString& node) {
@@ -199,10 +220,22 @@ void NetworkCanvas::keyPressEvent(QKeyEvent* event) {
     event->accept();
     return;
   }
+  if (connectMode_ && event->key() == Qt::Key_Escape) {
+    setConnectMode(false);
+    event->accept();
+    return;
+  }
   QGraphicsView::keyPressEvent(event);
 }
 
 void NetworkCanvas::rebuild() {
+  // Preserve connection sources across scene teardown. Item destruction during
+  // scene_->clear() can invoke link-update callbacks while nodes_ is empty;
+  // without a guard those callbacks would prune connectionSources_ away.
+  const QSet<QString> savedSources = connectionSources_;
+  const QString savedPrimary = connectionPrimary_;
+
+  rebuilding_ = true;
   cancelInlineRename();
   persistLayout();
   scene_->clear();
@@ -271,7 +304,15 @@ void NetworkCanvas::rebuild() {
       }
     }
   }
-  updateLinks();
+  for (LinkItem* link : links_) link->updatePath();
+  rebuilding_ = false;
+
+  connectionSources_ = savedSources;
+  connectionPrimary_ = savedPrimary;
+  refreshConnectionVisuals();
+  if (connectMode_ && !connectionSources_.isEmpty()) {
+    syncDocumentSelectionFromSources();
+  }
 }
 
 void NetworkCanvas::persistLayout() {
@@ -287,6 +328,7 @@ void NetworkCanvas::persistLayout() {
 }
 
 void NetworkCanvas::updateLinks() {
+  if (rebuilding_) return;
   for (LinkItem* link : links_) link->updatePath();
 }
 
@@ -376,17 +418,226 @@ NodeItem* NetworkCanvas::nodeItemAt(const QPoint& viewPos) const {
   return nullptr;
 }
 
-void NetworkCanvas::mousePressEvent(QMouseEvent* event) {
-  if (connectMode_ && event->button() == Qt::LeftButton) {
-    if (NodeItem* n = nodeItemAt(event->pos())) {
-      if (connectSrc_.isEmpty()) {
-        connectSrc_ = n->nodeName();
-      } else if (connectSrc_ != n->nodeName()) {
-        doc_->undoStack()->push(
-            new ConnectNodesCmd(doc_, connectSrc_, n->nodeName()));
-        connectSrc_.clear();
-        setConnectMode(false);
+ClusterItem* NetworkCanvas::clusterItemAt(const QPoint& viewPos) const {
+  for (QGraphicsItem* it : items(viewPos)) {
+    if (auto* c = qgraphicsitem_cast<ClusterItem*>(it)) return c;
+  }
+  return nullptr;
+}
+
+void NetworkCanvas::clearConnectionSources() {
+  connectionSources_.clear();
+  connectionPrimary_.clear();
+  refreshConnectionVisuals();
+}
+
+void NetworkCanvas::setSoleConnectionSource(const QString& node) {
+  connectionSources_.clear();
+  connectionSources_.insert(node);
+  connectionPrimary_ = node;
+  refreshConnectionVisuals();
+  syncDocumentSelectionFromSources();
+}
+
+void NetworkCanvas::toggleConnectionSource(const QString& node) {
+  if (connectionSources_.contains(node)) {
+    connectionSources_.remove(node);
+    if (connectionPrimary_ == node) {
+      connectionPrimary_ =
+          connectionSources_.isEmpty() ? QString()
+                                       : *connectionSources_.constBegin();
+    }
+  } else {
+    connectionSources_.insert(node);
+    connectionPrimary_ = node;
+  }
+  refreshConnectionVisuals();
+  syncDocumentSelectionFromSources();
+}
+
+void NetworkCanvas::setConnectionSourcesFromCluster(ClusterItem* cluster,
+                                                    bool unionWith) {
+  if (cluster == nullptr) return;
+  if (!unionWith) connectionSources_.clear();
+  const auto members = cluster->nodeItems();
+  for (NodeItem* n : members) {
+    connectionSources_.insert(n->nodeName());
+  }
+  if (!members.empty()) {
+    connectionPrimary_ = members.front()->nodeName();
+  } else if (!unionWith) {
+    connectionPrimary_.clear();
+  }
+  refreshConnectionVisuals();
+  syncDocumentSelectionFromSources();
+}
+
+void NetworkCanvas::refreshConnectionVisuals() {
+  if (rebuilding_) return;
+
+  // Prune against the document model, not the transient canvas node map —
+  // during rebuild nodes_ may be empty while sources are still valid.
+  QSet<QString> alive;
+  for (const QString& s : connectionSources_) {
+    if (doc_->network().find_node(s.toStdString()) != nullptr) {
+      alive.insert(s);
+    }
+  }
+  connectionSources_ = alive;
+  if (!connectionPrimary_.isEmpty() &&
+      !connectionSources_.contains(connectionPrimary_)) {
+    connectionPrimary_ = connectionSources_.isEmpty()
+                             ? QString()
+                             : *connectionSources_.constBegin();
+  }
+
+  for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
+    it.value()->setConnectionSource(connectionSources_.contains(it.key()));
+  }
+
+  const bool dim = connectMode_ && !connectionSources_.isEmpty();
+  for (LinkItem* link : links_) {
+    if (!dim) {
+      link->setOpacity(1.0);
+      continue;
+    }
+    const bool relevant =
+        link->src() != nullptr &&
+        connectionSources_.contains(link->src()->nodeName());
+    link->setOpacity(relevant ? 1.0 : 0.2);
+  }
+}
+
+void NetworkCanvas::syncDocumentSelectionFromSources() {
+  if (connectionSources_.isEmpty()) {
+    emit selectionChanged({}, {});
+    return;
+  }
+  const QString node = connectionPrimary_.isEmpty()
+                           ? *connectionSources_.constBegin()
+                           : connectionPrimary_;
+  emit selectionChanged({}, node);
+}
+
+void NetworkCanvas::batchToggleToDestinations(const QList<QString>& dests) {
+  if (connectionSources_.isEmpty() || dests.isEmpty()) return;
+
+  struct Pair {
+    QString src;
+    QString dest;
+  };
+  QVector<Pair> pairs;
+  for (const QString& src : connectionSources_) {
+    for (const QString& dest : dests) {
+      if (src == dest) continue;
+      if (doc_->network().find_node(src.toStdString()) == nullptr) continue;
+      if (doc_->network().find_node(dest.toStdString()) == nullptr) continue;
+      pairs.push_back({src, dest});
+    }
+  }
+  if (pairs.isEmpty()) return;
+
+  auto& net = doc_->network();
+  auto isConnected = [&net](const QString& src, const QString& dest) {
+    try {
+      return net.node(src.toStdString())
+          .is_connected_to(&net.node(dest.toStdString()));
+    } catch (...) {
+      return false;
+    }
+  };
+
+  bool anyMissing = false;
+  for (const Pair& p : pairs) {
+    if (!isConnected(p.src, p.dest)) {
+      anyMissing = true;
+      break;
+    }
+  }
+
+  if (anyMissing) {
+    QVector<Pair> toConnect;
+    for (const Pair& p : pairs) {
+      if (!isConnected(p.src, p.dest)) toConnect.push_back(p);
+    }
+    if (toConnect.isEmpty()) return;
+    if (toConnect.size() == 1) {
+      doc_->undoStack()->push(
+          new ConnectNodesCmd(doc_, toConnect.front().src, toConnect.front().dest));
+    } else {
+      doc_->undoStack()->beginMacro(
+          QStringLiteral("Connect %1 link(s)").arg(toConnect.size()));
+      for (const Pair& p : toConnect) {
+        doc_->undoStack()->push(new ConnectNodesCmd(doc_, p.src, p.dest));
       }
+      doc_->undoStack()->endMacro();
+    }
+  } else {
+    if (pairs.size() == 1) {
+      doc_->undoStack()->push(
+          new DisconnectNodesCmd(doc_, pairs.front().src, pairs.front().dest));
+    } else {
+      doc_->undoStack()->beginMacro(
+          QStringLiteral("Disconnect %1 link(s)").arg(pairs.size()));
+      for (const Pair& p : pairs) {
+        doc_->undoStack()->push(new DisconnectNodesCmd(doc_, p.src, p.dest));
+      }
+      doc_->undoStack()->endMacro();
+    }
+  }
+}
+
+void NetworkCanvas::handleConnectionLeftClick(QMouseEvent* event) {
+  const bool shift = event->modifiers() & Qt::ShiftModifier;
+  if (NodeItem* n = nodeItemAt(event->pos())) {
+    if (shift) {
+      toggleConnectionSource(n->nodeName());
+    } else {
+      setSoleConnectionSource(n->nodeName());
+    }
+    event->accept();
+    return;
+  }
+  if (ClusterItem* c = clusterItemAt(event->pos())) {
+    setConnectionSourcesFromCluster(c, shift);
+    event->accept();
+    return;
+  }
+  clearConnectionSources();
+  syncDocumentSelectionFromSources();
+  event->accept();
+}
+
+void NetworkCanvas::handleConnectionRightClick(QMouseEvent* event) {
+  if (connectionSources_.isEmpty()) {
+    event->accept();
+    return;
+  }
+  if (NodeItem* n = nodeItemAt(event->pos())) {
+    batchToggleToDestinations({n->nodeName()});
+    event->accept();
+    return;
+  }
+  if (ClusterItem* c = clusterItemAt(event->pos())) {
+    QList<QString> dests;
+    for (NodeItem* n : c->nodeItems()) {
+      dests.push_back(n->nodeName());
+    }
+    batchToggleToDestinations(dests);
+    event->accept();
+    return;
+  }
+  event->accept();
+}
+
+void NetworkCanvas::mousePressEvent(QMouseEvent* event) {
+  if (connectMode_) {
+    if (event->button() == Qt::LeftButton) {
+      handleConnectionLeftClick(event);
+      return;
+    }
+    if (event->button() == Qt::RightButton) {
+      handleConnectionRightClick(event);
       return;
     }
   }
@@ -395,18 +646,17 @@ void NetworkCanvas::mousePressEvent(QMouseEvent* event) {
 }
 
 void NetworkCanvas::contextMenuEvent(QContextMenuEvent* event) {
+  if (connectMode_) {
+    event->accept();
+    return;
+  }
+
   QMenu menu(this);
   menu.addAction(QStringLiteral("Add Cluster"), this,
                  &NetworkCanvas::promptAddCluster);
 
   NodeItem* node = nodeItemAt(event->pos());
-  ClusterItem* cluster = nullptr;
-  for (QGraphicsItem* it : items(event->pos())) {
-    if (auto* c = qgraphicsitem_cast<ClusterItem*>(it)) {
-      cluster = c;
-      break;
-    }
-  }
+  ClusterItem* cluster = clusterItemAt(event->pos());
 
   if (cluster != nullptr) {
     const QString clusterName = cluster->clusterName();
@@ -436,15 +686,17 @@ void NetworkCanvas::contextMenuEvent(QContextMenuEvent* event) {
           new SetInvertCmd(doc_, node->nodeName(), !cur));
     });
     menu.addAction(QStringLiteral("Connect From Here…"), this, [this, node]() {
-      connectSrc_ = node->nodeName();
       setConnectMode(true);
+      setSoleConnectionSource(node->nodeName());
     });
   }
 
   menu.addSeparator();
-  menu.addAction(QStringLiteral("Connect Mode"), this, [this]() {
+  auto* modeAct = menu.addAction(QStringLiteral("Connection Mode"), this, [this]() {
     setConnectMode(!connectMode_);
   });
+  modeAct->setCheckable(true);
+  modeAct->setChecked(connectMode_);
 
   menu.exec(event->globalPos());
 }

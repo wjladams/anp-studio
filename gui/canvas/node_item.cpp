@@ -42,6 +42,12 @@ void NodeItem::setLabelVisible(bool visible) {
   if (label_) label_->setVisible(visible);
 }
 
+void NodeItem::setConnectionSource(bool on) {
+  if (connectionSource_ == on) return;
+  connectionSource_ = on;
+  update();
+}
+
 void NodeItem::setRowGeometry(qreal width, qreal height) {
   setRect(0, 0, width, height);
   label_->setPos(10, (height - label_->boundingRect().height()) * 0.5);
@@ -69,13 +75,18 @@ void NodeItem::paint(QPainter* painter,
                      QWidget* widget) {
   Q_UNUSED(widget);
   painter->setRenderHint(QPainter::Antialiasing, true);
+  QBrush b = brush();
   QPen p = pen();
-  if (option->state & QStyle::State_Selected) {
+  if (connectionSource_) {
+    b = QBrush(QColor(232, 245, 233));
+    p.setColor(QColor(46, 125, 50));
+    p.setWidthF(2.4);
+  } else if (option->state & QStyle::State_Selected) {
     p.setColor(QColor(20, 90, 180));
     p.setWidthF(2.0);
   }
   painter->setPen(p);
-  painter->setBrush(brush());
+  painter->setBrush(b);
   painter->drawRoundedRect(rect(), 3, 3);
 }
 

@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Structure connection options</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --ink: #1c1b19;
+      --muted: #5c574e;
+      --line: #d4cfc4;
+      --panel: #fffdf8;
+      --accent: #2f5d50;
+      --accent-soft: #e4efe9;
+      --select: #c8ddd4;
+      --chrome: #ebe6dc;
+      --danger: #8b3a2f;
+      --danger-soft: #f3e4e1;
+      --link: #3a6ea5;
+      --canvas: #f0eee8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.45 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    header {
+      padding: 1.75rem 2rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+    header h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.65rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      margin: 0;
+      max-width: 46rem;
+      color: var(--muted);
+    }
+    .problem {
+      margin-top: 0.85rem;
+      padding: 0.7rem 0.9rem;
+      border-left: 3px solid var(--danger);
+      background: var(--danger-soft);
+      max-width: 46rem;
+      color: var(--ink);
+      font-size: 0.95rem;
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      padding: 1rem 2rem 0;
+    }
+    .tabs button {
+      font: inherit;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      padding: 0.45rem 0.85rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .tabs button[aria-selected="true"] {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    main { padding: 1rem 2rem 3rem; }
+    article { display: none; }
+    article.active { display: block; }
+    .meta {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+      max-width: 1100px;
+    }
+    @media (max-width: 860px) {
+      .meta { grid-template-columns: 1fr; }
+    }
+    .meta h2 {
+      margin: 0 0 0.4rem;
+      font-size: 1.25rem;
+    }
+    .meta p, .meta li { color: var(--muted); }
+    .meta ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+    .pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--select);
+      background: var(--accent-soft);
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      margin-bottom: 0.5rem;
+    }
+    .wire {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      overflow: hidden;
+      max-width: 1100px;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-size: 12px;
+    }
+    .stage-strip {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.55rem 0.75rem;
+      background: var(--chrome);
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .stage-strip strong { color: var(--ink); }
+    .body {
+      display: grid;
+      grid-template-columns: 1fr 240px;
+      min-height: 360px;
+    }
+    .body.with-bar { grid-template-rows: auto 1fr; grid-template-columns: 1fr 240px; }
+    .body.dialog-focus { grid-template-columns: 1fr; min-height: 320px; }
+    .col {
+      border-right: 1px solid var(--line);
+      padding: 0.6rem;
+      background: var(--panel);
+    }
+    .col:last-child { border-right: none; }
+    .col.canvas {
+      background: var(--canvas);
+      position: relative;
+      min-height: 320px;
+    }
+    .col h3 {
+      margin: 0 0 0.5rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .toolstrip {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.65rem;
+      border-bottom: 1px solid var(--line);
+      background: #f8f9fa;
+    }
+    .chip {
+      border: 1px solid var(--line);
+      padding: 0.25rem 0.55rem;
+      border-radius: 3px;
+      background: #fff;
+      color: var(--muted);
+    }
+    .chip.on {
+      background: #dbeafe;
+      border-color: #93c5fd;
+      color: #1e3a5f;
+      font-weight: 600;
+    }
+    .chip.warn {
+      background: var(--danger-soft);
+      border-color: #e0b4ad;
+      color: var(--danger);
+      font-weight: 600;
+    }
+    .hint {
+      margin-left: auto;
+      color: var(--link);
+      font-weight: 500;
+    }
+    .cluster {
+      position: absolute;
+      border: 1px solid #b8c4ce;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.72);
+      padding: 0.35rem;
+    }
+    .cluster .label {
+      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+      font-weight: 600;
+    }
+    .node {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      border: 1px solid #94a3b8;
+      background: #fff;
+      border-radius: 4px;
+      padding: 0.3rem 0.55rem;
+      margin: 0.15rem;
+      font-weight: 600;
+      color: var(--ink);
+      position: relative;
+    }
+    .node.sel { outline: 2px solid var(--link); background: #eff6ff; }
+    .node.src { outline: 2px solid var(--accent); background: var(--accent-soft); }
+    .port {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--link);
+      border: 1px solid #fff;
+      box-shadow: 0 0 0 1px var(--link);
+    }
+    .svg-links {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .svg-links.interactive { pointer-events: auto; }
+    .link-line { stroke: #64748b; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+    .link-line.hot { stroke: var(--danger); stroke-width: 3; }
+    .link-line.draft { stroke: var(--link); stroke-dasharray: 4 3; }
+    .insp-block { margin-bottom: 0.85rem; }
+    .insp-block .field {
+      display: grid;
+      gap: 0.2rem;
+      margin-bottom: 0.45rem;
+    }
+    .insp-block input[type="text"] {
+      font: inherit;
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      padding: 0.25rem 0.4rem;
+      background: #fff;
+    }
+    .check-list { list-style: none; margin: 0; padding: 0; }
+    .check-list li {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.18rem 0.2rem;
+      border-radius: 3px;
+    }
+    .check-list li:hover { background: #f3f4f6; }
+    .check-list .group {
+      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+      margin-top: 0.45rem;
+      padding: 0.15rem 0.2rem;
+    }
+    .btn-row { display: flex; gap: 0.35rem; margin-top: 0.45rem; flex-wrap: wrap; }
+    .btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 3px;
+      padding: 0.22rem 0.5rem;
+      color: var(--ink);
+      cursor: default;
+    }
+    .btn.primary {
+      background: #dbeafe;
+      border-color: #93c5fd;
+      color: #1e3a5f;
+      font-weight: 600;
+    }
+    .btn.danger {
+      background: var(--danger-soft);
+      border-color: #e0b4ad;
+      color: var(--danger);
+    }
+    .ctx {
+      position: absolute;
+      min-width: 160px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+      padding: 0.25rem 0;
+      z-index: 2;
+    }
+    .ctx div {
+      padding: 0.35rem 0.7rem;
+      color: var(--ink);
+    }
+    .ctx div.sep {
+      border-top: 1px solid var(--line);
+      margin-top: 0.15rem;
+      padding-top: 0.35rem;
+    }
+    .ctx .hot { color: var(--danger); font-weight: 600; }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(28, 27, 25, 0.28);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .sheet {
+      width: min(520px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+      overflow: hidden;
+    }
+    .sheet header {
+      padding: 0.7rem 0.9rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--chrome);
+    }
+    .sheet header h4 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    }
+    .sheet .body-pad { padding: 0.75rem 0.9rem; }
+    .pair-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto;
+      gap: 0.4rem;
+      align-items: center;
+      padding: 0.35rem 0;
+      border-bottom: 1px dashed var(--line);
+    }
+    .pair-row:last-child { border-bottom: none; }
+    .arrow { color: var(--muted); }
+    .x { color: var(--danger); font-weight: 700; padding: 0 0.35rem; }
+    .note {
+      margin-top: 1rem;
+      padding: 0.75rem 0.9rem;
+      border-left: 3px solid var(--accent);
+      background: var(--accent-soft);
+      max-width: 1100px;
+      color: var(--ink);
+    }
+    .legend {
+      margin-top: 0.75rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      max-width: 1100px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Structure — connection UX options</h1>
+    <p>
+      Options for
+      <a href="https://github.com/wjladams/anp-studio/issues/3">issue #3</a>:
+      making and removing Structure connections that are easy to manage and easy
+      for a new user to find. Click a tab to compare. Colors are illustrative;
+      the live app keeps its existing Structure chrome.
+    </p>
+    <div class="problem">
+      <strong>Today:</strong> create only via Network/context “Connect Mode”
+      (two node clicks), then mode exits. No remove UI — links aren’t selectable,
+      Inspector Connections is read-only, and <code>DisconnectNodesCmd</code>
+      exists but is unused.
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" aria-selected="true" data-tab="a">A · Inspector checklist</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="b">B · Drag wires</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="c">C · Connect toolbar</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="d">D · Connection manager</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="e">E · Context menus</button>
+  </div>
+
+  <main>
+    <!-- A -->
+    <article id="a" class="active">
+      <div class="meta">
+        <div>
+          <div class="pill">Most discoverable for new users</div>
+          <h2>A — Inspector Connections checklist</h2>
+          <p>
+            Keep the canvas visual. Turn the existing Inspector
+            <em>Connections</em> section into the primary editor: checkboxes by
+            cluster for destinations of the selected node, plus Add / Remove.
+          </p>
+          <ul>
+            <li>Pros: uses a panel users already open; add and remove in one place; no hidden mode</li>
+            <li>Cons: less “drawing” on the canvas; large networks need search/filter</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">Interaction</h2>
+          <ul>
+            <li>Select a node → Inspector lists possible targets by cluster</li>
+            <li>Check = connect, uncheck = disconnect (undoable)</li>
+            <li>Optional: “Connect to…” search for distant nodes</li>
+            <li>Canvas still shows arrows; optional highlight on hover in list</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip"><strong>Structure</strong> · Judgments · Analysis</div>
+        <div class="body">
+          <div class="col canvas">
+            <h3>Canvas</h3>
+            <svg class="svg-links" viewBox="0 0 640 300" aria-hidden="true">
+              <defs>
+                <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                  <path d="M0,0 L6,3 L0,6 Z" fill="#64748b" />
+                </marker>
+              </defs>
+              <path class="link-line" d="M150,95 L300,170" />
+              <path class="link-line" d="M150,140 L300,200" />
+            </svg>
+            <div class="cluster" style="left:40px;top:50px;width:150px;">
+              <div class="label">Criteria</div>
+              <span class="node sel">Benefits</span>
+              <span class="node">Costs</span>
+            </div>
+            <div class="cluster" style="left:310px;top:120px;width:200px;">
+              <div class="label">Alternatives</div>
+              <span class="node">A</span>
+              <span class="node">B</span>
+              <span class="node">C</span>
+            </div>
+          </div>
+          <div class="col">
+            <h3>Inspector</h3>
+            <div class="insp-block">
+              <div class="field">
+                <span style="color:var(--muted);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;">Name</span>
+                <input type="text" value="Benefits" readonly />
+              </div>
+            </div>
+            <div class="insp-block">
+              <h3>Connections from Benefits</h3>
+              <ul class="check-list">
+                <li class="group">Alternatives</li>
+                <li><input type="checkbox" checked disabled /> A</li>
+                <li><input type="checkbox" checked disabled /> B</li>
+                <li><input type="checkbox" disabled /> C</li>
+                <li class="group">Other</li>
+                <li><input type="checkbox" disabled /> Costs</li>
+              </ul>
+              <div class="btn-row">
+                <span class="btn primary">Connect to…</span>
+                <span class="btn danger">Remove selected</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Closest to extending issue #2’s Connections tree. Smallest conceptual jump:
+        the list you already see becomes the place you edit.
+      </p>
+    </article>
+
+    <!-- B -->
+    <article id="b">
+      <div class="meta">
+        <div>
+          <div class="pill">Graph-editor familiar</div>
+          <h2>B — Drag wires on the canvas</h2>
+          <p>
+            Add connection ports on nodes. Drag from a port to another node to
+            create a link. Click an arrow to select it; Delete / Backspace or a
+            context menu removes it.
+          </p>
+          <ul>
+            <li>Pros: visual and spatial; add and remove without leaving the canvas</li>
+            <li>Cons: harder on dense layouts; needs careful hit-testing and rubber-band conflict</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">Interaction</h2>
+          <ul>
+            <li>Hover node → show ports</li>
+            <li>Drag port → dashed preview → drop on target</li>
+            <li>Click link → highlight; Delete disconnects</li>
+            <li>Right-click link → Disconnect</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip"><strong>Structure</strong> · Judgments · Analysis</div>
+        <div class="body">
+          <div class="col canvas">
+            <h3>Canvas</h3>
+            <svg class="svg-links interactive" viewBox="0 0 640 300" aria-hidden="true">
+              <defs>
+                <marker id="arrow2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                  <path d="M0,0 L6,3 L0,6 Z" fill="#64748b" />
+                </marker>
+                <marker id="arrowHot" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                  <path d="M0,0 L6,3 L0,6 Z" fill="#8b3a2f" />
+                </marker>
+              </defs>
+              <path class="link-line hot" style="marker-end:url(#arrowHot)" d="M168,95 L320,170" />
+              <path class="link-line draft" d="M168,140 L280,155" />
+            </svg>
+            <div class="cluster" style="left:40px;top:50px;width:160px;">
+              <div class="label">Criteria</div>
+              <span class="node src">Benefits <span class="port"></span></span>
+              <span class="node">Costs <span class="port"></span></span>
+            </div>
+            <div class="cluster" style="left:320px;top:120px;width:200px;">
+              <div class="label">Alternatives</div>
+              <span class="node">A</span>
+              <span class="node sel">B</span>
+              <span class="node">C</span>
+            </div>
+            <div class="ctx" style="left:240px;top:150px;">
+              <div class="hot">Disconnect Benefits → B</div>
+              <div>Select source node</div>
+            </div>
+          </div>
+          <div class="col">
+            <h3>Inspector</h3>
+            <p style="color:var(--muted);margin:0;">
+              Can stay mostly as today (read-only list), or mirror selection when
+              a link is selected: “Benefits → B”.
+            </p>
+            <div class="insp-block" style="margin-top:0.75rem;">
+              <h3>Selected link</h3>
+              <div>Benefits → B</div>
+              <div class="btn-row">
+                <span class="btn danger">Disconnect</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Replaces Connect Mode for creation. Biggest canvas engineering lift;
+        strongest “I can see what I’m wiring” feel.
+      </p>
+    </article>
+
+    <!-- C -->
+    <article id="c">
+      <div class="meta">
+        <div>
+          <div class="pill">Evolves today’s Connect Mode</div>
+          <h2>C — Visible Connect / Disconnect toolbar</h2>
+          <p>
+            Keep click-to-connect, but put tools on a Structure toolstrip so
+            newcomers find them. Add Disconnect mode (click a link, or click
+            source then dest). Status hint guides each step; Escape cancels;
+            mode can stay on for multiple links.
+          </p>
+          <ul>
+            <li>Pros: small code delta from current path; fixes discoverability and removal</li>
+            <li>Cons: still a mode; less direct than checkboxes or drag</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">Interaction</h2>
+          <ul>
+            <li>Toolstrip: Select · Connect · Disconnect</li>
+            <li>Connect: pick source → dest; hint updates; stays on until Escape</li>
+            <li>Disconnect: click link, or two nodes that are connected</li>
+            <li>Network menu / shortcuts mirror the tools</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip"><strong>Structure</strong> · Judgments · Analysis</div>
+        <div class="body with-bar">
+          <div class="toolstrip">
+            <span class="chip">Select</span>
+            <span class="chip on">Connect</span>
+            <span class="chip warn">Disconnect</span>
+            <span class="hint">Source: Benefits — click a destination…</span>
+          </div>
+          <div class="col canvas">
+            <h3>Canvas</h3>
+            <svg class="svg-links" viewBox="0 0 640 280" aria-hidden="true">
+              <defs>
+                <marker id="arrow3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                  <path d="M0,0 L6,3 L0,6 Z" fill="#64748b" />
+                </marker>
+              </defs>
+              <path class="link-line" style="marker-end:url(#arrow3)" d="M150,80 L300,150" />
+            </svg>
+            <div class="cluster" style="left:40px;top:35px;width:150px;">
+              <div class="label">Criteria</div>
+              <span class="node src">Benefits</span>
+              <span class="node">Costs</span>
+            </div>
+            <div class="cluster" style="left:310px;top:100px;width:200px;">
+              <div class="label">Alternatives</div>
+              <span class="node">A</span>
+              <span class="node">B</span>
+              <span class="node">C</span>
+            </div>
+          </div>
+          <div class="col">
+            <h3>Inspector</h3>
+            <p style="color:var(--muted);margin:0 0 0.5rem;">
+              Unchanged for editing; still shows connections for reference.
+            </p>
+            <ul class="check-list">
+              <li class="group">Connected to</li>
+              <li>• A</li>
+              <li>• B</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Lowest-risk path: surface the existing mode, stop auto-exiting after one
+        link, and wire up <code>DisconnectNodesCmd</code> with link hit-testing.
+      </p>
+    </article>
+
+    <!-- D -->
+    <article id="d">
+      <div class="meta">
+        <div>
+          <div class="pill">Bulk / overview</div>
+          <h2>D — Connection manager sheet</h2>
+          <p>
+            A dedicated “Manage connections…” dialog or bottom sheet lists every
+            From → To pair. Add via two dropdowns; remove with a row button.
+            Reachable from Network menu, canvas empty-space menu, and Inspector.
+          </p>
+          <ul>
+            <li>Pros: easy to audit the whole network; great for cleanup; searchable</li>
+            <li>Cons: one step removed from the canvas; less spatial</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">Interaction</h2>
+          <ul>
+            <li>Open manager from Network → Manage Connections…</li>
+            <li>Optional filter by source cluster / node</li>
+            <li>Add row: From combo + To combo + Add</li>
+            <li>✕ on a row disconnects with undo</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip"><strong>Structure</strong> · Judgments · Analysis</div>
+        <div class="body dialog-focus" style="position:relative;min-height:360px;">
+          <div class="col canvas" style="border-right:none;filter:blur(1px);opacity:0.55;">
+            <div class="cluster" style="left:40px;top:50px;width:150px;">
+              <div class="label">Criteria</div>
+              <span class="node">Benefits</span>
+              <span class="node">Costs</span>
+            </div>
+            <div class="cluster" style="left:310px;top:120px;width:200px;">
+              <div class="label">Alternatives</div>
+              <span class="node">A</span>
+              <span class="node">B</span>
+              <span class="node">C</span>
+            </div>
+          </div>
+          <div class="overlay">
+            <div class="sheet">
+              <header><h4>Manage connections</h4></header>
+              <div class="body-pad">
+                <div class="pair-row">
+                  <span>Benefits</span><span class="arrow">→</span><span>A</span><span class="x">✕</span>
+                </div>
+                <div class="pair-row">
+                  <span>Benefits</span><span class="arrow">→</span><span>B</span><span class="x">✕</span>
+                </div>
+                <div class="pair-row">
+                  <span>Costs</span><span class="arrow">→</span><span>A</span><span class="x">✕</span>
+                </div>
+                <div class="btn-row" style="margin-top:0.75rem;">
+                  <span class="chip">From: Benefits ▾</span>
+                  <span class="chip">To: C ▾</span>
+                  <span class="btn primary">Add</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Strong as a companion to A or C, not necessarily the only path. Best when
+        models get large and the canvas is crowded.
+      </p>
+    </article>
+
+    <!-- E -->
+    <article id="e">
+      <div class="meta">
+        <div>
+          <div class="pill">Menu-first, no modes</div>
+          <h2>E — Rich context menus</h2>
+          <p>
+            Right-click a node for Connect to… / Disconnect from… submenus of
+            other nodes (grouped by cluster). Right-click a link for Disconnect.
+            No persistent Connect Mode required.
+          </p>
+          <ul>
+            <li>Pros: no mode to learn; remove is obvious on the link; works with keyboard focus later</li>
+            <li>Cons: submenus grow with network size; less visible than a toolbar or inspector</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">Interaction</h2>
+          <ul>
+            <li>Node menu: Connect to → cluster → node</li>
+            <li>Node menu: Disconnect from → existing targets</li>
+            <li>Link menu: Disconnect this link</li>
+            <li>Optional: “Connect From Here…” still seeds a one-shot click</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip"><strong>Structure</strong> · Judgments · Analysis</div>
+        <div class="body">
+          <div class="col canvas">
+            <h3>Canvas</h3>
+            <svg class="svg-links" viewBox="0 0 640 300" aria-hidden="true">
+              <defs>
+                <marker id="arrow4" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                  <path d="M0,0 L6,3 L0,6 Z" fill="#64748b" />
+                </marker>
+              </defs>
+              <path class="link-line" style="marker-end:url(#arrow4)" d="M150,95 L300,170" />
+            </svg>
+            <div class="cluster" style="left:40px;top:50px;width:150px;">
+              <div class="label">Criteria</div>
+              <span class="node sel">Benefits</span>
+              <span class="node">Costs</span>
+            </div>
+            <div class="cluster" style="left:310px;top:120px;width:200px;">
+              <div class="label">Alternatives</div>
+              <span class="node">A</span>
+              <span class="node">B</span>
+              <span class="node">C</span>
+            </div>
+            <div class="ctx" style="left:120px;top:90px;">
+              <div>Rename…</div>
+              <div class="sep">Connect to… ▸</div>
+              <div style="padding-left:1.1rem;color:var(--muted);">Alternatives ▸</div>
+              <div style="padding-left:1.1rem;">Disconnect from… ▸</div>
+              <div class="sep hot">Disconnect all from Benefits</div>
+            </div>
+          </div>
+          <div class="col">
+            <h3>Inspector</h3>
+            <p style="color:var(--muted);margin:0;">
+              Optional twin: same Connect to / Disconnect actions as buttons under
+              Connections so users who don’t right-click still find them.
+            </p>
+            <div class="btn-row" style="margin-top:0.75rem;">
+              <span class="btn primary">Connect to…</span>
+              <span class="btn danger">Disconnect…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Fast to ship for remove if links become selectable. Pairing with a small
+        Inspector affordance (as shown) covers discoverability for new users.
+      </p>
+    </article>
+
+    <p class="legend">
+      Rough fit: <strong>A</strong> or <strong>E+Inspector</strong> for “easy to find”;
+      <strong>B</strong> for canvas-native feel; <strong>C</strong> for smallest change;
+      <strong>D</strong> for bulk management. Hybrids (e.g. A + link Delete, or C + D)
+      are fair game if you want two entry points.
+    </p>
+  </main>
+
+  <script>
+    const tabs = document.querySelectorAll(".tabs button");
+    const articles = document.querySelectorAll("article");
+    tabs.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.tab;
+        tabs.forEach((b) => b.setAttribute("aria-selected", b === btn ? "true" : "false"));
+        articles.forEach((a) => a.classList.toggle("active", a.id === id));
+      });
+    });
+  </script>
+</body>
+</html>
