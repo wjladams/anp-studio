@@ -74,14 +74,16 @@ private:
                                          const QString& exceptName = {}) const;
   [[nodiscard]] bool isClusterNameAvailable(const QString& name,
                                             const QString& exceptName = {}) const;
-  void startInlineRenameCluster(const QString& cluster);
-  void startInlineRenameNode(const QString& node);
+  void startInlineRenameCluster(const QString& cluster,
+                                const QString& editText = {});
+  void startInlineRenameNode(const QString& node, const QString& editText = {});
   void beginInlineRename(QGraphicsItem* parentItem,
                          const QRectF& localRect,
                          const QString& oldName,
                          std::function<void()> onShow,
                          std::function<void()> onHide,
-                         std::function<void(const QString&)> onCommit);
+                         std::function<void(const QString&)> onCommit,
+                         const QString& editText = {});
   /** @param viaEnter True for Return/Enter; false for Escape or focus-loss. */
   void finishInlineRename(bool accept, bool viaEnter);
   void cancelInlineRename();

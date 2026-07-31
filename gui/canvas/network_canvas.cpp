@@ -13,6 +13,7 @@
 #include <QKeyEvent>
 #include <QLineEdit>
 #include <QMenu>
+#include <QMessageBox>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPointer>
@@ -223,7 +224,18 @@ void NetworkCanvas::finishInlineRename(bool accept, bool viaEnter) {
           isNode ? self->isNodeNameAvailable(neu, oldName)
                  : self->isClusterNameAvailable(neu, oldName);
       if (!available) {
-        // Reject duplicate: reopen editor on the existing object.
+        // Reject duplicate: warn, then reopen editor with the attempted name.
+        QMessageBox::warning(
+            self,
+            QStringLiteral("Duplicate name"),
+            isNode ? QStringLiteral(
+                         "A node named \"%1\" already exists.\n"
+                         "Please choose a unique name.")
+                         .arg(neu)
+                   : QStringLiteral(
+                         "A cluster named \"%1\" already exists.\n"
+                         "Please choose a unique name.")
+                         .arg(neu));
         if (abortRemovesNode) {
           self->renameAbortRemovesNode_ = true;
           self->nodeCreateChainCluster_ = addCluster;
@@ -232,12 +244,12 @@ void NetworkCanvas::finishInlineRename(bool accept, bool viaEnter) {
         if (viaEnter && !addCluster.isEmpty()) {
           self->renameDeferReturnPressed_ = true;
         }
-        QTimer::singleShot(0, self, [self, oldName, isNode]() {
+        QTimer::singleShot(0, self, [self, oldName, neu, isNode]() {
           if (!self) return;
           if (isNode) {
-            self->startInlineRenameNode(oldName);
+            self->startInlineRenameNode(oldName, neu);
           } else {
-            self->startInlineRenameCluster(oldName);
+            self->startInlineRenameCluster(oldName, neu);
           }
         });
         return;
@@ -262,11 +274,12 @@ void NetworkCanvas::beginInlineRename(
     const QString& oldName,
     std::function<void()> onShow,
     std::function<void()> onHide,
-    std::function<void(const QString&)> onCommit) {
+    std::function<void(const QString&)> onCommit,
+    const QString& editText) {
   cancelInlineRename();
   if (parentItem == nullptr) return;
 
-  auto* edit = new InlineRenameEdit(oldName);
+  auto* edit = new InlineRenameEdit(editText.isEmpty() ? oldName : editText);
   edit->setFrame(true);
   edit->selectAll();
 
@@ -529,7 +542,8 @@ bool NetworkCanvas::isClusterNameAvailable(const QString& name,
   return doc_->network().find_cluster(name.toStdString()) == nullptr;
 }
 
-void NetworkCanvas::startInlineRenameCluster(const QString& cluster) {
+void NetworkCanvas::startInlineRenameCluster(const QString& cluster,
+                                             const QString& editText) {
   ClusterItem* ci = clusters_.value(cluster);
   if (ci == nullptr) return;
   ci->setSelected(true);
@@ -544,10 +558,12 @@ void NetworkCanvas::startInlineRenameCluster(const QString& cluster) {
       },
       [this, cluster](const QString& neu) {
         doc_->undoStack()->push(new RenameClusterCmd(doc_, cluster, neu));
-      });
+      },
+      editText);
 }
 
-void NetworkCanvas::startInlineRenameNode(const QString& node) {
+void NetworkCanvas::startInlineRenameNode(const QString& node,
+                                          const QString& editText) {
   NodeItem* item = nodes_.value(node);
   if (item == nullptr) return;
   item->setSelected(true);
@@ -562,7 +578,8 @@ void NetworkCanvas::startInlineRenameNode(const QString& node) {
       },
       [this, node](const QString& neu) {
         doc_->undoStack()->push(new RenameNodeCmd(doc_, node, neu));
-      });
+      },
+      editText);
 }
 
 NodeItem* NetworkCanvas::nodeItemAt(const QPoint& viewPos) const {

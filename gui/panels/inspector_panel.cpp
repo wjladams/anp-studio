@@ -11,6 +11,7 @@
 #include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QTableWidget>
@@ -350,14 +351,30 @@ void InspectorPanel::onNameEdited() {
   if (!node.isEmpty()) {
     if (neu == node) return;
     if (doc_->network().find_node(neu.toStdString())) {
-      refresh();
+      QMessageBox::warning(
+          this, QStringLiteral("Duplicate name"),
+          QStringLiteral(
+              "A node named \"%1\" already exists.\n"
+              "Please choose a unique name.")
+              .arg(neu));
+      nameEdit_->setText(neu);
+      nameEdit_->setFocus(Qt::OtherFocusReason);
+      nameEdit_->selectAll();
       return;
     }
     doc_->undoStack()->push(new RenameNodeCmd(doc_, node, neu));
   } else if (!cluster.isEmpty()) {
     if (neu == cluster) return;
     if (doc_->network().find_cluster(neu.toStdString())) {
-      refresh();
+      QMessageBox::warning(
+          this, QStringLiteral("Duplicate name"),
+          QStringLiteral(
+              "A cluster named \"%1\" already exists.\n"
+              "Please choose a unique name.")
+              .arg(neu));
+      nameEdit_->setText(neu);
+      nameEdit_->setFocus(Qt::OtherFocusReason);
+      nameEdit_->selectAll();
       return;
     }
     doc_->undoStack()->push(new RenameClusterCmd(doc_, cluster, neu));
