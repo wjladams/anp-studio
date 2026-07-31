@@ -64,6 +64,12 @@ public:
    * @return False on failure.
    */
   bool saveToFile(const QString& path, QString* error = nullptr);
+  /**
+   * @brief Clears the associated file path (e.g. after opening a sample).
+   *
+   * Leaves the in-memory model unchanged so the next Save prompts Save As.
+   */
+  void clearPath();
 
   /** @brief Descends into a node's subnetwork for editing. */
   void pushSubnet(const QString& nodeName);

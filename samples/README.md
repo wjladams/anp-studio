@@ -1,7 +1,20 @@
 # ANP Studio sample models
 
-Open any of these JSON files in **ANP Studio** (File → Open) to explore a
-ready-made AHP/ANP model.
+Open any of these JSON files via **File → Open Sample…** (preferred) or
+**File → Open** in ANP Studio to explore a ready-made AHP/ANP model.
+
+Opening a sample does not bind Save to the installed copy — use **Save As** to
+keep your own file.
+
+## Where samples live
+
+| Context | Location |
+|---------|----------|
+| Source / git checkout | `samples/` at the repo root |
+| Local build | `samples/` next to the `anpstudio` binary (CMake copies on build) |
+| Windows zip | `samples/` next to `anpstudio.exe` |
+| macOS app | `anpstudio.app/Contents/Resources/samples/` |
+| Linux AppImage | `usr/share/anpstudio/samples/` inside the AppImage |
 
 Regenerate from libanpcpp:
 

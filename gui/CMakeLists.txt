@@ -48,3 +48,22 @@ if(MSVC)
 else()
   target_compile_options(anpstudio PRIVATE -Wall -Wextra -Wpedantic)
 endif()
+
+# Ship sample models next to the binary (and inside the macOS app bundle).
+set(ANPSTUDIO_SAMPLES_SRC "${CMAKE_SOURCE_DIR}/samples")
+add_custom_command(TARGET anpstudio POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${ANPSTUDIO_SAMPLES_SRC}"
+    "$<TARGET_FILE_DIR:anpstudio>/samples"
+  COMMENT "Copying samples next to anpstudio"
+)
+if(APPLE)
+  add_custom_command(TARGET anpstudio POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+      "$<TARGET_BUNDLE_CONTENT_DIR:anpstudio>/Resources"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+      "${ANPSTUDIO_SAMPLES_SRC}"
+      "$<TARGET_BUNDLE_CONTENT_DIR:anpstudio>/Resources/samples"
+    COMMENT "Copying samples into macOS app Resources"
+  )
+endif()

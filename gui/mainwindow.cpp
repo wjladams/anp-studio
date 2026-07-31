@@ -14,6 +14,8 @@
 #include <QButtonGroup>
 #include <QCloseEvent>
 #include <QComboBox>
+#include <QCoreApplication>
+#include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
@@ -97,6 +99,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   recentMenu_ = fileMenu->addMenu(QStringLiteral("Open &Recent"));
   connect(recentMenu_, &QMenu::aboutToShow, this, &MainWindow::rebuildRecentMenu);
   rebuildRecentMenu();
+  sampleMenu_ = fileMenu->addMenu(QStringLiteral("Open &Sample…"));
+  connect(sampleMenu_, &QMenu::aboutToShow, this, &MainWindow::rebuildSampleMenu);
+  rebuildSampleMenu();
   fileMenu->addAction(QStringLiteral("&Save"), this, &MainWindow::saveFile,
                       QKeySequence::Save);
   fileMenu->addAction(QStringLiteral("Save &As…"), this, &MainWindow::saveFileAs,
@@ -373,6 +378,112 @@ bool MainWindow::openPath(const QString& path) {
   rememberRecentFile(path);
   updateTitle();
   return true;
+}
+
+bool MainWindow::openSamplePath(const QString& path) {
+  QString err;
+  if (!doc_->loadFromFile(path, &err)) {
+    QMessageBox::warning(this, QStringLiteral("Open Sample failed"), err);
+    return false;
+  }
+  // Do not bind Save to the distribution/copy path.
+  doc_->clearPath();
+  doc_->setDirty(false);
+  updateTitle();
+  statusBar()->showMessage(
+      QStringLiteral("Opened sample “%1” — Save As to keep a copy.")
+          .arg(sampleDisplayName(QFileInfo(path).fileName())),
+      8000);
+  return true;
+}
+
+QString MainWindow::samplesDirectory() {
+  const QString appDir = QCoreApplication::applicationDirPath();
+  const QStringList candidates = {
+      appDir + QStringLiteral("/samples"),
+      appDir + QStringLiteral("/../Resources/samples"),
+      appDir + QStringLiteral("/../share/anpstudio/samples"),
+  };
+  for (const QString& dir : candidates) {
+    const QFileInfo fi(dir);
+    if (!fi.isDir()) continue;
+    const QDir d(fi.absoluteFilePath());
+    if (!d.entryList({QStringLiteral("*.json")}, QDir::Files).isEmpty()) {
+      return fi.absoluteFilePath();
+    }
+  }
+
+  // Dev fallback: walk up looking for repo-root samples/ next to CMakeLists.txt.
+  QDir walk(appDir);
+  for (int i = 0; i < 6; ++i) {
+    const QString samples = walk.filePath(QStringLiteral("samples"));
+    const QString cmake = walk.filePath(QStringLiteral("CMakeLists.txt"));
+    if (QFileInfo::exists(cmake) && QFileInfo(samples).isDir()) {
+      const QDir d(samples);
+      if (!d.entryList({QStringLiteral("*.json")}, QDir::Files).isEmpty()) {
+        return QFileInfo(samples).absoluteFilePath();
+      }
+    }
+    if (!walk.cdUp()) break;
+  }
+  return {};
+}
+
+QString MainWindow::sampleDisplayName(const QString& fileName) {
+  QString base = QFileInfo(fileName).completeBaseName();
+  // Strip leading catalog index: "02_ahp_best_car" -> "ahp_best_car"
+  if (base.size() > 3 && base[0].isDigit() && base[1].isDigit() &&
+      base[2] == QLatin1Char('_')) {
+    base = base.mid(3);
+  }
+  base.replace(QLatin1Char('_'), QLatin1Char(' '));
+  if (!base.isEmpty()) {
+    base[0] = base[0].toUpper();
+  }
+  return base;
+}
+
+void MainWindow::rebuildSampleMenu() {
+  if (sampleMenu_ == nullptr) return;
+  sampleMenu_->clear();
+
+  const QString dirPath = samplesDirectory();
+  if (dirPath.isEmpty()) {
+    auto* empty = sampleMenu_->addAction(QStringLiteral("(No samples found)"));
+    empty->setEnabled(false);
+    return;
+  }
+
+  QDir dir(dirPath);
+  const QStringList files =
+      dir.entryList({QStringLiteral("*.json")}, QDir::Files, QDir::Name);
+  if (files.isEmpty()) {
+    auto* empty = sampleMenu_->addAction(QStringLiteral("(No samples found)"));
+    empty->setEnabled(false);
+    return;
+  }
+
+  for (const QString& file : files) {
+    auto* act = sampleMenu_->addAction(sampleDisplayName(file));
+    act->setData(dir.absoluteFilePath(file));
+    act->setToolTip(dir.absoluteFilePath(file));
+    connect(act, &QAction::triggered, this, &MainWindow::openSampleFile);
+  }
+}
+
+void MainWindow::openSampleFile() {
+  auto* act = qobject_cast<QAction*>(sender());
+  if (act == nullptr) return;
+  const QString path = act->data().toString();
+  if (path.isEmpty()) return;
+  if (!maybeSave()) return;
+  if (!QFileInfo::exists(path)) {
+    QMessageBox::warning(
+        this, QStringLiteral("Open Sample"),
+        QStringLiteral("Sample file no longer exists:\n%1").arg(path));
+    return;
+  }
+  (void)openSamplePath(path);
 }
 
 bool MainWindow::saveFile() {

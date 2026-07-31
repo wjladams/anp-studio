@@ -93,6 +93,12 @@ bool Document::saveToFile(const QString& path, QString* error) {
   }
 }
 
+void Document::clearPath() {
+  if (path_.isEmpty()) return;
+  path_.clear();
+  emit pathChanged(path_);
+}
+
 void Document::pushSubnet(const QString& nodeName) {
   anpcpp::AnpNetwork& cur = network();
   anpcpp::AnpNode* node = cur.find_node(nodeName.toStdString());

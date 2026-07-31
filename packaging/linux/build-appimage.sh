@@ -25,12 +25,15 @@ if [[ ! -x "${BINARY}" ]]; then
   exit 1
 fi
 
-mkdir -p "${STAGE}/usr/bin" "${STAGE}/usr/share/applications" "${STAGE}/usr/share/icons/hicolor/256x256/apps"
+mkdir -p "${STAGE}/usr/bin" "${STAGE}/usr/share/applications" \
+  "${STAGE}/usr/share/icons/hicolor/256x256/apps" \
+  "${STAGE}/usr/share/anpstudio"
 cp "${BINARY}" "${STAGE}/usr/bin/anpstudio"
 chmod +x "${STAGE}/usr/bin/anpstudio"
 cp "${SCRIPT_DIR}/anpstudio.desktop" "${STAGE}/usr/share/applications/anpstudio.desktop"
 cp "${REPO_ROOT}/gui/resources/anpstudio-256.png" \
   "${STAGE}/usr/share/icons/hicolor/256x256/apps/anpstudio.png"
+cp -r "${REPO_ROOT}/samples" "${STAGE}/usr/share/anpstudio/samples"
 
 # AppDir root icon (linuxdeploy also uses this naming convention).
 cp "${REPO_ROOT}/gui/resources/anpstudio-256.png" "${STAGE}/anpstudio.png"

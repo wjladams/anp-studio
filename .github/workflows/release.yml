@@ -104,6 +104,7 @@ jobs:
           mkdir -p "${STAGE}"
           cp build/gui/anpstudio.exe "${STAGE}/"
           "${QT_ROOT_DIR}/bin/windeployqt.exe" --release --no-translations "${STAGE}/anpstudio.exe"
+          cp -r samples "${STAGE}/samples"
           ASSET="anpstudio-${{ steps.ver.outputs.label }}-${{ matrix.artifact }}.zip"
           mkdir -p out
           (cd dist && powershell.exe -NoProfile -Command "Compress-Archive -Path anpstudio -DestinationPath '../out/${ASSET}' -Force")
@@ -116,6 +117,8 @@ jobs:
           set -euo pipefail
           APP="build/gui/anpstudio.app"
           "${QT_ROOT_DIR}/bin/macdeployqt" "${APP}" -always-overwrite
+          mkdir -p "${APP}/Contents/Resources"
+          cp -r samples "${APP}/Contents/Resources/samples"
           ASSET="anpstudio-${{ steps.ver.outputs.label }}-${{ matrix.artifact }}.zip"
           mkdir -p out
           ditto -c -k --sequesterRsrc --keepParent "${APP}" "out/${ASSET}"

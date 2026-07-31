@@ -56,12 +56,17 @@ private slots:
   void openRecentFile();
   void clearRecentFiles();
   void rebuildRecentMenu();
+  void rebuildSampleMenu();
+  void openSampleFile();
 
 private:
   [[nodiscard]] bool maybeSave();
   [[nodiscard]] bool openPath(const QString& path);
+  [[nodiscard]] bool openSamplePath(const QString& path);
   void rememberRecentFile(const QString& path);
   void buildStagePages();
+  [[nodiscard]] static QString samplesDirectory();
+  [[nodiscard]] static QString sampleDisplayName(const QString& fileName);
 
   static constexpr int kMaxRecentFiles = 10;
 
@@ -76,6 +81,7 @@ private:
   QAction* connectModeAction_ = nullptr;
   QButtonGroup* structureModeButtons_ = nullptr;
   QMenu* recentMenu_ = nullptr;
+  QMenu* sampleMenu_ = nullptr;
 
   NetworkCanvas* canvas_ = nullptr;
   InspectorPanel* inspector_ = nullptr;
