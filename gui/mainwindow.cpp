@@ -122,6 +122,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         canvas_->setConnectMode(connectModeAction_->isChecked());
       });
   connectModeAction_->setCheckable(true);
+  netMenu->addAction(QStringLiteral("Organize Clusters"), this, [this]() {
+    canvas_->organizeClusters();
+  });
   netMenu->addAction(QStringLiteral("Up Subnetwork"), doc_,
                      &Document::popSubnet);
   netMenu->addAction(QStringLiteral("Root Network"), doc_,
@@ -488,6 +491,7 @@ void MainWindow::openSampleFile() {
 
 bool MainWindow::saveFile() {
   if (doc_->path().isEmpty()) return saveFileAs();
+  canvas_->persistLayout();
   QString err;
   if (!doc_->saveToFile(doc_->path(), &err)) {
     QMessageBox::warning(this, QStringLiteral("Save failed"), err);
@@ -503,6 +507,7 @@ bool MainWindow::saveFileAs() {
       this, QStringLiteral("Save Network"), {},
       QStringLiteral("ANP Studio JSON (*.json);;All files (*)"));
   if (path.isEmpty()) return false;
+  canvas_->persistLayout();
   QString err;
   if (!doc_->saveToFile(path, &err)) {
     QMessageBox::warning(this, QStringLiteral("Save failed"), err);

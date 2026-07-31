@@ -219,6 +219,7 @@ void ClusterItem::mouseMoveEvent(QGraphicsSceneMouseEvent* event) {
 void ClusterItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
   if (draggingTitle_) {
     draggingTitle_ = false;
+    if (layoutCommit_) layoutCommit_();
     event->accept();
     return;
   }

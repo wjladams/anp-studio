@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Structure — auto-organize clusters plan</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --ink: #1c1b19;
+      --muted: #5c574e;
+      --line: #d4cfc4;
+      --panel: #fffdf8;
+      --accent: #2f5d50;
+      --accent-soft: #e4efe9;
+      --select: #c8ddd4;
+      --chrome: #ebe6dc;
+      --link: #3a6ea5;
+      --canvas: #f0eee8;
+      --cluster: #fff;
+      --cluster-border: #5a6a7a;
+      --edge: #28466e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.45 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    header {
+      padding: 1.75rem 2rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+    header h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.65rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      margin: 0;
+      max-width: 48rem;
+      color: var(--muted);
+    }
+    .constraint {
+      margin-top: 0.85rem;
+      padding: 0.7rem 0.9rem;
+      border-left: 3px solid var(--accent);
+      background: var(--accent-soft);
+      max-width: 48rem;
+      font-size: 0.95rem;
+    }
+    .constraint strong { color: var(--ink); }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      padding: 1rem 2rem 0;
+    }
+    .tabs button {
+      font: inherit;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      padding: 0.45rem 0.85rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .tabs button[aria-selected="true"] {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    main { padding: 1rem 2rem 3rem; }
+    article { display: none; max-width: 1100px; }
+    article.active { display: block; }
+    .meta {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    @media (max-width: 860px) {
+      .meta { grid-template-columns: 1fr; }
+    }
+    .meta h2 {
+      margin: 0 0 0.4rem;
+      font-size: 1.25rem;
+    }
+    .meta p, .meta li, .prose p, .prose li { color: var(--muted); }
+    .meta ul, .prose ul, .prose ol { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+    .prose h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.25rem;
+    }
+    .prose h3 {
+      margin: 1.25rem 0 0.4rem;
+      font-size: 1.05rem;
+    }
+    .prose code, .meta code {
+      font-family: "IBM Plex Mono", "Consolas", monospace;
+      font-size: 0.86em;
+      background: var(--chrome);
+      padding: 0.05em 0.3em;
+      border-radius: 3px;
+    }
+    .pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--select);
+      background: var(--accent-soft);
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      margin-bottom: 0.5rem;
+    }
+    .wire {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      overflow: hidden;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-size: 12px;
+      margin-bottom: 1.25rem;
+    }
+    .stage-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 0.55rem 0.75rem;
+      background: var(--chrome);
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .stage-strip strong { color: var(--ink); }
+    .canvas {
+      background: var(--canvas);
+      position: relative;
+      min-height: 280px;
+      padding: 1rem;
+    }
+    .canvas svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 340px;
+    }
+    .cluster-box {
+      fill: var(--cluster);
+      stroke: var(--cluster-border);
+      stroke-width: 1.5;
+    }
+    .cluster-title {
+      fill: #2a3540;
+      font: 600 11px "IBM Plex Sans", "Segoe UI", sans-serif;
+    }
+    .cluster-row {
+      fill: #eef2f6;
+      stroke: #c5ced8;
+      stroke-width: 1;
+    }
+    .edge {
+      fill: none;
+      stroke: var(--edge);
+      stroke-width: 1.75;
+      marker-end: url(#arrow);
+    }
+    .edge.muted {
+      stroke-opacity: 0.45;
+      stroke-dasharray: 4 3;
+    }
+    .rank-label, .note-label {
+      fill: var(--muted);
+      font: 10px "IBM Plex Sans", "Segoe UI", sans-serif;
+    }
+    .flow {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      padding: 1rem 1.1rem;
+      font-family: "IBM Plex Mono", "Consolas", monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      white-space: pre;
+      overflow-x: auto;
+      color: var(--ink);
+      margin: 0.75rem 0 1.25rem;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 0.85rem;
+      margin: 0.75rem 0 1.25rem;
+    }
+    .card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      padding: 0.85rem 1rem;
+    }
+    .card h3 {
+      margin: 0 0 0.35rem;
+      font-size: 1rem;
+    }
+    .card p, .card li { color: var(--muted); margin: 0; font-size: 0.95rem; }
+    .card ul { margin: 0.35rem 0 0; padding-left: 1.05rem; }
+    table.plan {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-size: 13px;
+      margin: 0.75rem 0 1.25rem;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    table.plan th, table.plan td {
+      text-align: left;
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    table.plan th {
+      background: var(--chrome);
+      font-weight: 600;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    table.plan tr:last-child td { border-bottom: none; }
+    table.plan code {
+      font-family: "IBM Plex Mono", "Consolas", monospace;
+      font-size: 0.9em;
+      background: var(--chrome);
+      padding: 0.05em 0.3em;
+      border-radius: 3px;
+    }
+    .phases {
+      counter-reset: phase;
+      list-style: none;
+      margin: 0.75rem 0 0;
+      padding: 0;
+    }
+    .phases li {
+      position: relative;
+      padding: 0.85rem 1rem 0.85rem 3.4rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      margin-bottom: 0.55rem;
+      color: var(--muted);
+    }
+    .phases li::before {
+      counter-increment: phase;
+      content: counter(phase);
+      position: absolute;
+      left: 0.85rem;
+      top: 0.95rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font: 600 0.85rem/1.6rem "IBM Plex Sans", "Segoe UI", sans-serif;
+      text-align: center;
+    }
+    .phases strong { color: var(--ink); display: block; margin-bottom: 0.2rem; }
+    footer {
+      margin-top: 2rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Auto-organize clusters</h1>
+    <p>
+      Implementation plan for
+      <a href="https://github.com/wjladams/anp-studio/issues/8">issue #8</a>:
+      a Structure-tab action that lays out cluster windows from network topology
+      so they do not overlap and inter-cluster links stay readable.
+    </p>
+    <div class="constraint">
+      <strong>Topology rules.</strong>
+      Acyclic graphs use a ranked hierarchy (first → last) with same-rank ties
+      side-by-side. Cyclic graphs use a circular arrangement sized so no two
+      cluster AABBs overlap. Self-loops do not count as cycles.
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Plan sections">
+    <button type="button" role="tab" aria-selected="true" data-tab="overview">Overview</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="model">Meta-graph</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="dag">Acyclic layout</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="cycle">Cyclic layout</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="apply">Apply &amp; UX</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="phases">Phases</button>
+  </div>
+
+  <main>
+    <!-- Overview -->
+    <article id="overview" class="active" role="tabpanel">
+      <div class="meta">
+        <div>
+          <span class="pill">Goal</span>
+          <h2>What “Organize Clusters” does</h2>
+          <p>
+            One menu / context action recomputes every cluster’s scene
+            <code>(x, y)</code> from the current view network, writes positions
+            through an undoable command, and refreshes the canvas.
+          </p>
+          <ul>
+            <li>No two cluster windows overlap.</li>
+            <li>Placement follows topology (hierarchy or circle).</li>
+            <li>Node row order inside a cluster is unchanged.</li>
+            <li>Manual drag remains available afterward.</li>
+          </ul>
+        </div>
+        <div>
+          <span class="pill">Today</span>
+          <h2>Current Structure canvas</h2>
+          <ul>
+            <li><code>NetworkCanvas</code> + <code>ClusterItem</code> windows (fixed width 220).</li>
+            <li>Default cascade if no stored coords; title-bar drag otherwise.</li>
+            <li>Positions live in <code>AnpNetwork::cluster_positions_</code>.</li>
+            <li>IA marks auto-layout as later (<code>ia-stage-wireframe.md</code>).</li>
+            <li>No graph-layout dependency — custom C++ only.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="wire" aria-label="Decision flow overview">
+        <div class="stage-strip">
+          <strong>Decision flow</strong>
+          <span>build meta-graph → classify → layout → apply</span>
+        </div>
+        <div class="flow">build meta-graph (drop self-loops)
+        │
+   has directed cycle?
+      /            \
+    no              yes
+     │               │
+  longest-path     order on ring
+  ranks +          compute R (chord +
+  side-by-side     AABB verify)
+  (L→R bands)         │
+     \               /
+      set positions + undo cmd</div>
+      </div>
+
+      <div class="cards">
+        <div class="card">
+          <h3>Mode 1 — Acyclic</h3>
+          <p>Typical AHP: Goal → Criteria → Alternatives left-to-right; same-rank clusters stacked.</p>
+        </div>
+        <div class="card">
+          <h3>Mode 2 — Cyclic</h3>
+          <p>ANP feedback / dense meshes: clusters on a circle wide enough for AABB clearance.</p>
+        </div>
+        <div class="card">
+          <h3>v2 (optional)</h3>
+          <p>Tarjan SCCs: DAG of components hierarchical; multi-cluster SCCs on small circles.</p>
+        </div>
+      </div>
+    </article>
+
+    <!-- Meta-graph -->
+    <article id="model" role="tabpanel">
+      <div class="prose">
+        <span class="pill">Input</span>
+        <h2>Cluster meta-graph</h2>
+        <p>
+          Layout operates on clusters, not individual nodes. Build a directed
+          graph from the current view <code>AnpNetwork</code>:
+        </p>
+        <ul>
+          <li><strong>Vertex</strong> — each cluster, sized from current row layout
+            (<code>ClusterItem::kWidth</code> × height after <code>layoutNodes()</code>).</li>
+          <li><strong>Edge <code>A → B</code></strong> — at least one node in
+            <code>A</code> has a prioritizer destination in cluster
+            <code>B</code>, and <code>A ≠ B</code>.</li>
+          <li><strong>Weight</strong> — count of node→node links (ordering ties / ring order).</li>
+          <li><strong>Ignore self-loops</strong> — intra-cluster links already use loop lanes;
+            they must not force circular mode.</li>
+        </ul>
+
+        <h3>Classify</h3>
+        <p>
+          DFS (or equivalent) detects a directed cycle among distinct clusters.
+          No cycle → hierarchical layout. Any cycle → circular layout.
+        </p>
+
+        <h3>Sample shapes (top-level)</h3>
+      </div>
+      <table class="plan">
+        <thead>
+          <tr>
+            <th>Kind</th>
+            <th>Example</th>
+            <th>Meta-edges</th>
+            <th>Mode</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>AHP chain</td>
+            <td><code>02_ahp_best_car</code></td>
+            <td>Goal → Criteria → Alternatives</td>
+            <td>Acyclic ranks 0, 1, 2</td>
+          </tr>
+          <tr>
+            <td>2-way feedback</td>
+            <td><code>12_anp_bridge_feedback</code></td>
+            <td>Criteria ⇄ Alternatives</td>
+            <td>Circle (n = 2)</td>
+          </tr>
+          <tr>
+            <td>Dense ANP</td>
+            <td><code>01_hamburger_marketshare</code></td>
+            <td>Near-complete digraph among 4 clusters</td>
+            <td>Circle (n = 4)</td>
+          </tr>
+          <tr>
+            <td>Self-loop only</td>
+            <td>Criteria → Criteria + Criteria → Alts</td>
+            <td>After drop: Criteria → Alternatives</td>
+            <td>Acyclic (not circular)</td>
+          </tr>
+        </tbody>
+      </table>
+    </article>
+
+    <!-- DAG -->
+    <article id="dag" role="tabpanel">
+      <div class="meta">
+        <div>
+          <span class="pill">Mode 1</span>
+          <h2>Acyclic hierarchy</h2>
+          <p>
+            Rank clusters with longest-path levels after a topological pass.
+            Sources sit at rank 0; each edge <code>u → v</code> enforces
+            <code>rank(v) ≥ rank(u) + 1</code>. Isolates join rank 0 (or a
+            trailing unconnected band — pick one and keep it consistent).
+          </p>
+          <ul>
+            <li><strong>Axis (v1):</strong> rank increases left → right (matches
+              <code>LinkItem</code> left/right anchors).</li>
+            <li><strong>Ties:</strong> same rank stacked top → bottom with gap <code>G</code>.</li>
+            <li><strong>Between ranks:</strong>
+              <code>x[r+1] = x[r] + maxWidth(r) + HGap</code>.</li>
+            <li><strong>Vertical center</strong> each column on a shared midline.</li>
+          </ul>
+        </div>
+        <div>
+          <span class="pill">Tie order</span>
+          <h2>Within a rank</h2>
+          <p>Deterministic, connection-aware:</p>
+          <ul>
+            <li><strong>v1:</strong> sort by −weighted degree, then name.</li>
+            <li><strong>Better:</strong> barycenter of neighbors in adjacent ranks (1–2 sweeps).</li>
+          </ul>
+          <p style="margin-top:0.75rem">
+            Vertical top→bottom ranking can be a later preference; with today’s
+            link drawer, left→right reads cleaner.
+          </p>
+        </div>
+      </div>
+
+      <div class="wire" aria-label="AHP hierarchy wireframe">
+        <div class="stage-strip">
+          <strong>Structure</strong>
+          <span>Acyclic example — Goal → Criteria → Alternatives</span>
+        </div>
+        <div class="canvas">
+          <svg viewBox="0 0 720 260" role="img" aria-label="Three ranks left to right">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+                      markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#28466e" />
+              </marker>
+            </defs>
+            <text class="rank-label" x="70" y="24">rank 0</text>
+            <text class="rank-label" x="290" y="24">rank 1</text>
+            <text class="rank-label" x="510" y="24">rank 2</text>
+
+            <!-- Goal -->
+            <rect class="cluster-box" x="40" y="90" width="140" height="72" rx="3" />
+            <text class="cluster-title" x="52" y="110">Goal</text>
+            <rect class="cluster-row" x="52" y="120" width="116" height="18" rx="2" />
+            <text class="note-label" x="58" y="133">Choose best car</text>
+
+            <!-- Criteria (taller, same midline) -->
+            <rect class="cluster-box" x="260" y="70" width="140" height="112" rx="3" />
+            <text class="cluster-title" x="272" y="90">Criteria</text>
+            <rect class="cluster-row" x="272" y="100" width="116" height="18" rx="2" />
+            <rect class="cluster-row" x="272" y="124" width="116" height="18" rx="2" />
+            <rect class="cluster-row" x="272" y="148" width="116" height="18" rx="2" />
+            <text class="note-label" x="278" y="113">Price</text>
+            <text class="note-label" x="278" y="137">MPG</text>
+            <text class="note-label" x="278" y="161">Comfort</text>
+
+            <!-- Alternatives -->
+            <rect class="cluster-box" x="480" y="78" width="140" height="96" rx="3" />
+            <text class="cluster-title" x="492" y="98">Alternatives</text>
+            <rect class="cluster-row" x="492" y="108" width="116" height="18" rx="2" />
+            <rect class="cluster-row" x="492" y="132" width="116" height="18" rx="2" />
+            <rect class="cluster-row" x="492" y="156" width="116" height="18" rx="2" />
+            <text class="note-label" x="498" y="121">Accord</text>
+            <text class="note-label" x="498" y="145">Camry</text>
+            <text class="note-label" x="498" y="169">Civic</text>
+
+            <path class="edge" d="M180 126 H260" />
+            <path class="edge" d="M400 126 H480" />
+          </svg>
+        </div>
+      </div>
+
+      <div class="wire" aria-label="Side-by-side ties wireframe">
+        <div class="stage-strip">
+          <strong>Ties</strong>
+          <span>Same rank → stacked in one band (side-by-side along the cross axis)</span>
+        </div>
+        <div class="canvas">
+          <svg viewBox="0 0 720 300" role="img" aria-label="Two criteria clusters in one rank">
+            <text class="rank-label" x="70" y="22">rank 0</text>
+            <text class="rank-label" x="320" y="22">rank 1 (tie)</text>
+            <text class="rank-label" x="540" y="22">rank 2</text>
+
+            <rect class="cluster-box" x="40" y="110" width="130" height="64" rx="3" />
+            <text class="cluster-title" x="52" y="130">Goal</text>
+            <rect class="cluster-row" x="52" y="140" width="106" height="18" rx="2" />
+
+            <rect class="cluster-box" x="260" y="50" width="130" height="80" rx="3" />
+            <text class="cluster-title" x="272" y="70">Benefits</text>
+            <rect class="cluster-row" x="272" y="80" width="106" height="18" rx="2" />
+            <rect class="cluster-row" x="272" y="104" width="106" height="18" rx="2" />
+
+            <rect class="cluster-box" x="260" y="160" width="130" height="80" rx="3" />
+            <text class="cluster-title" x="272" y="180">Costs</text>
+            <rect class="cluster-row" x="272" y="190" width="106" height="18" rx="2" />
+            <rect class="cluster-row" x="272" y="214" width="106" height="18" rx="2" />
+
+            <rect class="cluster-box" x="500" y="100" width="130" height="88" rx="3" />
+            <text class="cluster-title" x="512" y="120">Alternatives</text>
+            <rect class="cluster-row" x="512" y="130" width="106" height="18" rx="2" />
+            <rect class="cluster-row" x="512" y="154" width="106" height="18" rx="2" />
+
+            <path class="edge" d="M170 142 H260" />
+            <path class="edge" d="M170 142 C210 142, 220 90, 260 90" />
+            <path class="edge" d="M390 90 H500" />
+            <path class="edge" d="M390 200 H500" />
+          </svg>
+        </div>
+      </div>
+    </article>
+
+    <!-- Cycle -->
+    <article id="cycle" role="tabpanel">
+      <div class="meta">
+        <div>
+          <span class="pill">Mode 2</span>
+          <h2>Circular arrangement</h2>
+          <p>
+            When the meta-graph has a directed cycle among distinct clusters,
+            place each cluster center on a circle and size the radius so
+            axis-aligned boxes never overlap.
+          </p>
+          <ul>
+            <li><strong>Order:</strong> prefer a directed-cycle tour; else
+              −weighted degree, then name.</li>
+            <li><strong>Angle:</strong> <code>2π i / n</code>; optional rotate so
+              heaviest cluster is at top.</li>
+            <li><strong>Position:</strong>
+              <code>topLeft = center − (w/2, h/2)</code>.</li>
+            <li><strong>n = 1:</strong> no-op / center alone.
+              <strong>n = 2:</strong> horizontal diameter with the same gap rule.</li>
+          </ul>
+        </div>
+        <div>
+          <span class="pill">Radius</span>
+          <h2>Non-overlap</h2>
+          <p>Initial estimate from adjacent chord length:</p>
+          <ul>
+            <li>
+              <code>chord ≥ max over neighbors of
+              (½diagᵢ + ½diagⱼ + gap)</code>
+            </li>
+            <li>
+              <code>R = chord / (2 · sin(π/n))</code> for <code>n ≥ 2</code>
+            </li>
+          </ul>
+          <p style="margin-top:0.75rem">
+            Then inflate <code>R</code> (binary search / bump) until <em>all</em>
+            AABB pairs clear — needed when heights differ a lot.
+          </p>
+        </div>
+      </div>
+
+      <div class="wire" aria-label="Circular layout wireframe">
+        <div class="stage-strip">
+          <strong>Structure</strong>
+          <span>Cyclic example — four clusters on a ring</span>
+        </div>
+        <div class="canvas">
+          <svg viewBox="0 0 720 360" role="img" aria-label="Clusters arranged in a circle">
+            <circle cx="360" cy="180" r="118" fill="none" stroke="#cfc8ba" stroke-dasharray="5 4" />
+            <!-- top -->
+            <rect class="cluster-box" x="295" y="28" width="130" height="72" rx="3" />
+            <text class="cluster-title" x="307" y="48">Alternatives</text>
+            <rect class="cluster-row" x="307" y="58" width="106" height="16" rx="2" />
+            <rect class="cluster-row" x="307" y="76" width="106" height="16" rx="2" />
+            <!-- right -->
+            <rect class="cluster-box" x="500" y="130" width="130" height="88" rx="3" />
+            <text class="cluster-title" x="512" y="150">Advertising</text>
+            <rect class="cluster-row" x="512" y="160" width="106" height="16" rx="2" />
+            <rect class="cluster-row" x="512" y="178" width="106" height="16" rx="2" />
+            <rect class="cluster-row" x="512" y="196" width="106" height="16" rx="2" />
+            <!-- bottom -->
+            <rect class="cluster-box" x="295" y="260" width="130" height="72" rx="3" />
+            <text class="cluster-title" x="307" y="280">Other</text>
+            <rect class="cluster-row" x="307" y="290" width="106" height="16" rx="2" />
+            <rect class="cluster-row" x="307" y="308" width="106" height="16" rx="2" />
+            <!-- left -->
+            <rect class="cluster-box" x="90" y="130" width="130" height="88" rx="3" />
+            <text class="cluster-title" x="102" y="150">Quality</text>
+            <rect class="cluster-row" x="102" y="160" width="106" height="16" rx="2" />
+            <rect class="cluster-row" x="102" y="178" width="106" height="16" rx="2" />
+            <rect class="cluster-row" x="102" y="196" width="106" height="16" rx="2" />
+
+            <path class="edge muted" d="M360 100 L360 260" />
+            <path class="edge muted" d="M220 174 L500 174" />
+            <path class="edge" d="M425 64 L500 150" />
+            <path class="edge" d="M500 218 L425 296" />
+            <path class="edge" d="M295 296 L220 218" />
+            <path class="edge" d="M220 150 L295 64" />
+            <text class="note-label" x="372" y="178">R sized for AABB gap</text>
+          </svg>
+        </div>
+      </div>
+    </article>
+
+    <!-- Apply -->
+    <article id="apply" role="tabpanel">
+      <div class="prose">
+        <span class="pill">Plumbing</span>
+        <h2>Apply, undo, and UI</h2>
+      </div>
+      <table class="plan">
+        <thead>
+          <tr>
+            <th>Piece</th>
+            <th>Plan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Entry points</td>
+            <td>
+              <strong>Network → Organize Clusters</strong>; also blank-canvas
+              context menu. Enabled only on Structure stage (same pattern as
+              Connection Mode).
+            </td>
+          </tr>
+          <tr>
+            <td>Algorithm</td>
+            <td>
+              Pure helpers in e.g. <code>gui/canvas/cluster_layout.hpp/.cpp</code>:
+              meta-graph → <code>QHash&lt;QString, QPointF&gt;</code>. No Qt
+              scene dependency inside the solver.
+            </td>
+          </tr>
+          <tr>
+            <td>Apply</td>
+            <td>
+              New undo command (<code>OrganizeClustersCmd</code> /
+              <code>SetClusterPositionsCmd</code>) stores old/new position maps,
+              writes via <code>set_cluster_position</code>, marks dirty, triggers
+              rebuild (or <code>setPos</code> + persist).
+            </td>
+          </tr>
+          <tr>
+            <td>Persist</td>
+            <td>
+              Call <code>persistLayout</code> on drag end and before save so
+              auto and manual layouts stay consistent with the model/JSON.
+            </td>
+          </tr>
+          <tr>
+            <td>View</td>
+            <td>
+              After apply, <code>ensureVisible</code> / light
+              <code>fitInView</code> so a large circle is not off-screen.
+            </td>
+          </tr>
+          <tr>
+            <td>Tests</td>
+            <td>
+              Unit-test pure layout: AHP 3-chain ranks; 2-cycle diameter;
+              self-loop-only treated as DAG; no AABB overlaps for varied heights.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="wire" aria-label="UI entry wireframe">
+        <div class="stage-strip">
+          <strong>Structure</strong>
+          <span>Normal</span>
+          <span>Connection</span>
+          <span style="margin-left:auto; color: var(--ink);">Network ▾ · Organize Clusters</span>
+        </div>
+        <div class="canvas" style="min-height: 120px; color: var(--muted); font-family: inherit;">
+          Context menu on empty canvas also offers <em>Organize Clusters</em>.
+          Node order inside clusters is left alone; only window positions change.
+        </div>
+      </div>
+    </article>
+
+    <!-- Phases -->
+    <article id="phases" role="tabpanel">
+      <div class="prose">
+        <span class="pill">Ship order</span>
+        <h2>Implementation phases</h2>
+      </div>
+      <ol class="phases">
+        <li>
+          <strong>Meta-graph, classify, undo/UI stub</strong>
+          Build the edge set (dropping self-loops), detect cycles, wire
+          Network menu + context action to a command that can apply a position
+          map (even if the map is still a temporary cascade).
+        </li>
+        <li>
+          <strong>Acyclic hierarchical layout</strong>
+          Longest-path ranks, L→R bands, side-by-side ties, fixed gaps.
+          Covers most sample networks immediately.
+        </li>
+        <li>
+          <strong>Circular layout for cyclic graphs</strong>
+          Ring order, radius from chord + AABB verify. Covers ANP feedback and
+          dense meshes.
+        </li>
+        <li>
+          <strong>Polish</strong>
+          Barycenter tie order, fit-in-view, persist-on-drag-end, optional
+          vertical axis preference. Optional v2: DAG-of-SCCs hybrid.
+        </li>
+      </ol>
+
+      <footer>
+        Related: issue #8 · <code>docs/ia-stage-wireframe.md</code> (auto-layout later) ·
+        <code>gui/canvas/network_canvas.*</code>, <code>cluster_item.*</code>,
+        <code>link_item.*</code> · <code>AnpNetwork::set_cluster_position</code>
+      </footer>
+    </article>
+  </main>
+
+  <script>
+    (function () {
+      const tabs = document.querySelectorAll('.tabs [role="tab"]');
+      const panels = document.querySelectorAll("main article");
+      function show(id) {
+        tabs.forEach((t) => {
+          const on = t.dataset.tab === id;
+          t.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        panels.forEach((p) => {
+          p.classList.toggle("active", p.id === id);
+        });
+      }
+      tabs.forEach((t) => {
+        t.addEventListener("click", () => show(t.dataset.tab));
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -39,6 +39,11 @@ public:
     linkUpdate_ = std::move(cb);
   }
 
+  /** @brief Invoked after a title-bar drag finishes (persist layout). */
+  void setLayoutCommitCallback(std::function<void()> cb) {
+    layoutCommit_ = std::move(cb);
+  }
+
   /** @brief Invoked when the title-bar "+" is clicked (add node). */
   void setAddNodeCallback(std::function<void()> cb) {
     addNodeCb_ = std::move(cb);
@@ -72,6 +77,7 @@ private:
   QString name_;
   QGraphicsSimpleTextItem* title_ = nullptr;
   std::function<void()> linkUpdate_;
+  std::function<void()> layoutCommit_;
   std::function<void()> addNodeCb_;
   std::function<void(const QString&)> renameCb_;
   bool draggingTitle_ = false;

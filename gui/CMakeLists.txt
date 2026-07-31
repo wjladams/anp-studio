@@ -10,6 +10,7 @@ add_executable(anpstudio
   document.cpp
   canvas/network_canvas.cpp
   canvas/cluster_item.cpp
+  canvas/cluster_layout.cpp
   canvas/node_item.cpp
   canvas/link_item.cpp
   panels/pairwise_panel.cpp

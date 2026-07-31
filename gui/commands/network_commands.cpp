@@ -585,3 +585,31 @@ void SetRatingsInterpreterCmd::undo() {
       ->set_interpreter(oldInterpreter_);
   doc_->notifyChanged();
 }
+
+SetClusterPositionsCmd::SetClusterPositionsCmd(
+    Document* doc,
+    QHash<QString, QPointF> oldPositions,
+    QHash<QString, QPointF> newPositions)
+    : QUndoCommand(QStringLiteral("Organize clusters")),
+      doc_(doc),
+      oldPositions_(std::move(oldPositions)),
+      newPositions_(std::move(newPositions)) {}
+
+void SetClusterPositionsCmd::apply(const QHash<QString, QPointF>& positions) {
+  auto& net = doc_->network();
+  for (auto it = positions.begin(); it != positions.end(); ++it) {
+    try {
+      net.set_cluster_position(it.key().toStdString(), it.value().x(),
+                               it.value().y());
+    } catch (...) {
+    }
+  }
+  // Skip canvas persist-of-old-items during the rebuild this triggers.
+  doc_->setSuppressLayoutPersist(true);
+  doc_->notifyChanged();
+  doc_->setSuppressLayoutPersist(false);
+}
+
+void SetClusterPositionsCmd::redo() { apply(newPositions_); }
+
+void SetClusterPositionsCmd::undo() { apply(oldPositions_); }

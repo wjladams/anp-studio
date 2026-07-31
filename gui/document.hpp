@@ -102,6 +102,18 @@ public:
   /** @brief Marks the document dirty and emits @ref modelChanged. */
   void notifyChanged();
 
+  /**
+   * @brief When true, NetworkCanvas::rebuild skips persisting item positions
+   *        into the model (used when positions were just written by a command).
+   */
+  void setSuppressLayoutPersist(bool suppress) {
+    suppressLayoutPersist_ = suppress;
+  }
+  /** @return True when canvas rebuild should not persist layout. */
+  [[nodiscard]] bool suppressLayoutPersist() const {
+    return suppressLayoutPersist_;
+  }
+
   /** @return Selected cluster name (may be empty). */
   [[nodiscard]] QString selectedCluster() const { return selectedCluster_; }
   /** @return Selected node name (may be empty). */
@@ -152,6 +164,7 @@ private:
   QUndoStack undo_;
   QString path_;
   bool dirty_ = false;
+  bool suppressLayoutPersist_ = false;
   QString selectedCluster_;
   QString selectedNode_;
   bool hasResults_ = false;

@@ -1,7 +1,9 @@
 #pragma once
 
-#include <QUndoCommand>
+#include <QHash>
+#include <QPointF>
 #include <QString>
+#include <QUndoCommand>
 #include <vector>
 
 #include "anpcpp/ratings.hpp"
@@ -362,4 +364,21 @@ private:
   QString destCluster_;
   anpcpp::ScoreInterpreter interpreter_;
   anpcpp::ScoreInterpreter oldInterpreter_;
+};
+
+/** @brief Sets cluster window positions (scene top-left) as one undo step. */
+class SetClusterPositionsCmd : public QUndoCommand {
+public:
+  SetClusterPositionsCmd(Document* doc,
+                         QHash<QString, QPointF> oldPositions,
+                         QHash<QString, QPointF> newPositions);
+  void redo() override;
+  void undo() override;
+
+private:
+  void apply(const QHash<QString, QPointF>& positions);
+
+  Document* doc_;
+  QHash<QString, QPointF> oldPositions_;
+  QHash<QString, QPointF> newPositions_;
 };

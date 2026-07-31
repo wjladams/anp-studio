@@ -39,6 +39,14 @@ public:
 
   /** @brief Rebuilds scene items from the current network. */
   void rebuild();
+  /**
+   * @brief Writes current cluster item positions into the model.
+   *
+   * Call before save so drags are not lost when no rebuild has run yet.
+   */
+  void persistLayout();
+  /** @brief Topology-aware auto-layout of cluster windows (undoable). */
+  void organizeClusters();
   /** @brief Enables or disables Connection mode. */
   void setConnectMode(bool on);
   /** @return True when Connection mode is active. */
@@ -63,9 +71,9 @@ protected:
   void resizeEvent(QResizeEvent* event) override;
 
 private:
-  void persistLayout();
   void updateLinks();
   void positionAddClusterButton();
+  void fitClustersInView();
   void promptAddCluster();
   void promptAddNode(const QString& clusterName);
   [[nodiscard]] QString uniqueClusterName() const;

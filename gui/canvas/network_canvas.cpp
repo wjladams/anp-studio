@@ -1,6 +1,7 @@
 #include "canvas/network_canvas.hpp"
 
 #include "canvas/cluster_item.hpp"
+#include "canvas/cluster_layout.hpp"
 #include "canvas/link_item.hpp"
 #include "canvas/node_item.hpp"
 #include "commands/network_commands.hpp"
@@ -25,6 +26,8 @@
 #include <QVector>
 
 #include <anpcpp/network.hpp>
+
+#include <cmath>
 
 namespace {
 
@@ -366,7 +369,9 @@ void NetworkCanvas::rebuild() {
 
   rebuilding_ = true;
   cancelInlineRename();
-  persistLayout();
+  if (!doc_->suppressLayoutPersist()) {
+    persistLayout();
+  }
   scene_->clear();
   clusters_.clear();
   nodes_.clear();
@@ -387,6 +392,10 @@ void NetworkCanvas::rebuild() {
     scene_->addItem(item);
     clusters_.insert(QString::fromStdString(c->name()), item);
     item->setLinkUpdateCallback([this]() { updateLinks(); });
+    item->setLayoutCommitCallback([this]() {
+      persistLayout();
+      doc_->setDirty(true);
+    });
     item->setAddNodeCallback([this, name = QString::fromStdString(c->name())]() {
       // Defer: AddNodeCmd rebuilds the scene and destroys this ClusterItem.
       // Calling promptAddNode synchronously from mousePressEvent would
@@ -463,6 +472,62 @@ void NetworkCanvas::persistLayout() {
       net.set_cluster_position(it.key().toStdString(), p.x(), p.y());
     } catch (...) {
     }
+  }
+}
+
+void NetworkCanvas::organizeClusters() {
+  if (doc_ == nullptr || clusters_.isEmpty()) return;
+
+  QHash<QString, QSizeF> sizes;
+  QHash<QString, QPointF> oldPositions;
+  sizes.reserve(clusters_.size());
+  oldPositions.reserve(clusters_.size());
+  for (auto it = clusters_.begin(); it != clusters_.end(); ++it) {
+    sizes.insert(it.key(), it.value()->rect().size());
+    oldPositions.insert(it.key(), it.value()->pos());
+  }
+
+  const QHash<QString, QPointF> newPositions =
+      cluster_layout::organize(doc_->network(), sizes);
+  if (newPositions.isEmpty()) return;
+
+  bool changed = false;
+  for (auto it = newPositions.begin(); it != newPositions.end(); ++it) {
+    const QPointF old = oldPositions.value(it.key());
+    if (std::abs(old.x() - it.value().x()) > 0.5 ||
+        std::abs(old.y() - it.value().y()) > 0.5) {
+      changed = true;
+      break;
+    }
+  }
+  if (!changed) return;
+
+  doc_->undoStack()->push(
+      new SetClusterPositionsCmd(doc_, oldPositions, newPositions));
+  fitClustersInView();
+}
+
+void NetworkCanvas::fitClustersInView() {
+  if (scene_ == nullptr || clusters_.isEmpty()) return;
+  QRectF bounds;
+  bool first = true;
+  for (ClusterItem* item : clusters_) {
+    if (item == nullptr) continue;
+    const QRectF r = item->mapToScene(item->rect()).boundingRect();
+    if (first) {
+      bounds = r;
+      first = false;
+    } else {
+      bounds |= r;
+    }
+  }
+  if (first) return;
+  bounds.adjust(-40, -40, 40, 40);
+  fitInView(bounds, Qt::KeepAspectRatio);
+  // Avoid extreme zoom-out on tiny nets; keep a readable default scale.
+  if (transform().m11() > 1.25) {
+    resetTransform();
+    centerOn(bounds.center());
   }
 }
 
@@ -825,6 +890,8 @@ void NetworkCanvas::contextMenuEvent(QContextMenuEvent* event) {
   QMenu menu(this);
   menu.addAction(QStringLiteral("Add Cluster"), this,
                  &NetworkCanvas::promptAddCluster);
+  menu.addAction(QStringLiteral("Organize Clusters"), this,
+                 &NetworkCanvas::organizeClusters);
 
   NodeItem* node = nodeItemAt(event->pos());
   ClusterItem* cluster = clusterItemAt(event->pos());
