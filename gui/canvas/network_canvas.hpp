@@ -70,6 +70,10 @@ private:
   void promptAddNode(const QString& clusterName);
   [[nodiscard]] QString uniqueClusterName() const;
   [[nodiscard]] QString uniqueNodeName() const;
+  [[nodiscard]] bool isNodeNameAvailable(const QString& name,
+                                         const QString& exceptName = {}) const;
+  [[nodiscard]] bool isClusterNameAvailable(const QString& name,
+                                            const QString& exceptName = {}) const;
   void startInlineRenameCluster(const QString& cluster);
   void startInlineRenameNode(const QString& node);
   void beginInlineRename(QGraphicsItem* parentItem,
@@ -78,6 +82,8 @@ private:
                          std::function<void()> onShow,
                          std::function<void()> onHide,
                          std::function<void(const QString&)> onCommit);
+  /** @param viaEnter True for Return/Enter; false for Escape or focus-loss. */
+  void finishInlineRename(bool accept, bool viaEnter);
   void cancelInlineRename();
 
   [[nodiscard]] NodeItem* nodeItemAt(const QPoint& viewPos) const;
@@ -105,5 +111,17 @@ private:
   QString connectionPrimary_;
   QGraphicsProxyWidget* renameProxy_ = nullptr;
   std::function<void()> renameHideCb_;
+  std::function<void(const QString&)> renameOnCommit_;
+  QString renameOldName_;
+  /** Non-empty while Add Node should chain another create after Enter. */
+  QString nodeCreateChainCluster_;
   bool renameClosing_ = false;
+  /** After Enter-chain, wait for KeyRelease before wiring returnPressed. */
+  bool renameDeferReturnPressed_ = false;
+  /** True once returnPressed is connected for the current editor. */
+  bool renameReturnWired_ = false;
+  /** True when this rename is for a node just created by promptAddNode. */
+  bool renameAbortRemovesNode_ = false;
+  /** True when the active inline rename target is a node (false = cluster). */
+  bool renameIsNode_ = true;
 };

@@ -27,11 +27,12 @@
 
 namespace {
 
-/** QLineEdit that reports Escape explicitly (proxy widgets often swallow filters). */
+/** QLineEdit that reports Escape / Enter-release explicitly (proxy widgets often swallow filters). */
 class InlineRenameEdit : public QLineEdit {
 public:
   using QLineEdit::QLineEdit;
   std::function<void()> onEscape;
+  std::function<void()> onEnterReleased;
 
 protected:
   void keyPressEvent(QKeyEvent* event) override {
@@ -43,6 +44,14 @@ protected:
       return;
     }
     QLineEdit::keyPressEvent(event);
+  }
+
+  void keyReleaseEvent(QKeyEvent* event) override {
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+      const std::function<void()> cb = onEnterReleased;
+      if (cb) cb();
+    }
+    QLineEdit::keyReleaseEvent(event);
   }
 };
 
@@ -70,7 +79,10 @@ NetworkCanvas::NetworkCanvas(Document* doc, QWidget* parent)
   auto* esc = new QShortcut(QKeySequence(Qt::Key_Escape), this);
   esc->setContext(Qt::WidgetWithChildrenShortcut);
   connect(esc, &QShortcut::activated, this, [this]() {
-    if (renameProxy_ != nullptr) return;
+    if (renameProxy_ != nullptr) {
+      finishInlineRename(false, false);
+      return;
+    }
     if (connectMode_) setConnectMode(false);
   });
 
@@ -130,12 +142,18 @@ void NetworkCanvas::cancelInlineRename() {
   if (renameProxy_ == nullptr) return;
   QGraphicsProxyWidget* proxy = renameProxy_;
   renameProxy_ = nullptr;
-  renameClosing_ = false;
+  renameClosing_ = true;
+  renameOnCommit_ = {};
+  renameOldName_.clear();
 
   auto hideCb = std::move(renameHideCb_);
   renameHideCb_ = {};
 
   if (QWidget* w = proxy->widget()) {
+    if (auto* inlineEdit = dynamic_cast<InlineRenameEdit*>(w)) {
+      inlineEdit->onEscape = {};
+      inlineEdit->onEnterReleased = {};
+    }
     w->disconnect();
     w->clearFocus();
   }
@@ -148,6 +166,94 @@ void NetworkCanvas::cancelInlineRename() {
   proxy->deleteLater();
 
   if (hideCb) hideCb();
+}
+
+void NetworkCanvas::finishInlineRename(bool accept, bool viaEnter) {
+  if (renameProxy_ == nullptr || renameClosing_) return;
+  renameClosing_ = true;
+
+  QString neu;
+  if (auto* edit = qobject_cast<QLineEdit*>(renameProxy_->widget())) {
+    neu = edit->text().trimmed();
+  }
+
+  const QString oldName = renameOldName_;
+  auto onCommit = std::move(renameOnCommit_);
+  renameOnCommit_ = {};
+
+  const bool isNode = renameIsNode_;
+  const bool abortRemovesNode = renameAbortRemovesNode_;
+  // Keep add-session cluster so we can restore flags if a rename is rejected.
+  const QString addCluster = nodeCreateChainCluster_;
+
+  // Snapshot then clear so a stale follow-up cannot chain again.
+  const QString chainCluster =
+      (viaEnter && accept && !neu.isEmpty()) ? nodeCreateChainCluster_
+                                            : QString();
+  nodeCreateChainCluster_.clear();
+  renameAbortRemovesNode_ = false;
+
+  const QPointer<NetworkCanvas> self(this);
+  // Fully leave this call stack before destroying the editor or mutating the
+  // model (avoids signal-stack teardown and ClusterItem/NodeItem UAF).
+  QTimer::singleShot(0, this, [self, accept, viaEnter, neu, oldName, onCommit,
+                               chainCluster, addCluster, abortRemovesNode,
+                               isNode]() {
+    if (!self) return;
+
+    self->cancelInlineRename();
+
+    // Escape (or empty accept): drop a just-created node so the create loop
+    // does not leave an unwanted placeholder behind.
+    if (!accept || neu.isEmpty()) {
+      if (abortRemovesNode && !oldName.isEmpty()) {
+        QUndoStack* stack = self->doc_->undoStack();
+        const QString addText = QStringLiteral("Add node %1").arg(oldName);
+        if (stack->canUndo() && stack->undoText() == addText) {
+          stack->undo();
+        } else {
+          stack->push(new RemoveNodeCmd(self->doc_, oldName));
+        }
+      }
+      return;
+    }
+
+    if (neu != oldName) {
+      const bool available =
+          isNode ? self->isNodeNameAvailable(neu, oldName)
+                 : self->isClusterNameAvailable(neu, oldName);
+      if (!available) {
+        // Reject duplicate: reopen editor on the existing object.
+        if (abortRemovesNode) {
+          self->renameAbortRemovesNode_ = true;
+          self->nodeCreateChainCluster_ = addCluster;
+        }
+        // Keep Enter-chain deferral if this confirm was via Enter.
+        if (viaEnter && !addCluster.isEmpty()) {
+          self->renameDeferReturnPressed_ = true;
+        }
+        QTimer::singleShot(0, self, [self, oldName, isNode]() {
+          if (!self) return;
+          if (isNode) {
+            self->startInlineRenameNode(oldName);
+          } else {
+            self->startInlineRenameCluster(oldName);
+          }
+        });
+        return;
+      }
+      if (onCommit) onCommit(neu);
+    }
+
+    if (chainCluster.isEmpty()) return;
+
+    // Next editor must not see the still-held Enter key. Defer wiring of
+    // returnPressed until KeyRelease (see beginInlineRename).
+    self->renameDeferReturnPressed_ = true;
+    QTimer::singleShot(0, self, [self, chainCluster]() {
+      if (self) self->promptAddNode(chainCluster);
+    });
+  });
 }
 
 void NetworkCanvas::beginInlineRename(
@@ -171,30 +277,52 @@ void NetworkCanvas::beginInlineRename(
   renameProxy_->setZValue(100);
   renameProxy_->setFlag(QGraphicsItem::ItemIsFocusable, true);
   renameHideCb_ = std::move(onHide);
+  renameOnCommit_ = std::move(onCommit);
+  renameOldName_ = oldName;
+  renameClosing_ = false;
+  renameReturnWired_ = false;
+
+  const bool deferReturn = renameDeferReturnPressed_;
+  renameDeferReturnPressed_ = false;
+
   if (onShow) onShow();
 
-  // Never destroy the editor from inside its own key/signal handlers.
-  const auto finish = [this, edit, oldName, onCommit](bool accept) {
-    if (renameProxy_ == nullptr || renameClosing_) return;
-    renameClosing_ = true;
-    const QString neu = edit->text().trimmed();
-    edit->disconnect();
-    const QPointer<NetworkCanvas> self(this);
-    QTimer::singleShot(0, this, [self, accept, neu, oldName, onCommit]() {
-      if (!self) return;
-      self->cancelInlineRename();
-      if (accept && !neu.isEmpty() && neu != oldName && onCommit) {
-        onCommit(neu);
-      }
-    });
+  edit->onEscape = [this]() {
+    // Queued: do not tear down the editor from inside its keyPressEvent.
+    QMetaObject::invokeMethod(
+        this,
+        [this]() { finishInlineRename(false, false); },
+        Qt::QueuedConnection);
   };
 
-  edit->onEscape = [finish]() { finish(false); };
-  connect(edit, &QLineEdit::returnPressed, this, [finish]() { finish(true); });
-  connect(edit, &QLineEdit::editingFinished, this, [this, finish]() {
-    if (renameProxy_ == nullptr || renameClosing_) return;
-    finish(true);
-  });
+  const auto wireReturnPressed = [this, edit]() {
+    if (renameReturnWired_ || renameProxy_ == nullptr || renameClosing_) return;
+    renameReturnWired_ = true;
+    connect(edit, &QLineEdit::returnPressed, this,
+            [this]() { finishInlineRename(true, true); }, Qt::QueuedConnection);
+  };
+
+  if (deferReturn) {
+    // Chained add: do not connect returnPressed until Enter is released.
+    // Also ignore editingFinished until then — QLineEdit emits it on each
+    // Enter auto-repeat keypress, which would tear down the new editor.
+    edit->onEnterReleased = [this, edit, wireReturnPressed]() {
+      if (renameProxy_ == nullptr || renameClosing_) return;
+      edit->onEnterReleased = {};
+      wireReturnPressed();
+    };
+  } else {
+    wireReturnPressed();
+  }
+
+  connect(edit, &QLineEdit::editingFinished, this,
+          [this]() {
+            if (renameProxy_ == nullptr || renameClosing_) return;
+            // Blur-commit only after Enter is a live shortcut for this editor.
+            if (!renameReturnWired_) return;
+            finishInlineRename(true, false);
+          },
+          Qt::QueuedConnection);
 
   renameProxy_->setFocus(Qt::MouseFocusReason);
   edit->setFocus(Qt::MouseFocusReason);
@@ -204,19 +332,7 @@ void NetworkCanvas::keyPressEvent(QKeyEvent* event) {
   // Fallback: graphics view may receive Escape before the proxy widget.
   if (renameProxy_ != nullptr && !renameClosing_ &&
       event->key() == Qt::Key_Escape) {
-    if (auto* edit = static_cast<InlineRenameEdit*>(renameProxy_->widget())) {
-      // Copy before invoke: finish() must not destroy a running std::function.
-      const std::function<void()> cb = edit->onEscape;
-      if (cb) {
-        cb();
-      } else {
-        renameClosing_ = true;
-        const QPointer<NetworkCanvas> self(this);
-        QTimer::singleShot(0, this, [self]() {
-          if (self) self->cancelInlineRename();
-        });
-      }
-    }
+    finishInlineRename(false, false);
     event->accept();
     return;
   }
@@ -259,9 +375,17 @@ void NetworkCanvas::rebuild() {
     clusters_.insert(QString::fromStdString(c->name()), item);
     item->setLinkUpdateCallback([this]() { updateLinks(); });
     item->setAddNodeCallback([this, name = QString::fromStdString(c->name())]() {
-      promptAddNode(name);
+      // Defer: AddNodeCmd rebuilds the scene and destroys this ClusterItem.
+      // Calling promptAddNode synchronously from mousePressEvent would
+      // return into a deleted item (segfault).
+      const QPointer<NetworkCanvas> self(this);
+      QTimer::singleShot(0, this, [self, name]() {
+        if (self) self->promptAddNode(name);
+      });
     });
     item->setRenameCallback([this](const QString& cluster) {
+      nodeCreateChainCluster_.clear();
+      renameAbortRemovesNode_ = false;
       startInlineRenameCluster(cluster);
     });
 
@@ -275,6 +399,8 @@ void NetworkCanvas::rebuild() {
             doc_->undoStack()->push(new ReorderNodeCmd(doc_, node, from, to));
           });
       ni->setRenameCallback([this](const QString& node) {
+        nodeCreateChainCluster_.clear();
+        renameAbortRemovesNode_ = false;
         startInlineRenameNode(node);
       });
       nodes_.insert(QString::fromStdString(n->name()), ni);
@@ -351,7 +477,10 @@ void NetworkCanvas::promptAddCluster() {
   // Defer past the add/rebuild stack so the new item exists and can take focus.
   const QPointer<NetworkCanvas> self(this);
   QTimer::singleShot(0, this, [self, name]() {
-    if (self) self->startInlineRenameCluster(name);
+    if (!self) return;
+    self->nodeCreateChainCluster_.clear();
+    self->renameAbortRemovesNode_ = false;
+    self->startInlineRenameCluster(name);
   });
 }
 
@@ -360,17 +489,20 @@ void NetworkCanvas::promptAddNode(const QString& clusterName) {
   doc_->undoStack()->push(new AddNodeCmd(doc_, clusterName, name));
   select({}, name);
   const QPointer<NetworkCanvas> self(this);
-  QTimer::singleShot(0, this, [self, name]() {
-    if (self) self->startInlineRenameNode(name);
+  QTimer::singleShot(0, this, [self, name, clusterName]() {
+    if (!self) return;
+    // Mark this rename as an add-node session so Enter chains another create,
+    // and Escape removes this placeholder node.
+    self->nodeCreateChainCluster_ = clusterName;
+    self->renameAbortRemovesNode_ = true;
+    self->startInlineRenameNode(name);
   });
 }
 
 QString NetworkCanvas::uniqueClusterName() const {
   const auto& net = doc_->network();
   for (int i = 1;; ++i) {
-    const QString name = (i == 1)
-                             ? QStringLiteral("New Cluster")
-                             : QStringLiteral("New Cluster %1").arg(i);
+    const QString name = QStringLiteral("New Cluster #%1").arg(i);
     if (net.find_cluster(name.toStdString()) == nullptr) return name;
   }
 }
@@ -378,21 +510,38 @@ QString NetworkCanvas::uniqueClusterName() const {
 QString NetworkCanvas::uniqueNodeName() const {
   const auto& net = doc_->network();
   for (int i = 1;; ++i) {
-    const QString name =
-        (i == 1) ? QStringLiteral("New Node")
-                 : QStringLiteral("New Node %1").arg(i);
+    const QString name = QStringLiteral("New Node #%1").arg(i);
     if (net.find_node(name.toStdString()) == nullptr) return name;
   }
+}
+
+bool NetworkCanvas::isNodeNameAvailable(const QString& name,
+                                        const QString& exceptName) const {
+  if (name.isEmpty()) return false;
+  if (name == exceptName) return true;
+  return doc_->network().find_node(name.toStdString()) == nullptr;
+}
+
+bool NetworkCanvas::isClusterNameAvailable(const QString& name,
+                                           const QString& exceptName) const {
+  if (name.isEmpty()) return false;
+  if (name == exceptName) return true;
+  return doc_->network().find_cluster(name.toStdString()) == nullptr;
 }
 
 void NetworkCanvas::startInlineRenameCluster(const QString& cluster) {
   ClusterItem* ci = clusters_.value(cluster);
   if (ci == nullptr) return;
   ci->setSelected(true);
+  renameIsNode_ = false;
   beginInlineRename(
       ci, ci->titleEditRect(), cluster,
-      [ci]() { ci->setTitleVisible(false); },
-      [ci]() { ci->setTitleVisible(true); },
+      [this, cluster]() {
+        if (auto* c = clusters_.value(cluster)) c->setTitleVisible(false);
+      },
+      [this, cluster]() {
+        if (auto* c = clusters_.value(cluster)) c->setTitleVisible(true);
+      },
       [this, cluster](const QString& neu) {
         doc_->undoStack()->push(new RenameClusterCmd(doc_, cluster, neu));
       });
@@ -402,10 +551,15 @@ void NetworkCanvas::startInlineRenameNode(const QString& node) {
   NodeItem* item = nodes_.value(node);
   if (item == nullptr) return;
   item->setSelected(true);
+  renameIsNode_ = true;
   beginInlineRename(
       item, item->rect().adjusted(4, 2, -4, -2), node,
-      [item]() { item->setLabelVisible(false); },
-      [item]() { item->setLabelVisible(true); },
+      [this, node]() {
+        if (auto* n = nodes_.value(node)) n->setLabelVisible(false);
+      },
+      [this, node]() {
+        if (auto* n = nodes_.value(node)) n->setLabelVisible(true);
+      },
       [this, node](const QString& neu) {
         doc_->undoStack()->push(new RenameNodeCmd(doc_, node, neu));
       });
