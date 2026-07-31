@@ -7,6 +7,24 @@ calculating, and studying Analytic Network Process (ANP) decision models.
   <img src="gui/resources/anpstudio-256.png" alt="ANP Studio icon" width="128" height="128">
 </p>
 
+## Download
+
+Get the latest prebuilt binaries from the
+**[Releases](https://github.com/wjadams/anp-studio/releases/latest)** page.
+
+| Platform | Asset |
+|---|---|
+| Windows x64 | `anpstudio-*-windows-x64.zip` — unzip and run `anpstudio.exe` |
+| macOS Apple Silicon | `anpstudio-*-macos-arm64.zip` — unzip, then right-click the app → **Open** (unsigned) |
+| Linux x86_64 | `anpstudio-*-linux-x86_64.AppImage` — `chmod +x` the file, then run it |
+
+Windows SmartScreen and macOS Gatekeeper may warn because builds are not code-signed.
+Intel Mac builds are not published yet.
+
+To build from source instead, see [Build the GUI](#build-the-gui) below.
+
+---
+
 The computational library (matrices, networks, pairwise judgments, limit
 matrix, synthesis, JSON I/O) lives in a separate repository:
 **[libanpcpp](https://github.com/wjadams/libanpcpp)** (CMake target
@@ -152,19 +170,18 @@ cd docs/site && bundle install && bundle exec jekyll serve --baseurl /anp-studio
 Enable Pages with **Settings → Pages → Source: GitHub Actions**; see
 `.github/workflows/docs.yml`.
 
-## Releases (prebuilt binaries)
+## Publishing releases (maintainers)
 
-GitHub Actions builds portable binaries for each published release:
+End users should use **[Download](#download)** above. This section is for
+cutting a new GitHub Release so CI attaches binaries.
+
+GitHub Actions builds portable binaries for each **published** release:
 
 | Platform | Artifact |
 |---|---|
-| Windows x64 | `anpstudio-<tag>-windows-x64.zip` (unzip and run `anpstudio.exe`) |
-| macOS Apple Silicon | `anpstudio-<tag>-macos-arm64.zip` (unsigned `.app`) |
+| Windows x64 | `anpstudio-<tag>-windows-x64.zip` |
+| macOS Apple Silicon | `anpstudio-<tag>-macos-arm64.zip` |
 | Linux x86_64 | `anpstudio-<tag>-linux-x86_64.AppImage` |
-
-macOS builds are **not code-signed**. Windows builds are **not** a Setup installer (zip only). Intel Mac builds are not produced yet.
-
-### How to publish a release
 
 1. Merge the changes you want on `main`.
 2. On GitHub open the repo → **Releases** → **Draft a new release**.
@@ -174,15 +191,8 @@ macOS builds are **not code-signed**. Windows builds are **not** a Setup install
 6. Open the **Actions** tab and watch **Release builds** (Windows, macOS, Linux).
 7. When the jobs finish, refresh the Release page; the three assets appear under the release.
 
-### Running the downloads
-
-- **Windows:** unzip the zip, run `anpstudio.exe`. SmartScreen may warn because the build is unsigned.
-- **macOS:** unzip, then **right-click** the app → **Open** the first time (Gatekeeper; unsigned).
-- **Linux:** `chmod +x anpstudio-*-linux-x86_64.AppImage` and run it.
-
-### Test a build without publishing
-
-**Actions** → **Release builds** → **Run workflow**. Download artifacts from the workflow run page; nothing is attached to a Release.
+**Test a build without publishing:** **Actions** → **Release builds** → **Run workflow**.
+Download artifacts from the workflow run page; nothing is attached to a Release.
 
 ## Status / remaining work
 
