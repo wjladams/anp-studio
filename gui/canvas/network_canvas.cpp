@@ -2,6 +2,7 @@
 
 #include "canvas/cluster_item.hpp"
 #include "canvas/cluster_layout.hpp"
+#include "canvas/cluster_link_item.hpp"
 #include "canvas/link_item.hpp"
 #include "canvas/node_item.hpp"
 #include "commands/network_commands.hpp"
@@ -123,6 +124,7 @@ void NetworkCanvas::setConnectMode(bool on) {
   clearConnectionSources();
   setCursor(on ? Qt::CrossCursor : Qt::ArrowCursor);
   setDragMode(on ? QGraphicsView::NoDrag : QGraphicsView::RubberBandDrag);
+  applyLinkVisibility();
   if (on) setFocus(Qt::OtherFocusReason);
   emit connectModeChanged(on);
 }
@@ -376,6 +378,7 @@ void NetworkCanvas::rebuild() {
   clusters_.clear();
   nodes_.clear();
   links_.clear();
+  clusterLinks_.clear();
 
   auto& net = doc_->network();
   qreal x = 40;
@@ -453,6 +456,20 @@ void NetworkCanvas::rebuild() {
     }
   }
   for (LinkItem* link : links_) link->updatePath();
+
+  // Implied cluster→cluster edges (same inference as Organize Clusters).
+  const auto meta = cluster_layout::metaEdges(net);
+  for (const auto& edge : meta) {
+    ClusterItem* a = clusters_.value(edge.first);
+    ClusterItem* b = clusters_.value(edge.second);
+    if (a == nullptr || b == nullptr) continue;
+    auto* link = new ClusterLinkItem(a, b);
+    scene_->addItem(link);
+    clusterLinks_.push_back(link);
+  }
+  for (ClusterLinkItem* link : clusterLinks_) link->updatePath();
+
+  applyLinkVisibility();
   rebuilding_ = false;
 
   connectionSources_ = savedSources;
@@ -534,6 +551,18 @@ void NetworkCanvas::fitClustersInView() {
 void NetworkCanvas::updateLinks() {
   if (rebuilding_) return;
   for (LinkItem* link : links_) link->updatePath();
+  for (ClusterLinkItem* link : clusterLinks_) link->updatePath();
+}
+
+void NetworkCanvas::applyLinkVisibility() {
+  // Normal: cluster meta-edges only. Connection: full node→node links.
+  const bool showNodes = connectMode_;
+  for (LinkItem* link : links_) {
+    link->setVisible(showNodes);
+  }
+  for (ClusterLinkItem* link : clusterLinks_) {
+    link->setVisible(!showNodes);
+  }
 }
 
 void NetworkCanvas::positionAddClusterButton() {
@@ -551,6 +580,7 @@ void NetworkCanvas::resizeEvent(QResizeEvent* event) {
 void NetworkCanvas::promptAddCluster() {
   const QString name = uniqueClusterName();
   doc_->undoStack()->push(new AddClusterCmd(doc_, name));
+  doc_->flushModelChanged();
   select(name, {});
   // Defer past the add/rebuild stack so the new item exists and can take focus.
   const QPointer<NetworkCanvas> self(this);
@@ -565,6 +595,7 @@ void NetworkCanvas::promptAddCluster() {
 void NetworkCanvas::promptAddNode(const QString& clusterName) {
   const QString name = uniqueNodeName();
   doc_->undoStack()->push(new AddNodeCmd(doc_, clusterName, name));
+  doc_->flushModelChanged();
   select({}, name);
   const QPointer<NetworkCanvas> self(this);
   QTimer::singleShot(0, this, [self, name, clusterName]() {

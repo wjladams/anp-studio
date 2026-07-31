@@ -44,6 +44,9 @@ public:
 public slots:
   void refresh();
 
+protected:
+  void showEvent(QShowEvent* event) override;
+
 private slots:
   void onNavItemActivated(QTreeWidgetItem* item, int column);
   void onNavCurrentChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous);
@@ -101,4 +104,6 @@ private:
 
   bool updating_ = false;
   bool navigating_ = false;
+  /** True when heavy panes need rebuild after edits made while hidden. */
+  bool heavyStale_ = true;
 };

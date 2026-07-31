@@ -14,6 +14,7 @@
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
+#include <QShowEvent>
 #include <QSlider>
 #include <QSpinBox>
 #include <QStackedWidget>
@@ -450,6 +451,13 @@ void AnalysisPanel::refresh() {
   updateSubnetNavVisibility();
   rebuildSensWrtNodes();
   rebuildInfluenceWrtNodes();
+  // Supermatrix / sensitivity / influence are expensive; skip while this stage
+  // is hidden (e.g. Structure connection edits) and rebuild on show.
+  if (!isVisible()) {
+    heavyStale_ = true;
+    return;
+  }
+  heavyStale_ = false;
   refreshSynthesisHtml();
   refreshSensitivity();
   refreshInfluence();
@@ -458,6 +466,13 @@ void AnalysisPanel::refresh() {
     QTimer::singleShot(0, this, [this]() {
       synthBrowser_->scrollToAnchor(synthAnchor_);
     });
+  }
+}
+
+void AnalysisPanel::showEvent(QShowEvent* event) {
+  QWidget::showEvent(event);
+  if (heavyStale_) {
+    refresh();
   }
 }
 

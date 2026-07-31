@@ -256,6 +256,8 @@ void MainWindow::setStage(Stage stage) {
   if (stage != Stage::Structure && canvas_ != nullptr && canvas_->connectMode()) {
     canvas_->setConnectMode(false);
   }
+  // Apply any coalesced model refresh before stage-specific UI reads state.
+  doc_->flushModelChanged();
   if (stage == Stage::Structure) {
     canvas_->select(doc_->selectedCluster(), doc_->selectedNode());
   } else if (stage == Stage::Judgments) {

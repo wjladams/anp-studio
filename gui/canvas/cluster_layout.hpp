@@ -6,9 +6,11 @@
 #pragma once
 
 #include <QHash>
+#include <QPair>
 #include <QPointF>
 #include <QSizeF>
 #include <QString>
+#include <QVector>
 
 namespace anpcpp {
 class AnpNetwork;
@@ -25,13 +27,22 @@ inline constexpr qreal kOriginX = 40.0;
 inline constexpr qreal kOriginY = 40.0;
 
 /**
+ * @brief Infers directed cluster→cluster edges from node connections.
+ *
+ * Edge A→B exists when any node in A has a prioritizer into B (B ≠ A).
+ * Self-loops are ignored. Derived from node prioritizers (not cluster_pairwise).
+ *
+ * @return Unique (from, to) cluster name pairs.
+ */
+[[nodiscard]] QVector<QPair<QString, QString>> metaEdges(
+    const anpcpp::AnpNetwork& net);
+
+/**
  * @brief Computes scene top-left positions for every cluster in @p net.
  *
- * Builds a directed cluster meta-graph inferred from node connections
- * (edge A→B when any node in A links into B; self-loops ignored). Acyclic
- * graphs get a left-to-right ranked layout with same-rank ties stacked
- * vertically. Graphs with a cycle get a circular arrangement sized so
- * AABBs do not overlap.
+ * Builds a directed cluster meta-graph via @ref metaEdges. Acyclic graphs get
+ * a left-to-right ranked layout with same-rank ties stacked vertically.
+ * Graphs with a cycle get a circular arrangement sized so AABBs do not overlap.
  *
  * @param net Current view network.
  * @param sizes Optional explicit sizes keyed by cluster name. Missing entries

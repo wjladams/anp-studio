@@ -16,6 +16,7 @@ class Document;
 class ClusterItem;
 class NodeItem;
 class LinkItem;
+class ClusterLinkItem;
 class QToolButton;
 class QGraphicsProxyWidget;
 class QGraphicsItem;
@@ -72,6 +73,7 @@ protected:
 
 private:
   void updateLinks();
+  void applyLinkVisibility();
   void positionAddClusterButton();
   void fitClustersInView();
   void promptAddCluster();
@@ -115,6 +117,7 @@ private:
   QHash<QString, ClusterItem*> clusters_;
   QHash<QString, NodeItem*> nodes_;
   QList<LinkItem*> links_;
+  QList<ClusterLinkItem*> clusterLinks_;
   bool connectMode_ = false;
   bool rebuilding_ = false;
   QSet<QString> connectionSources_;

@@ -13,6 +13,7 @@ add_executable(anpstudio
   canvas/cluster_layout.cpp
   canvas/node_item.cpp
   canvas/link_item.cpp
+  canvas/cluster_link_item.cpp
   panels/pairwise_panel.cpp
   panels/results_panel.cpp
   panels/inspector_panel.cpp

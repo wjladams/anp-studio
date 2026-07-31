@@ -2,20 +2,22 @@
 
 #include "anpcpp/json_io.hpp"
 
+#include <QMetaObject>
+
 #include <functional>
 
 Document::Document(QObject* parent) : QObject(parent) {
   newNetwork(true);
+  // Commands already call notifyChanged() in redo/undo. Only mark dirty here
+  // so each push does not refresh the UI twice.
   connect(&undo_, &QUndoStack::indexChanged, this, [this](int) {
     setDirty(true);
-    notifyChanged();
   });
 }
 
 Document::~Document() {
-  // ~QUndoStack::clear() emits indexChanged. That would call notifyChanged()
-  // while MainWindow children (breadcrumb, canvas, panels) may already be
-  // destroyed — disconnect before the undo stack member is torn down.
+  // Disconnect undo hooks before members tear down. indexChanged used to call
+  // notifyChanged(); keep the disconnect so future handlers stay safe.
   disconnect(&undo_, nullptr, this, nullptr);
   blockSignals(true);
 }
@@ -223,6 +225,26 @@ bool Document::navigateToNetworkPath(const QString& path) {
 void Document::notifyChanged() {
   invalidateResults();
   clearSelectionIfInvalid();
+  queueModelChanged();
+}
+
+void Document::queueModelChanged() {
+  if (modelChangedQueued_) return;
+  modelChangedQueued_ = true;
+  // Coalesce bursty updates (macros, rapid edits) into one UI refresh.
+  QMetaObject::invokeMethod(
+      this,
+      [this]() {
+        if (!modelChangedQueued_) return;
+        modelChangedQueued_ = false;
+        emit modelChanged();
+      },
+      Qt::QueuedConnection);
+}
+
+void Document::flushModelChanged() {
+  if (!modelChangedQueued_) return;
+  modelChangedQueued_ = false;
   emit modelChanged();
 }
 

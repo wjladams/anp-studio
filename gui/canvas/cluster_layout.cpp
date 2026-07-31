@@ -45,25 +45,10 @@ QSizeF sizeFor(const QString& name,
 }
 
 std::vector<MetaEdge> buildMetaEdges(const anpcpp::AnpNetwork& net) {
-  // Infer cluster→cluster links from node connections: edge A→B exists when
-  // any node in A has a prioritizer into B (B ≠ A). Self-loops are ignored.
-  std::set<std::pair<QString, QString>> seen;
-  for (const anpcpp::AnpNode* src : net.nodes()) {
-    if (src == nullptr || src->cluster() == nullptr) continue;
-    const QString srcC = QString::fromStdString(src->cluster()->name());
-    for (const anpcpp::AnpCluster* destC : net.clusters()) {
-      if (destC == nullptr) continue;
-      const QString destName = QString::fromStdString(destC->name());
-      if (destName == srcC) continue;
-      const anpcpp::NodePrioritizerSlot* slot =
-          src->node_prioritizer(destC->name());
-      if (slot == nullptr || slot->empty()) continue;
-      seen.insert({srcC, destName});
-    }
-  }
+  const QVector<QPair<QString, QString>> pairs = metaEdges(net);
   std::vector<MetaEdge> edges;
-  edges.reserve(seen.size());
-  for (const auto& pair : seen) {
+  edges.reserve(static_cast<size_t>(pairs.size()));
+  for (const auto& pair : pairs) {
     edges.push_back({pair.first, pair.second, /*weight=*/1});
   }
   return edges;
@@ -364,6 +349,31 @@ QSizeF estimateSize(int nodeCount) {
       std::max(ClusterItem::kTitleH + ClusterItem::kMinBodyH,
                ClusterItem::kTitleH + body);
   return QSizeF(w, h);
+}
+
+QVector<QPair<QString, QString>> metaEdges(const anpcpp::AnpNetwork& net) {
+  // Infer cluster→cluster links from node connections: edge A→B exists when
+  // any node in A has a prioritizer into B (B ≠ A). Self-loops are ignored.
+  std::set<std::pair<QString, QString>> seen;
+  for (const anpcpp::AnpNode* src : net.nodes()) {
+    if (src == nullptr || src->cluster() == nullptr) continue;
+    const QString srcC = QString::fromStdString(src->cluster()->name());
+    for (const anpcpp::AnpCluster* destC : net.clusters()) {
+      if (destC == nullptr) continue;
+      const QString destName = QString::fromStdString(destC->name());
+      if (destName == srcC) continue;
+      const anpcpp::NodePrioritizerSlot* slot =
+          src->node_prioritizer(destC->name());
+      if (slot == nullptr || slot->empty()) continue;
+      seen.insert({srcC, destName});
+    }
+  }
+  QVector<QPair<QString, QString>> edges;
+  edges.reserve(static_cast<int>(seen.size()));
+  for (const auto& pair : seen) {
+    edges.push_back({pair.first, pair.second});
+  }
+  return edges;
 }
 
 QHash<QString, QPointF> organize(const anpcpp::AnpNetwork& net,

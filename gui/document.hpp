@@ -99,8 +99,21 @@ public:
    */
   bool navigateToNetworkPath(const QString& path);
 
-  /** @brief Marks the document dirty and emits @ref modelChanged. */
+  /**
+   * @brief Invalidates results and schedules @ref modelChanged.
+   *
+   * Multiple calls in the same event-loop turn coalesce into one emission so
+   * undo macros and command+indexChanged pairs do not thrash the UI.
+   */
   void notifyChanged();
+
+  /**
+   * @brief Emits any pending coalesced @ref modelChanged immediately.
+   *
+   * Use after an undo push when the caller must read updated canvas/UI state
+   * before returning to the event loop.
+   */
+  void flushModelChanged();
 
   /**
    * @brief When true, NetworkCanvas::rebuild skips persisting item positions
@@ -158,6 +171,7 @@ private:
 
   void replaceRoot(std::unique_ptr<anpcpp::AnpNetwork> net);
   void clearSelectionIfInvalid();
+  void queueModelChanged();
 
   std::unique_ptr<anpcpp::AnpNetwork> root_;
   std::vector<Frame> stack_;
@@ -165,6 +179,7 @@ private:
   QString path_;
   bool dirty_ = false;
   bool suppressLayoutPersist_ = false;
+  bool modelChangedQueued_ = false;
   QString selectedCluster_;
   QString selectedNode_;
   bool hasResults_ = false;
