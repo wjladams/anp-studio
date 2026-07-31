@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=ANP Studio
+Comment=Analytic Network Process desktop application
+Exec=anpstudio
+Icon=anpstudio
+Terminal=false
+Categories=Science;Education;
+StartupNotify=true

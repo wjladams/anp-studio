@@ -34,6 +34,15 @@ target_link_libraries(anpstudio
     Qt6::Widgets
 )
 
+set_target_properties(anpstudio PROPERTIES
+  MACOSX_BUNDLE TRUE
+  MACOSX_BUNDLE_BUNDLE_NAME "ANP Studio"
+  MACOSX_BUNDLE_GUI_IDENTIFIER "org.bamath.anpstudio"
+  MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+  MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+  WIN32_EXECUTABLE TRUE
+)
+
 if(MSVC)
   target_compile_options(anpstudio PRIVATE /W4)
 else()

@@ -152,6 +152,38 @@ cd docs/site && bundle install && bundle exec jekyll serve --baseurl /anp-studio
 Enable Pages with **Settings → Pages → Source: GitHub Actions**; see
 `.github/workflows/docs.yml`.
 
+## Releases (prebuilt binaries)
+
+GitHub Actions builds portable binaries for each published release:
+
+| Platform | Artifact |
+|---|---|
+| Windows x64 | `anpstudio-<tag>-windows-x64.zip` (unzip and run `anpstudio.exe`) |
+| macOS Apple Silicon | `anpstudio-<tag>-macos-arm64.zip` (unsigned `.app`) |
+| Linux x86_64 | `anpstudio-<tag>-linux-x86_64.AppImage` |
+
+macOS builds are **not code-signed**. Windows builds are **not** a Setup installer (zip only). Intel Mac builds are not produced yet.
+
+### How to publish a release
+
+1. Merge the changes you want on `main`.
+2. On GitHub open the repo → **Releases** → **Draft a new release**.
+3. Under **Choose a tag**, create a new tag such as `v0.1.0` (target: `main`).
+4. Set the release title (e.g. `ANP Studio 0.1.0`) and optional notes.
+5. Click **Publish release** (not “Save draft”—drafts do not start the build).
+6. Open the **Actions** tab and watch **Release builds** (Windows, macOS, Linux).
+7. When the jobs finish, refresh the Release page; the three assets appear under the release.
+
+### Running the downloads
+
+- **Windows:** unzip the zip, run `anpstudio.exe`. SmartScreen may warn because the build is unsigned.
+- **macOS:** unzip, then **right-click** the app → **Open** the first time (Gatekeeper; unsigned).
+- **Linux:** `chmod +x anpstudio-*-linux-x86_64.AppImage` and run it.
+
+### Test a build without publishing
+
+**Actions** → **Release builds** → **Run workflow**. Download artifacts from the workflow run page; nothing is attached to a Release.
+
 ## Status / remaining work
 
 - Multi-user judgments, Rating/Direct prioritizers, sensitivity analysis

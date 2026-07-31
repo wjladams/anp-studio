@@ -1,0 +1,162 @@
+name: Release builds
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-builds-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  QT_VERSION: "6.7.3"
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows x64
+            os: windows-latest
+            artifact: windows-x64
+          - name: macOS arm64
+            os: macos-14
+            artifact: macos-arm64
+          - name: Linux x86_64 AppImage
+            os: ubuntu-22.04
+            artifact: linux-x86_64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version label
+        id: ver
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "label=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "label=dev-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: ""
+          archives: qtbase
+          cache: true
+
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Ninja (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: choco install ninja -y
+
+      - name: Install Ninja (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential ninja-build \
+            libgl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev \
+            libxcb-cursor0 libxcb-cursor-dev \
+            libfuse2
+
+      - name: Configure CMake
+        shell: bash
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DANPSTUDIO_BUILD_GUI=ON \
+            -DANPSTUDIO_BUILD_DOCS=OFF \
+            -DCMAKE_PREFIX_PATH="${QT_ROOT_DIR}"
+
+      - name: Build
+        run: cmake --build build --target anpstudio
+
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          STAGE=dist/anpstudio
+          mkdir -p "${STAGE}"
+          cp build/gui/anpstudio.exe "${STAGE}/"
+          "${QT_ROOT_DIR}/bin/windeployqt.exe" --release --no-translations "${STAGE}/anpstudio.exe"
+          ASSET="anpstudio-${{ steps.ver.outputs.label }}-${{ matrix.artifact }}.zip"
+          mkdir -p out
+          (cd dist && powershell.exe -NoProfile -Command "Compress-Archive -Path anpstudio -DestinationPath '../out/${ASSET}' -Force")
+          echo "ASSET=${ASSET}" >> "$GITHUB_ENV"
+
+      - name: Package macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP="build/gui/anpstudio.app"
+          "${QT_ROOT_DIR}/bin/macdeployqt" "${APP}" -always-overwrite
+          ASSET="anpstudio-${{ steps.ver.outputs.label }}-${{ matrix.artifact }}.zip"
+          mkdir -p out
+          ditto -c -k --sequesterRsrc --keepParent "${APP}" "out/${ASSET}"
+          echo "ASSET=${ASSET}" >> "$GITHUB_ENV"
+
+      - name: Package Linux AppImage
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          TOOLS="${RUNNER_TEMP}/linuxdeploy"
+          mkdir -p "${TOOLS}"
+          curl -fsSL -o "${TOOLS}/linuxdeploy" \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          curl -fsSL -o "${TOOLS}/linuxdeploy-plugin-qt" \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x "${TOOLS}/linuxdeploy" "${TOOLS}/linuxdeploy-plugin-qt"
+          export PATH="${TOOLS}:${PATH}"
+          export QMAKE="${QT_ROOT_DIR}/bin/qmake"
+          ASSET="anpstudio-${{ steps.ver.outputs.label }}-${{ matrix.artifact }}.AppImage"
+          mkdir -p out
+          # linuxdeploy writes the AppImage into the current working directory.
+          packaging/linux/build-appimage.sh build/gui/anpstudio "out/${ASSET}"
+          echo "ASSET=${ASSET}" >> "$GITHUB_ENV"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: anpstudio-${{ steps.ver.outputs.label }}-${{ matrix.artifact }}
+          path: out/${{ env.ASSET }}
+          if-no-files-found: error
+
+  publish:
+    name: Attach release assets
+    needs: build
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Attach to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
