@@ -3,8 +3,8 @@ name: Publish site
 on:
   push:
     branches: [main]
-  release:
-    types: [published]
+  # Do not deploy on release tags: the github-pages environment only allows
+  # branch "main". Docs already publish on every main push.
 
 permissions:
   contents: read
