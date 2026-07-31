@@ -50,9 +50,9 @@ jobs:
         uses: jurplel/install-qt-action@v4
         with:
           version: ${{ env.QT_VERSION }}
-          modules: ""
-          archives: qtbase
           cache: true
+          # Full desktop package (not archives: qtbase alone) so Linux ships
+          # ICU libs required by rcc (libicui18n.so.*).
 
       - name: Set up MSVC
         if: runner.os == 'Windows'
@@ -76,6 +76,12 @@ jobs:
             libgl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev \
             libxcb-cursor0 libxcb-cursor-dev \
             libfuse2
+
+      - name: Ensure Qt tools can find bundled libraries
+        shell: bash
+        run: |
+          echo "LD_LIBRARY_PATH=${QT_ROOT_DIR}/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+          ls "${QT_ROOT_DIR}/lib"/libicu* 2>/dev/null || echo "Note: no libicu* under Qt lib (ok on Windows/macOS)"
 
       - name: Configure CMake
         shell: bash
@@ -145,7 +151,8 @@ jobs:
   publish:
     name: Attach release assets
     needs: build
-    if: github.event_name == 'release'
+    # Attach whatever platforms succeeded even if one matrix leg failed.
+    if: github.event_name == 'release' && !cancelled() && needs.build.result != 'cancelled'
     runs-on: ubuntu-latest
     steps:
       - name: Download all build artifacts
@@ -153,10 +160,16 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
+          # Succeed even when one platform failed and produced no artifact.
+          # (download-artifact fails if zero artifacts exist)
+
+      - name: List artifacts
+        run: find artifacts -type f -print || true
 
       - name: Attach to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: artifacts/*
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
