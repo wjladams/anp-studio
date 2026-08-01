@@ -76,7 +76,7 @@ public:
   /**
    * @brief Replaces the Researcher session (does not emit session changed).
    *
-   * Callers that edit notebooks should also @ref setDirty.
+   * Callers that edit notebooks should also call @c setDirty().
    */
   void setResearcherSession(QVector<ResearcherNotebook> notebooks,
                             int activeIndex);
@@ -94,7 +94,8 @@ public:
   bool navigateToNetworkPath(const QString& path);
   /**
    * @brief Returns the network at a breadcrumb path without changing the view.
-   * @param path e.g. @c "Root" or @c "Root / Node" (@ref networkPathOptions).
+   * @param path e.g. @c "Root" or @c "Root / Node" (same form as
+   *        @c networkPathOptions()).
    * @return Network pointer, or nullptr if @p path is invalid.
    */
   [[nodiscard]] anpcpp::AnpNetwork* networkAtPath(const QString& path) const;
@@ -130,7 +131,7 @@ signals:
   /**
    * @brief Emitted when the Researcher session is replaced (load / new).
    *
-   * Not emitted for incremental edits via @ref setResearcherSession.
+   * Not emitted for incremental edits via @c setResearcherSession().
    */
   void researcherSessionChanged();
 
