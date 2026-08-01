@@ -93,7 +93,7 @@ CMake automatically uses `../libanpcpp` when that tree exists. Override with
 ### FetchContent from GitHub
 
 If there is no sibling checkout, CMake fetches `libanpcpp` from GitHub
-(`GIT_TAG v0.2.0`).
+(`GIT_TAG v0.3.0`).
 
 ## GUI features
 
@@ -191,8 +191,8 @@ GitHub Actions builds portable binaries for each **published** release:
 
 1. Merge the changes you want on `main`.
 2. On GitHub open the repo → **Releases** → **Draft a new release**.
-3. Under **Choose a tag**, create a new tag such as `0.2.0` (target: `main`).
-4. Set the release title (e.g. `ANP Studio 0.2.0`) and optional notes.
+3. Under **Choose a tag**, create a new tag such as `0.3.0` (target: `main`).
+4. Set the release title (e.g. `ANP Studio 0.3.0`) and optional notes.
 5. Click **Publish release** (not “Save draft”—drafts do not start the build).
 6. Open the **Actions** tab and watch **Release builds** (Windows, macOS, Linux).
 7. When the jobs finish, refresh the Release page; the three assets appear under the release.

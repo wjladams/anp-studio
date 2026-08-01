@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
 project(anpstudio
-  VERSION 0.2.0
+  VERSION 0.3.0
   DESCRIPTION "ANP Studio — Analytic Network Process desktop application"
   LANGUAGES CXX
 )
@@ -29,7 +29,7 @@ if(ANPSTUDIO_BUILD_GUI)
   else()
     FetchContent_Declare(anpcpp
       GIT_REPOSITORY https://github.com/wjladams/libanpcpp.git
-      GIT_TAG v0.2.0
+      GIT_TAG v0.3.0
     )
   endif()
 
