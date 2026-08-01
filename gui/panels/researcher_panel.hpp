@@ -1,6 +1,6 @@
 /**
  * @file researcher_panel.hpp
- * @brief Researcher stage: DSL notebook UI over the open document.
+ * @brief Researcher stage: multi-notebook DSL UI (browser-style tabs).
  */
 
 #pragma once
@@ -10,9 +10,9 @@
 #include <QWidget>
 #include <memory>
 
+#include "document.hpp"
 #include "researcher/researcher_dsl.hpp"
 
-class Document;
 class QListWidget;
 class QListWidgetItem;
 class QLineEdit;
@@ -20,9 +20,12 @@ class QLabel;
 class QScrollArea;
 class QVBoxLayout;
 class QTextBrowser;
+class QTabBar;
+class QToolButton;
+class QMenu;
 
 /**
- * @brief Full Researcher stage: starters, notebook cells, bindings rail.
+ * @brief Researcher stage: notebook tabs, starters + bindings rail.
  */
 class ResearcherPanel : public QWidget {
   Q_OBJECT
@@ -31,6 +34,8 @@ public:
 
 public slots:
   void refreshBindings();
+  /** @brief Rebuild tabs and active notebook from the document session. */
+  void reloadFromDocument();
 
 protected:
   void showEvent(QShowEvent* event) override;
@@ -41,22 +46,34 @@ private slots:
   void runCurrentInput();
   void clearNotebook();
   void exportHtml();
+  void onTabChanged(int index);
+  void onTabCloseRequested(int index);
+  void onTabDoubleClicked(int index);
+  void newNotebook();
+  void duplicateNotebook();
+  void deleteNotebook();
+  void addNotebookTab();
 
 private:
-  struct CellRecord {
-    QString command;
-    QString html;
-    bool ok = false;
-  };
-
   void appendCell(const QString& command, const ResearcherEvalResult& result);
+  void clearNotebookUi(bool keepEphemeralHelp);
+  void rebuildTabBar();
+  void loadActiveNotebookIntoUi();
+  void persistActiveNotebookToModel(bool markDirty);
+  void syncSessionToDocument(bool markDirty);
+  void ensureNotebooks();
   void setHistoryFromIndex();
+  void updateTabLabels();
   [[nodiscard]] QString buildExportHtml() const;
   [[nodiscard]] QString defaultExportFileName() const;
+  [[nodiscard]] static QString middleTruncate(const QString& name);
 
   Document* doc_ = nullptr;
   std::unique_ptr<ResearcherSession> session_;
 
+  QToolButton* menuBtn_ = nullptr;
+  QTabBar* tabBar_ = nullptr;
+  QToolButton* addTabBtn_ = nullptr;
   QListWidget* starters_ = nullptr;
   QScrollArea* notebookScroll_ = nullptr;
   QWidget* notebookHost_ = nullptr;
@@ -65,8 +82,11 @@ private:
   QLabel* promptLabel_ = nullptr;
   QTextBrowser* bindings_ = nullptr;
 
-  QVector<CellRecord> cells_;
+  QVector<ResearcherNotebook> notebooks_;
+  int activeIndex_ = 0;
+  QVector<ResearcherCell> cells_;
   QStringList history_;
   int historyIndex_ = -1;
   QString historyDraft_;
+  bool updatingTabs_ = false;
 };

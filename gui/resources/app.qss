@@ -764,11 +764,54 @@ QLabel#ratingsHeader {
 
 /* —— Researcher —— */
 QLabel#researcherCaption {
-  font-weight: 600;
-  font-size: 12px;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #5f6368;
+  margin-top: 2px;
+}
+
+QWidget#researcherRightRail,
+QWidget#researcherSideHost {
+  background-color: #f6f8fc;
+}
+
+QScrollArea#researcherSideScroll {
+  background-color: #f6f8fc;
+  border: none;
+}
+
+QListWidget#researcherStarters {
+  background-color: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  outline: none;
+  padding: 0px;
+  font-family: "Ubuntu Mono", "Consolas", "Courier New", monospace;
+  font-size: 12px;
+  color: #202124;
+}
+
+QListWidget#researcherStarters::item {
+  padding: 6px 10px;
+  border-bottom: 1px solid #dadce0;
+}
+
+QListWidget#researcherStarters::item:selected,
+QListWidget#researcherStarters::item:hover {
+  background-color: #f1f3f4;
+  color: #202124;
+}
+
+QTextBrowser#researcherBindings {
+  background-color: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  padding: 2px;
+  color: #5f6368;
+  font-family: "Ubuntu Mono", "Consolas", "Courier New", monospace;
+  font-size: 12px;
 }
 
 QLabel#researcherIntro {
@@ -791,5 +834,75 @@ QFrame#researcherCell {
   background-color: #ffffff;
   border: 1px solid #dadce0;
   border-radius: 8px;
+}
+
+QWidget#researcherTabRow {
+  background-color: #f6f8fc;
+  border-bottom: 1px solid #dadce0;
+}
+
+QToolButton#researcherMenuBtn,
+QToolButton#researcherAddTabBtn {
+  color: #5f6368;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+}
+
+QToolButton#researcherMenuBtn:hover,
+QToolButton#researcherAddTabBtn:hover {
+  background-color: #f1f3f4;
+  border-color: #dadce0;
+  color: #202124;
+}
+
+QToolButton#researcherAddTabBtn {
+  color: #1a73e8;
+  font-size: 16px;
+}
+
+/* Browser-style notebook tabs */
+QTabBar#researcherTabBar {
+  background: transparent;
+  qproperty-drawBase: 0;
+}
+
+QTabBar#researcherTabBar::tab {
+  background-color: #f1f3f4;
+  color: #5f6368;
+  border: 1px solid #dadce0;
+  border-bottom: none;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  padding: 7px 22px 7px 12px;
+  margin-right: 2px;
+  min-width: 4.5em;
+  max-width: 10em;
+  font-weight: 600;
+}
+
+QTabBar#researcherTabBar::tab:selected {
+  background-color: #ffffff;
+  color: #202124;
+  margin-bottom: -1px;
+  padding-bottom: 8px;
+}
+
+QTabBar#researcherTabBar::tab:hover:!selected {
+  background-color: #e8eaed;
+  color: #202124;
+}
+
+QTabBar#researcherTabBar::close-button {
+  subcontrol-position: right;
+  margin-right: 4px;
+}
+
+QTabBar#researcherTabBar::close-button:hover {
+  background-color: #dadce0;
+  border-radius: 3px;
 }
 

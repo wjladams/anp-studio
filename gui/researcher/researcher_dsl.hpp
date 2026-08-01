@@ -11,6 +11,7 @@
 #include <memory>
 #include <vector>
 
+#include "anpcpp/limit_matrix.hpp"
 #include "anpcpp/network.hpp"
 
 class Document;
@@ -31,6 +32,13 @@ struct ResearcherEvalResult {
  * - @c parentModel — @ref Document::parentNetwork (nullptr at root)
  *
  * Extra models are owned here via @c load … as &lt;name&gt;.
+ *
+ * Matrix / globals commands accept:
+ * - @c on &lt;target&gt; — handle (@c thisModel, …) or breadcrumb path
+ *   (@c "Root", @c "Root / Node", …); for a handle with subnets,
+ *   @c on &lt;handle&gt; "Root / Node"
+ * - @c method &lt;calculus|newhierarchy|sinks&gt; — limit / globals only
+ * - flags: @c with_limit (newhierarchy), @c no_straight (sinks)
  */
 class ResearcherSession {
 public:
@@ -56,13 +64,57 @@ public:
   /** @return HTML help page. */
   [[nodiscard]] static QString helpHtml();
 
+  /**
+   * @brief Completions for the token being typed at the end of @p line.
+   * @return Candidate strings (already filtered by the current token prefix).
+   */
+  [[nodiscard]] QStringList completions(const QString& line) const;
+
+  /** @return Known handle names (reserved + loaded). */
+  [[nodiscard]] QStringList handleNames() const;
+
 private:
+  struct CalcTarget {
+    anpcpp::AnpNetwork* net = nullptr;
+    QString label;
+  };
+
+  struct LimitParse {
+    anpcpp::LimitMatrixOptions options;
+    QString methodLabel = QStringLiteral("calculus");
+    QString error;
+    bool ok = true;
+  };
+
   [[nodiscard]] anpcpp::AnpNetwork* resolve(const QString& name,
                                             QString* error) const;
   [[nodiscard]] anpcpp::AnpNetwork* active(QString* error) const;
   [[nodiscard]] bool isReservedName(const QString& name) const;
   [[nodiscard]] ResearcherEvalResult okHtml(const QString& body) const;
   [[nodiscard]] ResearcherEvalResult errHtml(const QString& message) const;
+
+  [[nodiscard]] CalcTarget resolveOnTarget(const QString& target,
+                                           QString* error) const;
+  [[nodiscard]] CalcTarget resolveOnHandlePath(const QString& handle,
+                                               const QString& path,
+                                               QString* error) const;
+  [[nodiscard]] static anpcpp::AnpNetwork* networkAtRelativePath(
+      anpcpp::AnpNetwork* root, const QString& path, QString* error);
+  [[nodiscard]] static QStringList pathOptionsUnder(anpcpp::AnpNetwork* root);
+  [[nodiscard]] LimitParse parseLimitOptions(const QStringList& args,
+                                             int startIndex) const;
+
+  /**
+   * @brief Parses optional @c on / limit options for matrix and globals.
+   * @param allowLimit When false, method/flags are rejected.
+   */
+  [[nodiscard]] ResearcherEvalResult parseCalcTarget(
+      const QStringList& args, bool allowLimit, CalcTarget* target,
+      LimitParse* limit) const;
+
+  [[nodiscard]] ResearcherEvalResult cmdMatrix(const QString& kind,
+                                               const QStringList& args);
+  [[nodiscard]] ResearcherEvalResult cmdGlobals(const QStringList& args);
 
   [[nodiscard]] ResearcherEvalResult cmdHelp() const;
   [[nodiscard]] ResearcherEvalResult cmdVars() const;
@@ -75,8 +127,6 @@ private:
   [[nodiscard]] ResearcherEvalResult cmdClusters();
   [[nodiscard]] ResearcherEvalResult cmdNodes();
   [[nodiscard]] ResearcherEvalResult cmdAlts();
-  [[nodiscard]] ResearcherEvalResult cmdMatrix(const QString& kind);
-  [[nodiscard]] ResearcherEvalResult cmdGlobals();
   [[nodiscard]] ResearcherEvalResult cmdAltScores();
 
   /** Resolve relative load paths against cwd, document dir, then app samples. */

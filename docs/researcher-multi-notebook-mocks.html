@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Researcher — multi-notebook UI mocks</title>
+  <style>
+    :root {
+      --bg: #eef1f6;
+      --ink: #202124;
+      --muted: #5f6368;
+      --line: #dadce0;
+      --panel: #ffffff;
+      --chrome: #f6f8fc;
+      --accent: #1a73e8;
+      --accent-soft: #e8f0fe;
+      --hover: #f1f3f4;
+      --cell: #ffffff;
+      --prompt: #1a73e8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 14px/1.45 "Ubuntu", "Cantarell", "Noto Sans", system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    header {
+      padding: 1.5rem 2rem 1.1rem;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+    }
+    header h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.45rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      margin: 0;
+      max-width: 52rem;
+      color: var(--muted);
+    }
+    .note {
+      margin-top: 0.85rem;
+      padding: 0.65rem 0.85rem;
+      border-left: 3px solid var(--accent);
+      background: var(--accent-soft);
+      max-width: 52rem;
+      font-size: 0.92rem;
+      color: var(--ink);
+    }
+    main {
+      padding: 1.25rem 2rem 3rem;
+      display: grid;
+      gap: 2rem;
+    }
+    section.mock-block h2 {
+      margin: 0 0 0.35rem;
+      font-size: 1.15rem;
+    }
+    section.mock-block > p {
+      margin: 0 0 0.85rem;
+      color: var(--muted);
+      max-width: 48rem;
+    }
+
+    .app {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(32, 33, 36, 0.06);
+    }
+    .stage-strip {
+      display: flex;
+      gap: 0.15rem;
+      padding: 0.55rem 0.85rem 0;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .stage-strip span {
+      padding: 0.55rem 0.85rem;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.85rem;
+      border-bottom: 2px solid transparent;
+    }
+    .stage-strip span.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* Option 1: no left rail — center + right only */
+    .researcher.opt1 {
+      display: grid;
+      grid-template-columns: 1fr 240px;
+      min-height: 420px;
+      background: var(--chrome);
+    }
+    /* Option 2: notebooks left + center + right */
+    .researcher.opt2 {
+      display: grid;
+      grid-template-columns: 200px 1fr 240px;
+      min-height: 420px;
+      background: var(--chrome);
+    }
+
+    .rail {
+      background: var(--chrome);
+      border-right: 1px solid var(--line);
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      min-width: 0;
+    }
+    .rail.right {
+      border-right: none;
+      border-left: 1px solid var(--line);
+    }
+    .caption-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.35rem;
+      margin: 0.15rem 0;
+    }
+    .caption {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0;
+    }
+    .center {
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .intro {
+      padding: 0.7rem 0.85rem 0.35rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .notebook {
+      flex: 1;
+      overflow: auto;
+      padding: 0.5rem 0.85rem 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+    .cell {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--cell);
+      padding: 0.55rem 0.7rem;
+    }
+    .cell .cmd {
+      font-family: "Ubuntu Mono", Consolas, monospace;
+      font-weight: 600;
+      font-size: 0.85rem;
+      margin-bottom: 0.35rem;
+    }
+    .cell .out {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .cell .out table {
+      border-collapse: collapse;
+      margin-top: 0.25rem;
+      font-size: 0.78rem;
+      color: var(--ink);
+    }
+    .cell .out th, .cell .out td {
+      border: 1px solid #e8eaed;
+      padding: 0.25rem 0.45rem;
+    }
+    .cell .out th { background: #f1f3f4; color: var(--muted); }
+    .input-row {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+      padding: 0.55rem 0.85rem 0.75rem;
+      border-top: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .input-row .prompt {
+      font-family: "Ubuntu Mono", Consolas, monospace;
+      font-weight: 600;
+      color: var(--prompt);
+      white-space: nowrap;
+      font-size: 0.85rem;
+    }
+    .input-row input {
+      flex: 1;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0.4rem 0.55rem;
+      font: inherit;
+    }
+    .input-row button {
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      border-radius: 6px;
+      padding: 0.4rem 0.7rem;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      color: #fff;
+    }
+
+    /* Analysis-like nav list */
+    .nav-list {
+      list-style: none;
+      margin: 0;
+      padding: 0.25rem 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+      flex: 1;
+    }
+    .nav-list li {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.88rem;
+      cursor: default;
+      border-left: 3px solid transparent;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .nav-list li:hover:not(.active) { background: var(--hover); }
+    .nav-list li.active {
+      background: var(--accent-soft);
+      color: #1967d2;
+      font-weight: 600;
+      border-left-color: var(--accent);
+    }
+    .list.starters {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .list.starters li {
+      padding: 0.4rem 0.6rem;
+      border-bottom: 1px solid var(--line);
+      font-family: "Ubuntu Mono", Consolas, monospace;
+      font-size: 0.8rem;
+    }
+    .list.starters li:last-child { border-bottom: none; }
+    .list.starters li:hover { background: var(--hover); }
+    .bindings-box {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 0.55rem 0.65rem;
+      font-family: "Ubuntu Mono", Consolas, monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .clear-link {
+      margin-top: auto;
+      padding: 0.45rem 0.15rem;
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: default;
+    }
+    .clear-link:hover { text-decoration: underline; }
+
+    /* Hamburger + popover menu (list items, not buttons) */
+    .menu-wrap {
+      position: relative;
+      flex-shrink: 0;
+    }
+    .burger {
+      width: 28px;
+      height: 28px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      font-size: 1.05rem;
+      line-height: 1;
+    }
+    .burger:hover,
+    .menu-wrap.open .burger {
+      background: var(--hover);
+      color: var(--ink);
+      border-color: var(--line);
+    }
+    .menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      z-index: 20;
+      min-width: 11.5rem;
+      margin: 0;
+      padding: 0.3rem 0;
+      list-style: none;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(32, 33, 36, 0.12);
+    }
+    .menu-wrap.open .menu { display: block; }
+    .menu.align-right {
+      left: auto;
+      right: 0;
+    }
+    .menu li {
+      padding: 0.5rem 0.85rem;
+      font-size: 0.88rem;
+      color: var(--ink);
+      cursor: default;
+      border-left: 3px solid transparent;
+    }
+    .menu li:hover {
+      background: var(--accent-soft);
+      color: #1967d2;
+      border-left-color: var(--accent);
+    }
+    .menu li.danger:hover {
+      background: #fce8e6;
+      color: #b3261e;
+      border-left-color: #b3261e;
+    }
+    .menu li.sep {
+      height: 1px;
+      padding: 0;
+      margin: 0.3rem 0;
+      background: var(--line);
+      border: none;
+      pointer-events: none;
+    }
+
+    /* Option 1 — notebook tabs + burger at start */
+    .nb-tabs {
+      display: flex;
+      align-items: flex-end;
+      gap: 0.2rem;
+      padding: 0.45rem 0.75rem 0;
+      border-bottom: 1px solid var(--line);
+      background: var(--chrome);
+      min-width: 0;
+    }
+    .nb-tabs .menu-wrap {
+      align-self: center;
+      margin: 0 0.35rem 0.35rem 0;
+    }
+    .nb-tab {
+      position: relative;
+      max-width: 9.5rem;
+      min-width: 4.5rem;
+      padding: 0.45rem 1.55rem 0.45rem 0.65rem;
+      border: 1px solid var(--line);
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      background: var(--hover);
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: default;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .nb-tab.active {
+      background: var(--panel);
+      color: var(--ink);
+      margin-bottom: -1px;
+      padding-bottom: calc(0.45rem + 1px);
+      z-index: 1;
+    }
+    .nb-tab .label {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .nb-tab .close {
+      position: absolute;
+      right: 0.35rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 1rem;
+      height: 1rem;
+      border-radius: 3px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      line-height: 1rem;
+      text-align: center;
+    }
+    .nb-tab.add {
+      min-width: 0;
+      max-width: none;
+      padding: 0.4rem 0.55rem;
+      background: transparent;
+      border-color: transparent;
+      color: var(--accent);
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .callout {
+      margin-top: 0.75rem;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+    .callout code {
+      font-family: "Ubuntu Mono", Consolas, monospace;
+      background: #f1f3f4;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.82rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Researcher — multi-notebook mocks</h1>
+    <p>
+      Updated: hamburger menus for notebook actions (list items, Analysis-style),
+      and Starters live with Bindings on the right in both options.
+    </p>
+    <div class="note">
+      <strong>Hamburger menus</strong> open a list (not chrome buttons):
+      New notebook, Duplicate, Delete, Export HTML….
+      Click the ☰ control in either mock to preview. Long tab/list names still
+      middle-truncate; hover shows the full title.
+    </div>
+  </header>
+
+  <main>
+    <!-- ========== OPTION 1 ========== -->
+    <section class="mock-block">
+      <h2>Option 1 — Notebook tabs + hamburger (starters with bindings)</h2>
+      <p>
+        ☰ sits to the left of the first tab. Starters moved to the right rail with
+        Bindings. No separate left column.
+      </p>
+
+      <div class="app" aria-label="Option 1 mock">
+        <div class="stage-strip">
+          <span>Structure</span>
+          <span>Judgments</span>
+          <span>Analysis</span>
+          <span class="active">Researcher</span>
+        </div>
+        <div class="researcher opt1">
+          <div class="center">
+            <div class="nb-tabs" role="tablist" aria-label="Notebooks">
+              <div class="menu-wrap" data-menu>
+                <button type="button" class="burger" aria-label="Notebook menu"
+                        aria-haspopup="true" aria-expanded="false">☰</button>
+                <ul class="menu" role="menu">
+                  <li role="menuitem">New notebook</li>
+                  <li role="menuitem">Duplicate</li>
+                  <li role="menuitem" class="danger">Delete</li>
+                  <li class="sep" aria-hidden="true"></li>
+                  <li role="menuitem">Export HTML…</li>
+                </ul>
+              </div>
+              <div class="nb-tab active" role="tab" aria-selected="true"
+                   title="LongNamedStupidWorkbookAlts">
+                <span class="label">LongNamed…Alts</span>
+                <span class="close" aria-hidden="true">×</span>
+              </div>
+              <div class="nb-tab" role="tab" aria-selected="false"
+                   title="Sensitivity sweep p">
+                <span class="label">Sensitivity sweep p</span>
+                <span class="close" aria-hidden="true">×</span>
+              </div>
+              <div class="nb-tab" role="tab" aria-selected="false"
+                   title="CompareHamburgerVsCarPurchaseModel">
+                <span class="label">CompareHam…odel</span>
+                <span class="close" aria-hidden="true">×</span>
+              </div>
+              <div class="nb-tab add" role="button" title="New notebook">+</div>
+            </div>
+            <div class="intro">
+              Active:
+              <strong title="LongNamedStupidWorkbookAlts">LongNamedStupidWorkbookAlts</strong>
+              — ☰ for New / Duplicate / Delete / Export.
+            </div>
+            <div class="notebook">
+              <div class="cell">
+                <div class="cmd">› info</div>
+                <div class="out">Clusters: 4 · Nodes: 12 · Alternatives: 3</div>
+              </div>
+              <div class="cell">
+                <div class="cmd">› altscores</div>
+                <div class="out">
+                  <table>
+                    <tr><th>Alternative</th><th>Value</th></tr>
+                    <tr><td>McDonald's</td><td>0.4120</td></tr>
+                    <tr><td>Burger King</td><td>0.3185</td></tr>
+                    <tr><td>Wendy's</td><td>0.2695</td></tr>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="input-row">
+              <span class="prompt">thisModel ›</span>
+              <input type="text" readonly value="limit" aria-label="Command" />
+              <button type="button">Run</button>
+            </div>
+          </div>
+
+          <aside class="rail right">
+            <div class="caption">Bindings</div>
+            <div class="bindings-box">
+              thisModel&nbsp;&nbsp;[Root]<br />
+              parentModel&nbsp;(at root)<br />
+              h&nbsp;&nbsp;(loaded)<br />
+              active → thisModel
+            </div>
+            <div class="caption" style="margin-top:0.35rem;">Starters</div>
+            <ul class="list starters">
+              <li>help</li>
+              <li>info</li>
+              <li>limit</li>
+              <li>globals</li>
+              <li>altscores</li>
+            </ul>
+            <div class="clear-link">Clear notebook</div>
+          </aside>
+        </div>
+      </div>
+      <p class="callout">
+        Tabs keep middle truncation + hover. The <code>+</code> tab can remain as a
+        shortcut; full actions live in ☰.
+      </p>
+    </section>
+
+    <!-- ========== OPTION 2 ========== -->
+    <section class="mock-block">
+      <h2>Option 2 — Notebook list + hamburger beside “Notebooks”</h2>
+      <p>
+        Left rail is an Analysis-style list of notebooks. ☰ beside the
+        <strong>Notebooks</strong> caption holds New / Duplicate / Delete / Export
+        as list items (not buttons). Starters sit under Bindings on the right.
+      </p>
+
+      <div class="app" aria-label="Option 2 mock">
+        <div class="stage-strip">
+          <span>Structure</span>
+          <span>Judgments</span>
+          <span>Analysis</span>
+          <span class="active">Researcher</span>
+        </div>
+        <div class="researcher opt2">
+          <aside class="rail">
+            <div class="caption-row">
+              <div class="caption">Notebooks</div>
+              <div class="menu-wrap" data-menu>
+                <button type="button" class="burger" aria-label="Notebook menu"
+                        aria-haspopup="true" aria-expanded="false">☰</button>
+                <ul class="menu align-right" role="menu">
+                  <li role="menuitem">New notebook</li>
+                  <li role="menuitem">Duplicate</li>
+                  <li role="menuitem" class="danger">Delete</li>
+                  <li class="sep" aria-hidden="true"></li>
+                  <li role="menuitem">Export HTML…</li>
+                </ul>
+              </div>
+            </div>
+            <ul class="nav-list" role="listbox" aria-label="Notebooks">
+              <li class="active" role="option" aria-selected="true"
+                  title="LongNamedStupidWorkbookAlts">LongNamed…Alts</li>
+              <li role="option" title="Sensitivity sweep p">Sensitivity sweep p</li>
+              <li role="option" title="CompareHamburgerVsCarPurchaseModel">CompareHam…odel</li>
+            </ul>
+          </aside>
+
+          <div class="center">
+            <div class="intro">
+              Exploring
+              <strong title="LongNamedStupidWorkbookAlts">LongNamedStupidWorkbookAlts</strong>.
+              Switch from the left list; manage via ☰ next to Notebooks.
+            </div>
+            <div class="notebook">
+              <div class="cell">
+                <div class="cmd">› use h</div>
+                <div class="out">Active handle is now <code>h</code>.</div>
+              </div>
+              <div class="cell">
+                <div class="cmd">› globals</div>
+                <div class="out">
+                  <table>
+                    <tr><th>Node</th><th>Value</th></tr>
+                    <tr><td>Price</td><td>0.2104</td></tr>
+                    <tr><td>Quality</td><td>0.3891</td></tr>
+                    <tr><td>Service</td><td>0.4005</td></tr>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="input-row">
+              <span class="prompt">h ›</span>
+              <input type="text" readonly value="altscores" aria-label="Command" />
+              <button type="button">Run</button>
+            </div>
+          </div>
+
+          <aside class="rail right">
+            <div class="caption">Bindings</div>
+            <div class="bindings-box">
+              thisModel&nbsp;&nbsp;[Root]<br />
+              parentModel&nbsp;(at root)<br />
+              h&nbsp;&nbsp;(loaded)<br />
+              active → h
+            </div>
+            <div class="caption" style="margin-top:0.35rem;">Starters</div>
+            <ul class="list starters">
+              <li>help</li>
+              <li>info</li>
+              <li>vars</li>
+              <li>limit</li>
+              <li>globals</li>
+              <li>altscores</li>
+            </ul>
+            <div class="clear-link">Clear notebook</div>
+          </aside>
+        </div>
+      </div>
+      <p class="callout">
+        Notebook rows mirror Analysis left-nav selection (soft blue + accent bar).
+        Destructive <code>Delete</code> is styled distinctly in the menu list.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    document.querySelectorAll("[data-menu]").forEach((wrap) => {
+      const btn = wrap.querySelector(".burger");
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const open = wrap.classList.toggle("open");
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        document.querySelectorAll("[data-menu]").forEach((other) => {
+          if (other !== wrap) {
+            other.classList.remove("open");
+            const b = other.querySelector(".burger");
+            if (b) b.setAttribute("aria-expanded", "false");
+          }
+        });
+      });
+    });
+    document.addEventListener("click", () => {
+      document.querySelectorAll("[data-menu].open").forEach((wrap) => {
+        wrap.classList.remove("open");
+        const b = wrap.querySelector(".burger");
+        if (b) b.setAttribute("aria-expanded", "false");
+      });
+    });
+  </script>
+</body>
+</html>
