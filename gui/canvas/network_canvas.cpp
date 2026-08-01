@@ -371,6 +371,10 @@ void NetworkCanvas::rebuild() {
 
   rebuilding_ = true;
   cancelInlineRename();
+  // Persist current item positions into the model before tearing the scene
+  // down — but only for in-place edits of the same network. File load / subnet
+  // navigation sets Document::suppressLayoutPersist so we do not copy the old
+  // canvas onto a different AnpNetwork (same cluster names → "ghost" layout).
   if (!doc_->suppressLayoutPersist()) {
     persistLayout();
   }

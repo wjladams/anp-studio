@@ -180,6 +180,15 @@ private:
   void replaceRoot(std::unique_ptr<anpcpp::AnpNetwork> net);
   void clearSelectionIfInvalid();
   void queueModelChanged();
+  /**
+   * @brief Emits view/model change without writing canvas layout into the new net.
+   *
+   * @c NetworkCanvas::rebuild persists scene positions into @ref network before
+   * tearing down items. That is correct for in-place edits, but corrupts the
+   * model when the viewed @c AnpNetwork* changes (file load, subnet nav) and
+   * cluster names overlap.
+   */
+  void emitViewSwitch();
 
   std::unique_ptr<anpcpp::AnpNetwork> root_;
   std::vector<Frame> stack_;

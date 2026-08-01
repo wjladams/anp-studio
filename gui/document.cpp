@@ -68,8 +68,16 @@ void Document::replaceRoot(std::unique_ptr<anpcpp::AnpNetwork> net) {
   setDirty(false);
   emit selectionChanged(selectedCluster_, selectedNode_);
   emit resultsFreshnessChanged();
+  emitViewSwitch();
+}
+
+void Document::emitViewSwitch() {
+  // See declaration: suppress canvas→model layout write across network swaps.
+  setSuppressLayoutPersist(true);
   emit viewNetworkChanged();
   notifyChanged();
+  flushModelChanged();
+  setSuppressLayoutPersist(false);
 }
 
 void Document::newNetwork(bool create_alts) {
@@ -121,8 +129,7 @@ void Document::pushSubnet(const QString& nodeName) {
   selectedCluster_.clear();
   selectedNode_.clear();
   emit selectionChanged(selectedCluster_, selectedNode_);
-  emit viewNetworkChanged();
-  notifyChanged();
+  emitViewSwitch();
 }
 
 void Document::popSubnet() {
@@ -131,8 +138,7 @@ void Document::popSubnet() {
   selectedCluster_.clear();
   selectedNode_.clear();
   emit selectionChanged(selectedCluster_, selectedNode_);
-  emit viewNetworkChanged();
-  notifyChanged();
+  emitViewSwitch();
 }
 
 void Document::popToRoot() {
@@ -141,8 +147,7 @@ void Document::popToRoot() {
   selectedCluster_.clear();
   selectedNode_.clear();
   emit selectionChanged(selectedCluster_, selectedNode_);
-  emit viewNetworkChanged();
-  notifyChanged();
+  emitViewSwitch();
 }
 
 void Document::popToDepth(int depth) {
@@ -153,8 +158,7 @@ void Document::popToDepth(int depth) {
   selectedCluster_.clear();
   selectedNode_.clear();
   emit selectionChanged(selectedCluster_, selectedNode_);
-  emit viewNetworkChanged();
-  notifyChanged();
+  emitViewSwitch();
 }
 
 int Document::subnetDepth() const {
@@ -227,8 +231,7 @@ bool Document::navigateToNetworkPath(const QString& path) {
   selectedCluster_.clear();
   selectedNode_.clear();
   emit selectionChanged(selectedCluster_, selectedNode_);
-  emit viewNetworkChanged();
-  notifyChanged();
+  emitViewSwitch();
   return true;
 }
 
