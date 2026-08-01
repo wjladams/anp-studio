@@ -165,10 +165,11 @@ void ResultsPanel::calculate() {
     fillMatrix(unscaled_, net.unscaled_supermatrix(), nodes, nodes);
     fillMatrix(clusterW_, net.cluster_weight_matrix(), clusters, clusters);
     fillMatrix(scaled_, net.scaled_supermatrix(), nodes, nodes);
-    fillMatrix(limit_, net.limit_matrix(), nodes, nodes);
-    fillVector(global_, net.global_priority(), nodes);
+    fillMatrix(limit_, net.limit_matrix(net.limit_matrix_options()), nodes,
+               nodes);
+    fillVector(global_, net.global_priority(net.limit_matrix_options()), nodes);
     const auto altNames = net.alt_names();
-    const auto altPri = net.priority();
+    const auto altPri = net.priority(net.limit_matrix_options());
     fillVector(alts_, altPri, altNames);
     tabs_->setCurrentWidget(alts_);
 

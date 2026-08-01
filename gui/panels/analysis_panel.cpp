@@ -57,6 +57,52 @@ QTreeWidgetItem* makeNavItem(QTreeWidgetItem* parent,
   return item;
 }
 
+QString limitOptionsSummaryHtml(const anpcpp::LimitMatrixOptions& lim) {
+  QString method = QStringLiteral("Calculus");
+  if (lim.method == anpcpp::LimitMatrixMethod::NewHierarchy) {
+    method = QStringLiteral("New Hierarchy");
+  } else if (lim.method == anpcpp::LimitMatrixMethod::Sinks) {
+    method = QStringLiteral("Sinks");
+  }
+
+  QString body = QStringLiteral(
+      "<p class='muted'>Calculated from the scaled supermatrix using the "
+      "network limit-matrix settings (Structure → Inspector):</p><ul>");
+  body += QStringLiteral("<li>Method: <code>") + method +
+          QStringLiteral("</code></li>");
+  body += QStringLiteral("<li>Error tolerance: <code>") +
+          QString::number(lim.error, 'g', 12) + QStringLiteral("</code></li>");
+  body += QStringLiteral("<li>Max iterations: <code>") +
+          QString::number(static_cast<qulonglong>(lim.max_iters)) +
+          QStringLiteral("</code></li>");
+  body += QStringLiteral("<li>Hierarchy formula shortcut: <code>") +
+          QString(lim.use_hierarchy_formula ? QStringLiteral("yes")
+                                            : QStringLiteral("no")) +
+          QStringLiteral("</code></li>");
+  body += QStringLiteral("<li>Start power: <code>") +
+          (lim.start_pow == 0
+               ? QStringLiteral("auto")
+               : QString::number(static_cast<qulonglong>(lim.start_pow))) +
+          QStringLiteral("</code></li>");
+  if (lim.method == anpcpp::LimitMatrixMethod::NewHierarchy) {
+    body += QStringLiteral("<li>With limit: <code>") +
+            QString(lim.with_limit ? QStringLiteral("yes")
+                                   : QStringLiteral("no")) +
+            QStringLiteral("</code></li>");
+    body += QStringLiteral("<li>With-limit max count: <code>") +
+            QString::number(static_cast<qulonglong>(lim.max_count)) +
+            QStringLiteral("</code></li>");
+  }
+  if (lim.method == anpcpp::LimitMatrixMethod::Sinks) {
+    body += QStringLiteral("<li>Straight normalizer: <code>") +
+            QString(lim.straight_normalizer ? QStringLiteral("yes")
+                                            : QStringLiteral("no")) +
+            QStringLiteral("</code></li>");
+  }
+  body += QStringLiteral("</ul>");
+  return body;
+}
+
 QTableWidget* makeInfluenceTable(QWidget* parent) {
   auto* table = new QTableWidget(parent);
   table->setSortingEnabled(true);
@@ -297,6 +343,8 @@ void AnalysisPanel::buildNavTree() {
               QStringLiteral("cluster"));
   makeNavItem(synthItem_, QStringLiteral("Scaled Supermatrix"), Page::Synthesis,
               QStringLiteral("scaled"));
+  makeNavItem(synthItem_, QStringLiteral("Limit Matrix"), Page::Synthesis,
+              QStringLiteral("limit"));
   makeNavItem(synthItem_, QStringLiteral("Global priorities"), Page::Synthesis,
               QStringLiteral("global"));
   subnetNavItem_ = makeNavItem(synthItem_, QStringLiteral("Subnetwork synthesis results"),
@@ -454,8 +502,9 @@ std::vector<std::pair<QString, double>> AnalysisPanel::altScoresAtP(
     double p) const {
   std::vector<std::pair<QString, double>> out;
   try {
+    const auto& lim = doc_->network().limit_matrix_options();
     const auto scores = doc_->network().priority_map_at_p(
-        wrt.toStdString(), p, anpcpp::P0Mode::Direct(0.5));
+        wrt.toStdString(), p, anpcpp::P0Mode::Direct(0.5), lim);
     for (const auto& alt : doc_->network().alt_names()) {
       const auto it = scores.find(alt);
       out.emplace_back(QString::fromStdString(alt),
@@ -470,6 +519,7 @@ void AnalysisPanel::refreshSynthesisHtml() {
   QString body;
   try {
     auto& net = doc_->network();
+    const auto& lim = net.limit_matrix_options();
     const auto nodeNames = net.node_names();
     const auto clusterNames = net.cluster_names();
 
@@ -485,8 +535,14 @@ void AnalysisPanel::refreshSynthesisHtml() {
     body +=
         HtmlReport::matrixTable(net.scaled_supermatrix(), nodeNames, nodeNames);
 
+    body += QStringLiteral("<h1 id='limit'>Limit Matrix</h1>");
+    body += limitOptionsSummaryHtml(lim);
+    body += HtmlReport::matrixTable(net.limit_matrix(lim), nodeNames, nodeNames);
+
     body += QStringLiteral("<h1 id='global'>Global priorities</h1>");
-    body += HtmlReport::vectorTable(net.global_priority(), nodeNames,
+    body += QStringLiteral(
+        "<p class='muted'>Row-sum priorities of the Limit Matrix above.</p>");
+    body += HtmlReport::vectorTable(net.global_priority(lim), nodeNames,
                                     QStringLiteral("Node"),
                                     QStringLiteral("Priority"));
 
@@ -496,7 +552,7 @@ void AnalysisPanel::refreshSynthesisHtml() {
       for (anpcpp::AnpNode* n : net.nodes()) {
         if (n->has_subnetwork()) hosts.push_back(n);
       }
-      const anpcpp::Vector g = net.global_priority();
+      const anpcpp::Vector g = net.global_priority(lim);
       std::vector<double> hostW;
       double hostSum = 0.0;
       for (anpcpp::AnpNode* h : hosts) {
@@ -532,7 +588,8 @@ void AnalysisPanel::refreshSynthesisHtml() {
         for (anpcpp::AnpNode* h : hosts) {
           double score = 0.0;
           try {
-            const auto pm = h->subnetwork()->priority_map();
+            anpcpp::AnpNetwork* sub = h->subnetwork();
+            const auto pm = sub->priority_map(sub->limit_matrix_options());
             const auto it = pm.find(alt);
             if (it != pm.end()) score = it->second;
           } catch (...) {
@@ -545,7 +602,7 @@ void AnalysisPanel::refreshSynthesisHtml() {
     }
 
     body += QStringLiteral("<h1 id='alts'>Alternative Scores</h1>");
-    body += HtmlReport::vectorTable(net.priority(), net.alt_names(),
+    body += HtmlReport::vectorTable(net.priority(lim), net.alt_names(),
                                     QStringLiteral("Alternative"),
                                     QStringLiteral("Score"));
   } catch (const std::exception& e) {
@@ -613,11 +670,12 @@ void AnalysisPanel::refreshInfluence() {
 
   try {
     auto& net = doc_->network();
+    const auto& lim = net.limit_matrix_options();
 
     if (!inflWrtRaw_->currentText().isEmpty()) {
       const auto rows = net.influence_raw(
           inflWrtRaw_->currentText().toStdString(), inflDeltaUp_->value(),
-          inflDeltaDown_->value(), 0.5);
+          inflDeltaDown_->value(), 0.5, lim);
       inflTableRaw_->setColumnCount(3);
       inflTableRaw_->setHorizontalHeaderLabels(
           {QStringLiteral("Original"), QStringLiteral("Up"),
@@ -646,7 +704,7 @@ void AnalysisPanel::refreshInfluence() {
     }
 
     {
-      const auto rows = net.influence_rank();
+      const auto rows = net.influence_rank(1e-5, 5, lim);
       inflTableRank_->setSortingEnabled(false);
       inflTableRank_->setColumnCount(2);
       inflTableRank_->setHorizontalHeaderLabels(
@@ -667,7 +725,7 @@ void AnalysisPanel::refreshInfluence() {
     }
 
     {
-      const auto rows = net.influence_marginal_smart();
+      const auto rows = net.influence_marginal_smart(1e-6, lim);
       inflTableMarginal_->setSortingEnabled(false);
       inflTableMarginal_->setColumnCount(2);
       inflTableMarginal_->setHorizontalHeaderLabels(
@@ -688,7 +746,8 @@ void AnalysisPanel::refreshInfluence() {
     }
 
     {
-      const auto rows = net.influence_total(inflDeltaTotal_->value());
+      const auto rows =
+          net.influence_total(inflDeltaTotal_->value(), lim);
       inflTableTotal_->setSortingEnabled(false);
       inflTableTotal_->setColumnCount(2);
       inflTableTotal_->setHorizontalHeaderLabels(

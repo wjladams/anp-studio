@@ -93,6 +93,18 @@ QStringList limitFlags() {
           QStringLiteral("straight")};
 }
 
+QString methodLabelFromOptions(const anpcpp::LimitMatrixOptions& opt) {
+  switch (opt.method) {
+    case anpcpp::LimitMatrixMethod::NewHierarchy:
+      return QStringLiteral("newhierarchy");
+    case anpcpp::LimitMatrixMethod::Sinks:
+      return QStringLiteral("sinks");
+    case anpcpp::LimitMatrixMethod::Calculus:
+    default:
+      return QStringLiteral("calculus");
+  }
+}
+
 }  // namespace
 
 ResearcherSession::ResearcherSession(Document* doc) : doc_(doc) {}
@@ -176,8 +188,9 @@ QString ResearcherSession::helpHtml() {
       "<code>on h \"Root / Child\"</code>.</li>"
       "<li><code>method &lt;name&gt;</code> — for <code>limit</code> / "
       "<code>globals</code> only: "
-      "<code>calculus</code> (default), <code>newhierarchy</code>, "
-      "<code>sinks</code>.</li>"
+      "<code>calculus</code>, <code>newhierarchy</code>, "
+      "<code>sinks</code>. If omitted, uses the network's stored limit-matrix "
+      "setting (Inspector).</li>"
       "<li>Flags: <code>with_limit</code> (newhierarchy), "
       "<code>no_straight</code> / <code>straight</code> (sinks).</li>"
       "</ul>"
@@ -344,8 +357,11 @@ ResearcherSession::CalcTarget ResearcherSession::resolveOnTarget(
 }
 
 ResearcherSession::LimitParse ResearcherSession::parseLimitOptions(
-    const QStringList& args, int startIndex) const {
-  LimitParse parsed;
+    const QStringList& args, int startIndex, const LimitParse& base) const {
+  LimitParse parsed = base;
+  parsed.ok = true;
+  parsed.error.clear();
+  parsed.fromNetwork = false;
   for (int i = startIndex; i < args.size(); ++i) {
     const QString& tok = args.at(i);
     if (tok.compare(QStringLiteral("method"), Qt::CaseInsensitive) == 0) {
@@ -410,6 +426,7 @@ ResearcherEvalResult ResearcherSession::parseCalcTarget(
   target->net = def;
   target->label = activeName_;
   *limit = LimitParse{};
+  bool sawLimitOverride = false;
 
   int i = 0;
   if (i < args.size() && !isKeyword(args.at(i))) {
@@ -454,10 +471,21 @@ ResearcherEvalResult ResearcherSession::parseCalcTarget(
       return errHtml(QStringLiteral("Unexpected argument '%1'.").arg(tok));
     }
 
-    // Remaining tokens are limit options (method / flags).
-    *limit = parseLimitOptions(args, i);
+    // Remaining tokens are limit options (method / flags), layered on the
+    // network default so `with_limit` alone keeps the stored method.
+    LimitParse base;
+    base.options = target->net->limit_matrix_options();
+    base.methodLabel = methodLabelFromOptions(base.options);
+    *limit = parseLimitOptions(args, i, base);
     if (!limit->ok) return errHtml(limit->error);
-    return {};
+    sawLimitOverride = true;
+    break;
+  }
+
+  if (allowLimit && target->net != nullptr && !sawLimitOverride) {
+    limit->options = target->net->limit_matrix_options();
+    limit->methodLabel = methodLabelFromOptions(limit->options);
+    limit->fromNetwork = true;
   }
   return {};
 }
@@ -897,6 +925,7 @@ ResearcherEvalResult ResearcherSession::cmdMatrix(const QString& kind,
     cols = &clusterNames;
   } else if (kind == QLatin1String("limit")) {
     title = QStringLiteral("Limit matrix (%1)").arg(limit.methodLabel);
+    if (limit.fromNetwork) title += QStringLiteral(", network default");
     if (limit.options.with_limit) title += QStringLiteral(", with_limit");
     if (limit.options.method == anpcpp::LimitMatrixMethod::Sinks &&
         !limit.options.straight_normalizer) {
@@ -921,6 +950,7 @@ ResearcherEvalResult ResearcherSession::cmdGlobals(const QStringList& args) {
   if (!parseErr.html.isEmpty()) return parseErr;
 
   QString title = QStringLiteral("Global priorities (%1)").arg(limit.methodLabel);
+  if (limit.fromNetwork) title += QStringLiteral(", network default");
   if (limit.options.with_limit) title += QStringLiteral(", with_limit");
   if (limit.options.method == anpcpp::LimitMatrixMethod::Sinks &&
       !limit.options.straight_normalizer) {
@@ -941,6 +971,7 @@ ResearcherEvalResult ResearcherSession::cmdAltScores() {
   if (net == nullptr) return errHtml(error);
   return okHtml(QStringLiteral("<h3>Alternative scores — ") +
                 HtmlReport::escape(activeName_) + QStringLiteral("</h3>") +
-                HtmlReport::vectorTable(net->priority(), net->alt_names(),
-                                        QStringLiteral("Alternative")));
+                HtmlReport::vectorTable(
+                    net->priority(net->limit_matrix_options()),
+                    net->alt_names(), QStringLiteral("Alternative")));
 }

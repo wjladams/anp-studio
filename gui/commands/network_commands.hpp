@@ -106,6 +106,20 @@ private:
   anpcpp::SynthesisOptions old_;
 };
 
+class SetLimitMatrixOptionsCmd : public QUndoCommand {
+public:
+  SetLimitMatrixOptionsCmd(Document* doc,
+                           anpcpp::LimitMatrixOptions neu,
+                           anpcpp::LimitMatrixOptions old);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  anpcpp::LimitMatrixOptions neu_;
+  anpcpp::LimitMatrixOptions old_;
+};
+
 class SetInvertCmd : public QUndoCommand {
 public:
   SetInvertCmd(Document* doc, QString node, bool value);

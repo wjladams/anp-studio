@@ -84,6 +84,7 @@ private:
     QString methodLabel = QStringLiteral("calculus");
     QString error;
     bool ok = true;
+    bool fromNetwork = false;
   };
 
   [[nodiscard]] anpcpp::AnpNetwork* resolve(const QString& name,
@@ -102,7 +103,8 @@ private:
       anpcpp::AnpNetwork* root, const QString& path, QString* error);
   [[nodiscard]] static QStringList pathOptionsUnder(anpcpp::AnpNetwork* root);
   [[nodiscard]] LimitParse parseLimitOptions(const QStringList& args,
-                                             int startIndex) const;
+                                             int startIndex,
+                                             const LimitParse& base) const;
 
   /**
    * @brief Parses optional @c on / limit options for matrix and globals.

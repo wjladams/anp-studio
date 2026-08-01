@@ -119,6 +119,26 @@ InspectorPanel::InspectorPanel(Document* doc, QWidget* parent)
   customExpr_->setPlaceholderText(QStringLiteral("e.g. Benefits / Costs"));
   layout->addWidget(customExpr_);
 
+  limitOptsLabel_ = new QLabel(QStringLiteral("Limit matrix"), content);
+  limitOptsLabel_->setStyleSheet(
+      QStringLiteral("font-weight: bold; margin-top: 8px;"));
+  layout->addWidget(limitOptsLabel_);
+  limitMethod_ = new QComboBox(content);
+  limitMethod_->addItem(QStringLiteral("Calculus"),
+                        static_cast<int>(anpcpp::LimitMatrixMethod::Calculus));
+  limitMethod_->addItem(
+      QStringLiteral("New Hierarchy"),
+      static_cast<int>(anpcpp::LimitMatrixMethod::NewHierarchy));
+  limitMethod_->addItem(QStringLiteral("Sinks"),
+                        static_cast<int>(anpcpp::LimitMatrixMethod::Sinks));
+  layout->addWidget(limitMethod_);
+  limitWithLimit_ = new QCheckBox(QStringLiteral("With limit (New Hierarchy)"),
+                                  content);
+  layout->addWidget(limitWithLimit_);
+  limitStraight_ =
+      new QCheckBox(QStringLiteral("Straight normalizer (Sinks)"), content);
+  layout->addWidget(limitStraight_);
+
   subnetLabel_ = new QLabel(QStringLiteral("Subnetworks"), content);
   subnetLabel_->setStyleSheet(QStringLiteral("font-weight: bold; margin-top: 8px;"));
   layout->addWidget(subnetLabel_);
@@ -164,6 +184,12 @@ InspectorPanel::InspectorPanel(Document* doc, QWidget* parent)
           &InspectorPanel::onSynthesisKindChanged);
   connect(customExpr_, &QLineEdit::editingFinished, this,
           &InspectorPanel::onCustomExprEdited);
+  connect(limitMethod_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+          this, &InspectorPanel::onLimitMethodChanged);
+  connect(limitWithLimit_, &QCheckBox::toggled, this,
+          &InspectorPanel::onLimitFlagChanged);
+  connect(limitStraight_, &QCheckBox::toggled, this,
+          &InspectorPanel::onLimitFlagChanged);
   connect(nameEdit_, &QLineEdit::editingFinished, this,
           &InspectorPanel::onNameEdited);
   descriptionEdit_->installEventFilter(this);
@@ -198,6 +224,18 @@ void InspectorPanel::refreshSynthesisControls() {
   customExpr_->setEnabled(opt.kind == anpcpp::SynthesisKind::Custom);
 }
 
+void InspectorPanel::refreshLimitControls() {
+  const auto& opt = doc_->network().limit_matrix_options();
+  const int idx = limitMethod_->findData(static_cast<int>(opt.method));
+  if (idx >= 0) limitMethod_->setCurrentIndex(idx);
+  limitWithLimit_->setChecked(opt.with_limit);
+  limitStraight_->setChecked(opt.straight_normalizer);
+  const auto method =
+      static_cast<anpcpp::LimitMatrixMethod>(limitMethod_->currentData().toInt());
+  limitWithLimit_->setEnabled(method == anpcpp::LimitMatrixMethod::NewHierarchy);
+  limitStraight_->setEnabled(method == anpcpp::LimitMatrixMethod::Sinks);
+}
+
 void InspectorPanel::setModeWidgets(Mode mode) {
   const bool net = mode == Mode::Network;
   const bool cluster = mode == Mode::Cluster;
@@ -206,6 +244,10 @@ void InspectorPanel::setModeWidgets(Mode mode) {
   formulaLabel_->setVisible(net);
   synthKind_->setVisible(net);
   customExpr_->setVisible(net);
+  limitOptsLabel_->setVisible(net);
+  limitMethod_->setVisible(net);
+  limitWithLimit_->setVisible(net);
+  limitStraight_->setVisible(net);
   subnetLabel_->setVisible(net);
   subnetTree_->setVisible(net);
 
@@ -293,7 +335,8 @@ void InspectorPanel::fillMatrixColumns(const QString& nodeName) {
     }
     fillColumnTable(scaledCol_, names, scaledCol);
 
-    const anpcpp::Matrix limit = net.limit_matrix();
+    const anpcpp::Matrix limit =
+        net.limit_matrix(net.limit_matrix_options());
     anpcpp::Vector limitCol(names.size(), 0.0);
     for (std::size_t r = 0; r < names.size() && r < limit.rows(); ++r) {
       limitCol[r] = limit(r, col);
@@ -334,6 +377,7 @@ void InspectorPanel::refresh() {
     descriptionEdit_->setPlainText(
         QString::fromStdString(doc_->network().description()));
     refreshSynthesisControls();
+    refreshLimitControls();
     fillSubnetTree();
   }
   updating_ = false;
@@ -466,4 +510,40 @@ void InspectorPanel::onCustomExprEdited() {
   neu.custom_expr = customExpr_->text().toStdString();
   if (neu.custom_expr == old.custom_expr) return;
   doc_->undoStack()->push(new SetSynthesisOptionsCmd(doc_, neu, old));
+}
+
+anpcpp::LimitMatrixOptions InspectorPanel::currentLimitOptionsFromUi() const {
+  anpcpp::LimitMatrixOptions opt = doc_->network().limit_matrix_options();
+  opt.method = static_cast<anpcpp::LimitMatrixMethod>(
+      limitMethod_->currentData().toInt());
+  opt.with_limit = limitWithLimit_->isChecked();
+  opt.straight_normalizer = limitStraight_->isChecked();
+  return opt;
+}
+
+void InspectorPanel::onLimitMethodChanged(int) {
+  if (updating_) return;
+  const auto method =
+      static_cast<anpcpp::LimitMatrixMethod>(limitMethod_->currentData().toInt());
+  limitWithLimit_->setEnabled(method == anpcpp::LimitMatrixMethod::NewHierarchy);
+  limitStraight_->setEnabled(method == anpcpp::LimitMatrixMethod::Sinks);
+
+  anpcpp::LimitMatrixOptions old = doc_->network().limit_matrix_options();
+  anpcpp::LimitMatrixOptions neu = currentLimitOptionsFromUi();
+  if (neu.method == old.method && neu.with_limit == old.with_limit &&
+      neu.straight_normalizer == old.straight_normalizer) {
+    return;
+  }
+  doc_->undoStack()->push(new SetLimitMatrixOptionsCmd(doc_, neu, old));
+}
+
+void InspectorPanel::onLimitFlagChanged() {
+  if (updating_) return;
+  anpcpp::LimitMatrixOptions old = doc_->network().limit_matrix_options();
+  anpcpp::LimitMatrixOptions neu = currentLimitOptionsFromUi();
+  if (neu.method == old.method && neu.with_limit == old.with_limit &&
+      neu.straight_normalizer == old.straight_normalizer) {
+    return;
+  }
+  doc_->undoStack()->push(new SetLimitMatrixOptionsCmd(doc_, neu, old));
 }

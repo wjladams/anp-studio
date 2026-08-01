@@ -136,6 +136,25 @@ void SetSynthesisOptionsCmd::undo() {
   doc_->notifyChanged();
 }
 
+SetLimitMatrixOptionsCmd::SetLimitMatrixOptionsCmd(
+    Document* doc,
+    anpcpp::LimitMatrixOptions neu,
+    anpcpp::LimitMatrixOptions old)
+    : QUndoCommand(QStringLiteral("Set limit matrix options")),
+      doc_(doc),
+      neu_(std::move(neu)),
+      old_(std::move(old)) {}
+
+void SetLimitMatrixOptionsCmd::redo() {
+  doc_->network().set_limit_matrix_options(neu_);
+  doc_->notifyChanged();
+}
+
+void SetLimitMatrixOptionsCmd::undo() {
+  doc_->network().set_limit_matrix_options(old_);
+  doc_->notifyChanged();
+}
+
 SetInvertCmd::SetInvertCmd(Document* doc, QString node, bool value)
     : QUndoCommand(QStringLiteral("Set invert")),
       doc_(doc),

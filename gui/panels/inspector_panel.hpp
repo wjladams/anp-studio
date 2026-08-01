@@ -7,6 +7,8 @@
 
 #include <QWidget>
 
+#include "anpcpp/limit_matrix.hpp"
+
 class Document;
 class QLineEdit;
 class QTextEdit;
@@ -39,6 +41,8 @@ private slots:
   void onOpenSubnet();
   void onSynthesisKindChanged(int index);
   void onCustomExprEdited();
+  void onLimitMethodChanged(int index);
+  void onLimitFlagChanged();
   void onNameEdited();
   void onDescriptionEdited();
   void onSubnetItemActivated(QTreeWidgetItem* item, int column);
@@ -47,11 +51,13 @@ private:
   enum class Mode { Network, Cluster, Node };
 
   void refreshSynthesisControls();
+  void refreshLimitControls();
   void setModeWidgets(Mode mode);
   void fillSubnetTree();
   void fillConnections();
   void fillMatrixColumns(const QString& nodeName);
   [[nodiscard]] QString displayNetworkName() const;
+  [[nodiscard]] anpcpp::LimitMatrixOptions currentLimitOptionsFromUi() const;
 
   Document* doc_ = nullptr;
   QLabel* title_ = nullptr;
@@ -66,6 +72,11 @@ private:
   QLabel* formulaLabel_ = nullptr;
   QComboBox* synthKind_ = nullptr;
   QLineEdit* customExpr_ = nullptr;
+
+  QLabel* limitOptsLabel_ = nullptr;
+  QComboBox* limitMethod_ = nullptr;
+  QCheckBox* limitWithLimit_ = nullptr;
+  QCheckBox* limitStraight_ = nullptr;
 
   QLabel* subnetLabel_ = nullptr;
   QTreeWidget* subnetTree_ = nullptr;
