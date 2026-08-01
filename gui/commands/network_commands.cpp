@@ -605,8 +605,11 @@ void SetClusterPositionsCmd::apply(const QHash<QString, QPointF>& positions) {
     }
   }
   // Skip canvas persist-of-old-items during the rebuild this triggers.
+  // Flush synchronously so rebuild runs while suppress is still true;
+  // coalesced notify would clear the flag before the queued rebuild.
   doc_->setSuppressLayoutPersist(true);
   doc_->notifyChanged();
+  doc_->flushModelChanged();
   doc_->setSuppressLayoutPersist(false);
 }
 
