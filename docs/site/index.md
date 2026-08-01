@@ -16,10 +16,15 @@ permalink: /
 </div>
 
 <p class="docs-nav">
-  <strong>Documentation:</strong>
-  <a href="{{ '/api/' | relative_url }}">GUI API reference</a>
+  <strong>For everyone:</strong>
+  <a href="{{ '/guide/' | relative_url }}">User guide</a>
   &middot;
-  <a href="https://bamath.org/libanpcpp/api/examples.html">Library examples</a>
+  <a href="{{ '/guide/glossary/' | relative_url }}">Glossary</a>
+  <br>
+  <strong>For developers:</strong>
+  <a href="{{ '/api/' | relative_url }}">Studio GUI API</a>
+  &middot;
+  <a href="https://bamath.org/libanpcpp/">ANP library (libanpcpp)</a>
 </p>
 
 {% include_relative README.content.md %}

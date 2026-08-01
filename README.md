@@ -23,6 +23,14 @@ Intel Mac builds are not published yet.
 
 To build from source instead, see [Build the GUI](#build-the-gui) below.
 
+## Learn
+
+| You are… | Start here |
+|---|---|
+| New to ANP? | [What is ANP?](https://bamath.org/anp-studio/guide/concepts/) |
+| Know ANP? | [User guide](https://bamath.org/anp-studio/guide/) |
+| Looking up a term | [Glossary](https://bamath.org/anp-studio/guide/glossary/) |
+
 ---
 
 The computational library (matrices, networks, pairwise judgments, limit
@@ -117,29 +125,25 @@ See that repository’s README for FetchContent / `find_package` consumer docs.
 
 ## Documentation
 
-### Library API (libanpcpp)
+### User guide
 
-**Site:** [https://bamath.org/libanpcpp/](https://bamath.org/libanpcpp/)
+**[User guide](https://bamath.org/anp-studio/guide/)** — Structure, connections,
+judgments, ratings, and calculations.
 
-**API reference:** [https://bamath.org/libanpcpp/api/](https://bamath.org/libanpcpp/api/)
+**[Glossary](https://bamath.org/anp-studio/guide/glossary/)** — Short definitions
+of ANP and Studio terms.
 
-For a local sibling checkout:
+**Site home:** [https://bamath.org/anp-studio/](https://bamath.org/anp-studio/)
+(built from `main` via GitHub Actions).
 
-```bash
-cd ../libanpcpp
-cmake -S . -B build -DANPCPP_BUILD_DOCS=ON -DANPCPP_BUILD_TESTS=OFF -DANPCPP_BUILD_EXAMPLES=OFF
-cmake --build build --target anpcpp_docs
-```
+### Developers
 
-Open **[../libanpcpp/build/docs/html/index.html](../libanpcpp/build/docs/html/index.html)**.
+**Studio GUI API** (Qt classes): [https://bamath.org/anp-studio/api/](https://bamath.org/anp-studio/api/)
 
-### GUI reference (this repo)
+**ANP library (libanpcpp):** [https://bamath.org/libanpcpp/](https://bamath.org/libanpcpp/) ·
+[API](https://bamath.org/libanpcpp/api/)
 
-**Site:** [https://bamath.org/anp-studio/](https://bamath.org/anp-studio/) (README landing page, built from `main` via GitHub Actions)
-
-**API reference:** [https://bamath.org/anp-studio/api/](https://bamath.org/anp-studio/api/)
-
-**Local Doxygen** requires Doxygen (`sudo apt install doxygen` on Ubuntu).
+**Local Doxygen** (this repo) requires Doxygen (`sudo apt install doxygen` on Ubuntu).
 With the default `ANPSTUDIO_BUILD_DOCS=ON`, `cmake --build build` runs the
 same Doxygen pass as CI (`WARN_AS_ERROR`). Docs-only:
 
@@ -150,7 +154,17 @@ cmake --build build --target anpstudio_docs
 
 Open **[build/docs/html/index.html](build/docs/html/index.html)**.
 
-**Local full site preview** (README landing + API under `/api/`):
+For libanpcpp docs with a sibling checkout:
+
+```bash
+cd ../libanpcpp
+cmake -S . -B build -DANPCPP_BUILD_DOCS=ON -DANPCPP_BUILD_TESTS=OFF -DANPCPP_BUILD_EXAMPLES=OFF
+cmake --build build --target anpcpp_docs
+```
+
+Open **[../libanpcpp/build/docs/html/index.html](../libanpcpp/build/docs/html/index.html)**.
+
+**Local full site preview** (README landing + guide + API under `/api/`):
 
 ```bash
 cmake -S . -B build -DANPSTUDIO_BUILD_DOCS=ON -DANPSTUDIO_BUILD_GUI=OFF

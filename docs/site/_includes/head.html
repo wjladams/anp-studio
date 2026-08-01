@@ -12,4 +12,21 @@
   {%- if jekyll.environment == 'production' and site.google_analytics -%}
     {%- include google-analytics.html -%}
   {%- endif -%}
+  <script type="module">
+    const blocks = document.querySelectorAll('pre > code.language-mermaid');
+    if (blocks.length) {
+      const { default: mermaid } = await import(
+        'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs'
+      );
+      mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
+      for (const code of blocks) {
+        const pre = code.parentElement;
+        const graph = document.createElement('div');
+        graph.className = 'mermaid';
+        graph.textContent = code.textContent;
+        pre.replaceWith(graph);
+      }
+      await mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
+    }
+  </script>
 </head>

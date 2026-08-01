@@ -59,6 +59,9 @@ private slots:
   void rebuildRecentMenu();
   void rebuildSampleMenu();
   void openSampleFile();
+  void openUserGuide();
+  void openGlossary();
+  void showAbout();
 
 private:
   [[nodiscard]] bool maybeSave();

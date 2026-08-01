@@ -16,6 +16,7 @@
 #include <QCloseEvent>
 #include <QComboBox>
 #include <QCoreApplication>
+#include <QDesktopServices>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -29,9 +30,15 @@
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QStatusBar>
+#include <QSysInfo>
 #include <QUndoStack>
+#include <QUrl>
 #include <QVBoxLayout>
 #include <QWidget>
+
+namespace {
+constexpr auto kDocsBaseUrl = "https://bamath.org/anp-studio";
+}  // namespace
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   doc_ = new Document(this);
@@ -139,6 +146,16 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   computeMenu->addAction(QStringLiteral("Show Researcher"), this, [this]() {
     setStage(Stage::Researcher);
   });
+
+  auto* helpMenu = menuBar()->addMenu(QStringLiteral("&Help"));
+  helpMenu->addAction(QStringLiteral("User Guide"), this,
+                      &MainWindow::openUserGuide);
+  helpMenu->addAction(QStringLiteral("Glossary"), this,
+                      &MainWindow::openGlossary);
+  helpMenu->addSeparator();
+  auto* aboutAction = helpMenu->addAction(
+      QStringLiteral("About ANP Studio…"), this, &MainWindow::showAbout);
+  aboutAction->setMenuRole(QAction::AboutRole);
 
   connect(doc_, &Document::dirtyChanged, this, [this](bool) { updateTitle(); });
   connect(doc_, &Document::pathChanged, this, [this](const QString&) {
@@ -626,4 +643,44 @@ bool MainWindow::maybeSave() {
 void MainWindow::closeEvent(QCloseEvent* event) {
   if (maybeSave()) event->accept();
   else event->ignore();
+}
+
+void MainWindow::openUserGuide() {
+  QDesktopServices::openUrl(
+      QUrl(QStringLiteral("%1/guide/").arg(QLatin1String(kDocsBaseUrl))));
+}
+
+void MainWindow::openGlossary() {
+  QDesktopServices::openUrl(QUrl(
+      QStringLiteral("%1/guide/glossary/").arg(QLatin1String(kDocsBaseUrl))));
+}
+
+void MainWindow::showAbout() {
+  const QString version = QCoreApplication::applicationVersion();
+  const QString text = QStringLiteral(
+      "<h3>ANP Studio %1</h3>"
+      "<p>Analytic Network Process desktop modeling.</p>"
+      "<p>"
+      "<b>Operating system:</b> %2<br>"
+      "<b>CPU architecture:</b> %3<br>"
+      "<b>Qt:</b> %4"
+      "</p>"
+      "<p>"
+      "<a href=\"%5/\">Website</a> · "
+      "<a href=\"%5/guide/\">User guide</a> · "
+      "<a href=\"https://github.com/wjladams/anp-studio/releases\">Releases</a>"
+      "</p>"
+      "<p>Copyright © 2026 William Adams<br>"
+      "MIT License — see the repository for details.</p>")
+                           .arg(version,
+                                QSysInfo::prettyProductName(),
+                                QSysInfo::currentCpuArchitecture(),
+                                QString::fromLatin1(qVersion()),
+                                QLatin1String(kDocsBaseUrl));
+  QMessageBox about(this);
+  about.setWindowTitle(QStringLiteral("About ANP Studio"));
+  about.setTextFormat(Qt::RichText);
+  about.setText(text);
+  about.setIconPixmap(windowIcon().pixmap(64, 64));
+  about.exec();
 }
