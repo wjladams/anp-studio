@@ -37,6 +37,14 @@ public:
   [[nodiscard]] anpcpp::AnpNetwork& root();
   /** @brief Const overload of @ref root. */
   [[nodiscard]] const anpcpp::AnpNetwork& root() const;
+  /**
+   * @return Parent network in the subnet stack, or @c nullptr at root.
+   *
+   * Used by the Researcher stage as @c parentModel.
+   */
+  [[nodiscard]] anpcpp::AnpNetwork* parentNetwork();
+  /** @brief Const overload of @ref parentNetwork. */
+  [[nodiscard]] const anpcpp::AnpNetwork* parentNetwork() const;
 
   /** @return Undo/redo command stack for model edits. */
   [[nodiscard]] QUndoStack* undoStack() { return &undo_; }

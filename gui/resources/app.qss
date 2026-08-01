@@ -761,3 +761,35 @@ QLabel#ratingsHeader {
   font-size: 14px;
   color: #202124;
 }
+
+/* —— Researcher —— */
+QLabel#researcherCaption {
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #5f6368;
+}
+
+QLabel#researcherIntro {
+  color: #5f6368;
+}
+
+QLabel#researcherPrompt {
+  font-family: "Ubuntu Mono", "Consolas", "Courier New", monospace;
+  font-weight: 600;
+  color: #1a73e8;
+}
+
+QLabel#researcherCellCmd {
+  font-family: "Ubuntu Mono", "Consolas", "Courier New", monospace;
+  font-weight: 600;
+  color: #202124;
+}
+
+QFrame#researcherCell {
+  background-color: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+}
+

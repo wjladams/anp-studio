@@ -23,7 +23,10 @@ add_executable(anpstudio
   panels/session_stub_panel.cpp
   panels/synthesis_summary_panel.cpp
   panels/analysis_panel.cpp
+  panels/researcher_panel.cpp
   panels/sensitivity_chart_widget.cpp
+  researcher/researcher_dsl.cpp
+  html_report.cpp
   commands/network_commands.cpp
   ratings/rating_preset.cpp
   ratings/rating_preset_store.cpp

@@ -9,6 +9,7 @@
 #include "panels/judgment_priorities_panel.hpp"
 #include "panels/pairwise_panel.hpp"
 #include "panels/ratings_panel.hpp"
+#include "panels/researcher_panel.hpp"
 
 #include <QAction>
 #include <QButtonGroup>
@@ -55,6 +56,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   addStageBtn(QStringLiteral("Structure"), Stage::Structure);
   addStageBtn(QStringLiteral("Judgments"), Stage::Judgments);
   addStageBtn(QStringLiteral("Analysis"), Stage::Analysis);
+  addStageBtn(QStringLiteral("Researcher"), Stage::Researcher);
   stageRow->addStretch();
   rootLay->addLayout(stageRow);
 
@@ -134,6 +136,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   computeMenu->addAction(QStringLiteral("Show Analysis"), this, [this]() {
     setStage(Stage::Analysis);
   }, QKeySequence(Qt::Key_F5));
+  computeMenu->addAction(QStringLiteral("Show Researcher"), this, [this]() {
+    setStage(Stage::Researcher);
+  });
 
   connect(doc_, &Document::dirtyChanged, this, [this](bool) { updateTitle(); });
   connect(doc_, &Document::pathChanged, this, [this](const QString&) {
@@ -148,7 +153,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   updateTitle();
   updateBreadcrumb();
   statusBar()->showMessage(
-      QStringLiteral("Structure → Judgments → Analysis"));
+      QStringLiteral("Structure → Judgments → Analysis → Researcher"));
 }
 
 void MainWindow::buildStagePages() {
@@ -205,7 +210,8 @@ void MainWindow::buildStagePages() {
                                  "right-click destination(s). Esc = Normal."));
             } else if (stage_ == Stage::Structure) {
               statusBar()->showMessage(
-                  QStringLiteral("Structure → Judgments → Analysis"));
+                  QStringLiteral(
+                      "Structure → Judgments → Analysis → Researcher"));
             }
           });
 
@@ -242,6 +248,10 @@ void MainWindow::buildStagePages() {
   // Analysis: left-tabbed Synthesis / Sensitivity / Influence
   analysis_ = new AnalysisPanel(doc_, this);
   stages_->addWidget(analysis_);
+
+  // Researcher: DSL notebook over thisModel / parentModel
+  researcher_ = new ResearcherPanel(doc_, this);
+  stages_->addWidget(researcher_);
 }
 
 void MainWindow::setStage(Stage stage) {
@@ -262,6 +272,8 @@ void MainWindow::setStage(Stage stage) {
     canvas_->select(doc_->selectedCluster(), doc_->selectedNode());
   } else if (stage == Stage::Judgments) {
     judgmentNav_->refresh();
+  } else if (stage == Stage::Researcher) {
+    researcher_->refreshBindings();
   }
 }
 

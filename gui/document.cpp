@@ -30,6 +30,16 @@ const anpcpp::AnpNetwork& Document::network() const {
   return *stack_.back().net;
 }
 
+anpcpp::AnpNetwork* Document::parentNetwork() {
+  if (stack_.size() < 2) return nullptr;
+  return stack_[stack_.size() - 2].net;
+}
+
+const anpcpp::AnpNetwork* Document::parentNetwork() const {
+  if (stack_.size() < 2) return nullptr;
+  return stack_[stack_.size() - 2].net;
+}
+
 anpcpp::AnpNetwork& Document::root() {
   return *root_;
 }

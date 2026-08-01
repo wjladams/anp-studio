@@ -11,6 +11,7 @@ class Document;
 class NetworkCanvas;
 class PairwisePanel;
 class AnalysisPanel;
+class ResearcherPanel;
 class InspectorPanel;
 class JudgmentNavPanel;
 class RatingsPanel;
@@ -29,7 +30,7 @@ class QComboBox;
 class MainWindow : public QMainWindow {
   Q_OBJECT
 public:
-  enum class Stage { Structure = 0, Judgments = 1, Analysis = 2 };
+  enum class Stage { Structure = 0, Judgments = 1, Analysis = 2, Researcher = 3 };
 
   explicit MainWindow(QWidget* parent = nullptr);
 
@@ -93,4 +94,5 @@ private:
   QStackedWidget* judgmentCenter_ = nullptr;
 
   AnalysisPanel* analysis_ = nullptr;
+  ResearcherPanel* researcher_ = nullptr;
 };

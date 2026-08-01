@@ -1,6 +1,7 @@
 #include "panels/analysis_panel.hpp"
 
 #include "document.hpp"
+#include "html_report.hpp"
 #include "panels/sensitivity_chart_widget.hpp"
 
 #include "anpcpp/limit_matrix.hpp"
@@ -34,54 +35,6 @@ namespace {
 
 constexpr int kRolePage = Qt::UserRole;
 constexpr int kRoleAnchor = Qt::UserRole + 1;
-
-QString esc(const QString& s) {
-  QString o = s;
-  o.replace(QLatin1Char('&'), QStringLiteral("&amp;"));
-  o.replace(QLatin1Char('<'), QStringLiteral("&lt;"));
-  o.replace(QLatin1Char('>'), QStringLiteral("&gt;"));
-  return o;
-}
-
-QString fmt(double v, int decimals = 4) {
-  return QString::number(v, 'f', decimals);
-}
-
-QString matrixHtml(const anpcpp::Matrix& m,
-                   const std::vector<std::string>& rows,
-                   const std::vector<std::string>& cols) {
-  QString html = QStringLiteral("<table border='1' cellspacing='0' cellpadding='4'>");
-  html += QStringLiteral("<tr><th></th>");
-  for (const auto& c : cols) {
-    html += QStringLiteral("<th>") + esc(QString::fromStdString(c)) +
-            QStringLiteral("</th>");
-  }
-  html += QStringLiteral("</tr>");
-  for (std::size_t i = 0; i < m.rows(); ++i) {
-    html += QStringLiteral("<tr><th>") +
-            esc(QString::fromStdString(i < rows.size() ? rows[i] : "?")) +
-            QStringLiteral("</th>");
-    for (std::size_t j = 0; j < m.cols(); ++j) {
-      html += QStringLiteral("<td>") + fmt(m(i, j)) + QStringLiteral("</td>");
-    }
-    html += QStringLiteral("</tr>");
-  }
-  html += QStringLiteral("</table>");
-  return html;
-}
-
-QString vectorHtml(const anpcpp::Vector& v,
-                   const std::vector<std::string>& labels) {
-  QString html = QStringLiteral("<table border='1' cellspacing='0' cellpadding='4'>");
-  html += QStringLiteral("<tr><th>Node</th><th>Priority</th></tr>");
-  for (std::size_t i = 0; i < v.size(); ++i) {
-    html += QStringLiteral("<tr><td>") +
-            esc(QString::fromStdString(i < labels.size() ? labels[i] : "?")) +
-            QStringLiteral("</td><td>") + fmt(v[i]) + QStringLiteral("</td></tr>");
-  }
-  html += QStringLiteral("</table>");
-  return html;
-}
 
 std::size_t nodeRowIndex(const anpcpp::AnpNetwork& net, const std::string& name) {
   const auto names = net.node_names();
@@ -143,8 +96,7 @@ AnalysisPanel::AnalysisPanel(Document* doc, QWidget* parent)
   sensOverview_ = new QTextBrowser(stack_);
   sensOverview_->setOpenExternalLinks(false);
   sensOverview_->setOpenLinks(false);
-  sensOverview_->setHtml(QStringLiteral(
-      "<html><body style='font-family: sans-serif; max-width: 40em;'>"
+  sensOverview_->setHtml(HtmlReport::wrapDocument(QStringLiteral(
       "<h1>Sensitivity</h1>"
       "<p>ANP Row Sensitivity varies a parameter <i>p</i> for a chosen row "
       "(Wrt) node while holding the rest of the model fixed. At "
@@ -154,8 +106,7 @@ AnalysisPanel::AnalysisPanel(Document* doc, QWidget* parent)
       "for the selected network are shown as a horizontal bar chart.</p>"
       "<h2><a href='anp://SensGlobal'>Global</a></h2>"
       "<p>Sweep <i>p</i> from 0.01 to 1.00 in steps of 0.01 and plot each "
-      "alternative's synthesized score as a line series against <i>p</i>.</p>"
-      "</body></html>"));
+      "alternative's synthesized score as a line series against <i>p</i>.</p>")));
   stack_->addWidget(sensOverview_);
 
   // --- Sensitivity Interactive ---
@@ -201,8 +152,7 @@ AnalysisPanel::AnalysisPanel(Document* doc, QWidget* parent)
   inflOverview_ = new QTextBrowser(stack_);
   inflOverview_->setOpenExternalLinks(false);
   inflOverview_->setOpenLinks(false);
-  inflOverview_->setHtml(QStringLiteral(
-      "<html><body style='font-family: sans-serif; max-width: 40em;'>"
+  inflOverview_->setHtml(HtmlReport::wrapDocument(QStringLiteral(
       "<h1>Influence analysis</h1>"
       "<p>Influence analysis measures how alternative scores respond when a "
       "node's row weight is perturbed around the resting parameter "
@@ -221,8 +171,7 @@ AnalysisPanel::AnalysisPanel(Document* doc, QWidget* parent)
       "<h2><a href='anp://InflTotal'>Total</a></h2>"
       "<p>For each node (row), apply a fixed Δ from <i>p</i><sub>0</sub> and "
       "report total influence (sum of absolute alternative-score changes) and "
-      "max alt change, matching pyanp fixed influence.</p>"
-      "</body></html>"));
+      "max alt change, matching pyanp fixed influence.</p>")));
   stack_->addWidget(inflOverview_);
 
   // --- Influence Raw ---
@@ -518,26 +467,31 @@ std::vector<std::pair<QString, double>> AnalysisPanel::altScoresAtP(
 }
 
 void AnalysisPanel::refreshSynthesisHtml() {
-  QString html = QStringLiteral("<html><body style='font-family: sans-serif;'>");
+  QString body;
   try {
     auto& net = doc_->network();
     const auto nodeNames = net.node_names();
     const auto clusterNames = net.cluster_names();
 
-    html += QStringLiteral("<h1 id='unscaled'>Unscaled Supermatrix</h1>");
-    html += matrixHtml(net.unscaled_supermatrix(), nodeNames, nodeNames);
+    body += QStringLiteral("<h1 id='unscaled'>Unscaled Supermatrix</h1>");
+    body += HtmlReport::matrixTable(net.unscaled_supermatrix(), nodeNames,
+                                    nodeNames);
 
-    html += QStringLiteral("<h1 id='cluster'>Cluster matrix</h1>");
-    html += matrixHtml(net.cluster_weight_matrix(), clusterNames, clusterNames);
+    body += QStringLiteral("<h1 id='cluster'>Cluster matrix</h1>");
+    body += HtmlReport::matrixTable(net.cluster_weight_matrix(), clusterNames,
+                                    clusterNames);
 
-    html += QStringLiteral("<h1 id='scaled'>Scaled Supermatrix</h1>");
-    html += matrixHtml(net.scaled_supermatrix(), nodeNames, nodeNames);
+    body += QStringLiteral("<h1 id='scaled'>Scaled Supermatrix</h1>");
+    body +=
+        HtmlReport::matrixTable(net.scaled_supermatrix(), nodeNames, nodeNames);
 
-    html += QStringLiteral("<h1 id='global'>Global priorities</h1>");
-    html += vectorHtml(net.global_priority(), nodeNames);
+    body += QStringLiteral("<h1 id='global'>Global priorities</h1>");
+    body += HtmlReport::vectorTable(net.global_priority(), nodeNames,
+                                    QStringLiteral("Node"),
+                                    QStringLiteral("Priority"));
 
     if (net.has_subnet()) {
-      html += QStringLiteral("<h1 id='subnet'>Subnetwork synthesis results</h1>");
+      body += QStringLiteral("<h1 id='subnet'>Subnetwork synthesis results</h1>");
       std::vector<anpcpp::AnpNode*> hosts;
       for (anpcpp::AnpNode* n : net.nodes()) {
         if (n->has_subnetwork()) hosts.push_back(n);
@@ -555,20 +509,26 @@ void AnalysisPanel::refreshSynthesisHtml() {
       }
 
       const auto alts = net.alt_names();
-      html += QStringLiteral("<table border='1' cellspacing='0' cellpadding='4'><tr><th></th>");
+      body += HtmlReport::tableBegin();
+      body += QStringLiteral("<tr>");
+      body += HtmlReport::headerCell(QString(), true);
       for (anpcpp::AnpNode* h : hosts) {
-        html += QStringLiteral("<th>") + esc(QString::fromStdString(h->name())) +
-                QStringLiteral("</th>");
+        body += HtmlReport::headerCell(QString::fromStdString(h->name()));
       }
-      html += QStringLiteral("</tr><tr><th>Normalized host weights</th>");
-      for (double w : hostW) {
-        html += QStringLiteral("<td>") + fmt(w) + QStringLiteral("</td>");
-      }
-      html += QStringLiteral("</tr>");
+      body += QStringLiteral("</tr>");
 
-      for (const auto& alt : alts) {
-        html += QStringLiteral("<tr><th>") + esc(QString::fromStdString(alt)) +
-                QStringLiteral("</th>");
+      body += HtmlReport::rowBegin(0);
+      body += HtmlReport::stubCell(QStringLiteral("Normalized host weights"), 0);
+      for (double w : hostW) {
+        body += HtmlReport::dataCell(w, 0);
+      }
+      body += HtmlReport::rowEnd();
+
+      for (std::size_t ai = 0; ai < alts.size(); ++ai) {
+        const auto& alt = alts[ai];
+        const std::size_t rowIndex = ai + 1;
+        body += HtmlReport::rowBegin(rowIndex);
+        body += HtmlReport::stubCell(QString::fromStdString(alt), rowIndex);
         for (anpcpp::AnpNode* h : hosts) {
           double score = 0.0;
           try {
@@ -577,30 +537,21 @@ void AnalysisPanel::refreshSynthesisHtml() {
             if (it != pm.end()) score = it->second;
           } catch (...) {
           }
-          html += QStringLiteral("<td>") + fmt(score) + QStringLiteral("</td>");
+          body += HtmlReport::dataCell(score, rowIndex);
         }
-        html += QStringLiteral("</tr>");
+        body += HtmlReport::rowEnd();
       }
-      html += QStringLiteral("</table>");
+      body += HtmlReport::tableEnd();
     }
 
-    html += QStringLiteral("<h1 id='alts'>Alternative Scores</h1>");
-    const auto alts = net.alt_names();
-    const anpcpp::Vector scores = net.priority();
-    html += QStringLiteral("<table border='1' cellspacing='0' cellpadding='4'>");
-    html += QStringLiteral("<tr><th>Alternative</th><th>Score</th></tr>");
-    for (std::size_t i = 0; i < alts.size() && i < scores.size(); ++i) {
-      html += QStringLiteral("<tr><td>") + esc(QString::fromStdString(alts[i])) +
-              QStringLiteral("</td><td>") + fmt(scores[i]) +
-              QStringLiteral("</td></tr>");
-    }
-    html += QStringLiteral("</table>");
+    body += QStringLiteral("<h1 id='alts'>Alternative Scores</h1>");
+    body += HtmlReport::vectorTable(net.priority(), net.alt_names(),
+                                    QStringLiteral("Alternative"),
+                                    QStringLiteral("Score"));
   } catch (const std::exception& e) {
-    html += QStringLiteral("<p><b>Error:</b> ") + esc(QString::fromUtf8(e.what())) +
-            QStringLiteral("</p>");
+    body += HtmlReport::errorParagraph(QString::fromUtf8(e.what()));
   }
-  html += QStringLiteral("</body></html>");
-  synthBrowser_->setHtml(html);
+  synthBrowser_->setHtml(HtmlReport::wrapDocument(body));
 }
 
 void AnalysisPanel::refreshSensitivity() {
@@ -676,18 +627,18 @@ void AnalysisPanel::refreshInfluence() {
         const auto& r = rows[static_cast<std::size_t>(i)];
         inflTableRaw_->setVerticalHeaderItem(
             i, new QTableWidgetItem(QString::fromStdString(r.name)));
-        auto* o = new QTableWidgetItem(fmt(r.original, decimals));
+        auto* o = new QTableWidgetItem(HtmlReport::formatNumber(r.original, decimals));
         o->setData(Qt::UserRole, r.original);
         inflTableRaw_->setItem(i, 0, o);
         const QString upTxt =
-            fmt(r.up_score, decimals) + QStringLiteral(" [") +
-            fmt(r.up_diff, decimals) + QStringLiteral("]");
+            HtmlReport::formatNumber(r.up_score, decimals) + QStringLiteral(" [") +
+            HtmlReport::formatNumber(r.up_diff, decimals) + QStringLiteral("]");
         auto* u = new QTableWidgetItem(upTxt);
         u->setData(Qt::UserRole, r.up_score);
         inflTableRaw_->setItem(i, 1, u);
         const QString downTxt =
-            fmt(r.down_score, decimals) + QStringLiteral(" [") +
-            fmt(r.down_diff, decimals) + QStringLiteral("]");
+            HtmlReport::formatNumber(r.down_score, decimals) + QStringLiteral(" [") +
+            HtmlReport::formatNumber(r.down_diff, decimals) + QStringLiteral("]");
         auto* d = new QTableWidgetItem(downTxt);
         d->setData(Qt::UserRole, r.down_score);
         inflTableRaw_->setItem(i, 2, d);
@@ -705,10 +656,10 @@ void AnalysisPanel::refreshInfluence() {
         const auto& r = rows[static_cast<std::size_t>(i)];
         inflTableRank_->setVerticalHeaderItem(
             i, new QTableWidgetItem(QString::fromStdString(r.name)));
-        auto* o = new QTableWidgetItem(fmt(r.original, decimals));
+        auto* o = new QTableWidgetItem(HtmlReport::formatNumber(r.original, decimals));
         o->setData(Qt::UserRole, r.original);
         inflTableRank_->setItem(i, 0, o);
-        auto* s = new QTableWidgetItem(fmt(r.rank_influence, decimals));
+        auto* s = new QTableWidgetItem(HtmlReport::formatNumber(r.rank_influence, decimals));
         s->setData(Qt::UserRole, r.rank_influence);
         inflTableRank_->setItem(i, 1, s);
       }
@@ -726,10 +677,10 @@ void AnalysisPanel::refreshInfluence() {
         const auto& r = rows[static_cast<std::size_t>(i)];
         inflTableMarginal_->setVerticalHeaderItem(
             i, new QTableWidgetItem(QString::fromStdString(r.name)));
-        auto* m = new QTableWidgetItem(fmt(r.marginal, decimals));
+        auto* m = new QTableWidgetItem(HtmlReport::formatNumber(r.marginal, decimals));
         m->setData(Qt::UserRole, r.marginal);
         inflTableMarginal_->setItem(i, 0, m);
-        auto* p0 = new QTableWidgetItem(fmt(r.smart_p0, decimals));
+        auto* p0 = new QTableWidgetItem(HtmlReport::formatNumber(r.smart_p0, decimals));
         p0->setData(Qt::UserRole, r.smart_p0);
         inflTableMarginal_->setItem(i, 1, p0);
       }
@@ -747,10 +698,10 @@ void AnalysisPanel::refreshInfluence() {
         const auto& r = rows[static_cast<std::size_t>(i)];
         inflTableTotal_->setVerticalHeaderItem(
             i, new QTableWidgetItem(QString::fromStdString(r.name)));
-        auto* t = new QTableWidgetItem(fmt(r.total_influence, decimals));
+        auto* t = new QTableWidgetItem(HtmlReport::formatNumber(r.total_influence, decimals));
         t->setData(Qt::UserRole, r.total_influence);
         inflTableTotal_->setItem(i, 0, t);
-        auto* m = new QTableWidgetItem(fmt(r.max_alt_change, decimals));
+        auto* m = new QTableWidgetItem(HtmlReport::formatNumber(r.max_alt_change, decimals));
         m->setData(Qt::UserRole, r.max_alt_change);
         inflTableTotal_->setItem(i, 1, m);
       }
