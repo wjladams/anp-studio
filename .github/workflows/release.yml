@@ -86,10 +86,13 @@ jobs:
       - name: Configure CMake
         shell: bash
         run: |
+          # CMAKE_POLICY_VERSION_MINIMUM: OpenXLSX→miniz still uses
+          # cmake_minimum_required < 3.5; CMake 4+ rejects that otherwise.
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DANPSTUDIO_BUILD_GUI=ON \
             -DANPSTUDIO_BUILD_DOCS=OFF \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DCMAKE_PREFIX_PATH="${QT_ROOT_DIR}"
 
       - name: Build

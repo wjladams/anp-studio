@@ -3,10 +3,34 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network)
-find_package(ZLIB REQUIRED)
+
+# zlib for ZIP inflate in xlsx_sheet_reader (system lib on Linux/macOS;
+# FetchContent fallback for Windows / bare runners).
+include(FetchContent)
+find_package(ZLIB QUIET)
+if(NOT ZLIB_FOUND)
+  message(STATUS "ZLIB not found; fetching madler/zlib via FetchContent")
+  FetchContent_Declare(
+    zlib
+    GIT_REPOSITORY https://github.com/madler/zlib.git
+    GIT_TAG v1.3.1
+  )
+  set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(zlib)
+  if(TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
+    add_library(ZLIB::ZLIB ALIAS zlibstatic)
+  elseif(TARGET zlib AND NOT TARGET ZLIB::ZLIB)
+    add_library(ZLIB::ZLIB ALIAS zlib)
+  endif()
+  if(NOT TARGET ZLIB::ZLIB)
+    message(FATAL_ERROR "Fetched zlib but no ZLIB::ZLIB-compatible target was created")
+  endif()
+endif()
 
 # OpenXLSX — respondent Excel templates (read/write .xlsx, no Qt dependency)
-include(FetchContent)
+# miniz (via OpenXLSX) still declares cmake_minimum_required < 3.5; CMake 4+
+# needs this to configure that dependency.
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
 set(OPENXLSX_CREATE_DOCS OFF CACHE BOOL "" FORCE)
 set(OPENXLSX_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
 set(OPENXLSX_BUILD_TESTS OFF CACHE BOOL "" FORCE)
