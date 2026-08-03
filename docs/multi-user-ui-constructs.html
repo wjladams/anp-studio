@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Multi-user UI constructs — ANP Studio</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --ink: #1c1b19;
+      --muted: #5c574e;
+      --line: #d4cfc4;
+      --panel: #fffdf8;
+      --accent: #2f5d50;
+      --accent-soft: #e4efe9;
+      --select: #c8ddd4;
+      --chrome: #ebe6dc;
+      --warn: #8a5a2b;
+      --warn-soft: #f3e6d4;
+      --danger: #7a3030;
+      --readonly: #f0ede6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.45 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    header {
+      padding: 1.75rem 2rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+    header h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.65rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      margin: 0;
+      max-width: 46rem;
+      color: var(--muted);
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      padding: 1rem 2rem 0;
+    }
+    .tabs button {
+      font: inherit;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      padding: 0.45rem 0.85rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .tabs button[aria-selected="true"] {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    main { padding: 1rem 2rem 3rem; }
+    article { display: none; }
+    article.active { display: block; }
+    .meta {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+      max-width: 1120px;
+    }
+    @media (max-width: 860px) {
+      .meta { grid-template-columns: 1fr; }
+    }
+    .meta h2 {
+      margin: 0 0 0.4rem;
+      font-size: 1.25rem;
+    }
+    .meta p, .meta li { color: var(--muted); }
+    .meta ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+    .pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--select);
+      background: var(--accent-soft);
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      margin-bottom: 0.5rem;
+    }
+    .wire {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      overflow: hidden;
+      max-width: 1120px;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-size: 12px;
+    }
+    .stage-strip {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.55rem 0.75rem;
+      background: var(--chrome);
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      align-items: center;
+    }
+    .stage-strip strong { color: var(--ink); }
+    .stage-strip .spacer { flex: 1; }
+    .menubar {
+      display: flex;
+      gap: 0.85rem;
+      padding: 0.35rem 0.75rem;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .body {
+      display: grid;
+      grid-template-columns: 200px 1fr 210px;
+      min-height: 360px;
+    }
+    .body.two-col { grid-template-columns: 220px 1fr; }
+    .body.analysis { grid-template-columns: 200px 1fr 200px; }
+    .body.dialog-wrap {
+      display: block;
+      padding: 1.25rem;
+      background: rgba(28, 27, 25, 0.12);
+      min-height: 380px;
+    }
+    .col {
+      border-right: 1px solid var(--line);
+      padding: 0.6rem;
+      background: var(--panel);
+    }
+    .col:last-child { border-right: none; }
+    .col h3 {
+      margin: 0 0 0.5rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .tree { list-style: none; margin: 0; padding: 0; }
+    .tree ul { list-style: none; margin: 0; padding-left: 0.85rem; }
+    .tree li {
+      padding: 0.22rem 0.35rem;
+      border-radius: 3px;
+      margin: 0.08rem 0;
+      color: var(--ink);
+    }
+    .tree .group {
+      font-weight: 600;
+      margin-top: 0.45rem;
+      color: var(--muted);
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .tree .sel { background: var(--select); font-weight: 600; }
+    .tree .dim { color: var(--muted); }
+    .center-mock {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px dashed var(--line);
+      align-items: center;
+    }
+    .chip {
+      border: 1px solid var(--line);
+      padding: 0.2rem 0.45rem;
+      border-radius: 3px;
+      background: #fff;
+      color: var(--muted);
+    }
+    .chip.on {
+      background: var(--accent-soft);
+      border-color: var(--select);
+      color: var(--ink);
+      font-weight: 600;
+    }
+    .chip.warn {
+      background: var(--warn-soft);
+      border-color: #e0c8a8;
+      color: var(--warn);
+    }
+    .chip.btn {
+      cursor: default;
+      background: var(--chrome);
+      color: var(--ink);
+    }
+    .scope-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      align-items: center;
+      padding: 0.45rem 0.6rem;
+      background: var(--accent-soft);
+      border-bottom: 1px solid var(--select);
+      font-size: 11px;
+    }
+    .scope-bar label { color: var(--muted); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.65rem; }
+    .scope-bar select, .fake-select {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 3px;
+      padding: 0.2rem 0.4rem;
+      font: inherit;
+      color: var(--ink);
+    }
+    .matrix {
+      flex: 1;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      display: grid;
+      grid-template-columns: 48px repeat(3, 1fr);
+      grid-auto-rows: 28px;
+      place-items: center;
+      background:
+        linear-gradient(to right, transparent 47px, var(--line) 47px),
+        linear-gradient(to bottom, transparent 27px, var(--line) 27px);
+      background-size: 100% 100%, 100% 100%;
+      color: var(--muted);
+      min-height: 140px;
+    }
+    .matrix.readonly {
+      background-color: var(--readonly);
+      position: relative;
+    }
+    .matrix .heat {
+      background: #f0c9b0;
+      color: var(--ink);
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      font-weight: 600;
+    }
+    .bars { display: flex; flex-direction: column; gap: 0.55rem; margin-top: 0.4rem; }
+    .bar-row { display: grid; grid-template-columns: 36px 1fr 28px; gap: 0.35rem; align-items: center; }
+    .bar {
+      height: 10px;
+      background: var(--accent);
+      border-radius: 2px;
+      opacity: 0.75;
+    }
+    .bar.alt { background: #4a6f8a; opacity: 0.7; }
+    .note {
+      margin-top: 1rem;
+      padding: 0.75rem 0.9rem;
+      border-left: 3px solid var(--accent);
+      background: var(--accent-soft);
+      max-width: 1120px;
+      color: var(--ink);
+    }
+    .dialog {
+      max-width: 520px;
+      margin: 0 auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: 0 12px 40px rgba(28, 27, 25, 0.18);
+      overflow: hidden;
+    }
+    .dialog.wide { max-width: 640px; }
+    .dialog-title {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--chrome);
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .dialog-body { padding: 1rem; }
+    .dialog-foot {
+      padding: 0.65rem 1rem;
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.4rem;
+      background: #faf8f3;
+    }
+    .btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 0.35rem 0.75rem;
+      border-radius: 3px;
+      font: inherit;
+      font-size: 12px;
+      color: var(--ink);
+    }
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn.ghost { background: transparent; color: var(--muted); }
+    table.roster {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    table.roster th, table.roster td {
+      text-align: left;
+      padding: 0.4rem 0.45rem;
+      border-bottom: 1px solid var(--line);
+    }
+    table.roster th {
+      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    table.roster tr.sel td { background: var(--select); }
+    .tag {
+      display: inline-block;
+      font-size: 10px;
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      margin-right: 0.2rem;
+    }
+    .tag.blue { background: #e3eaf1; color: #3a5570; }
+    .field-row {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.55rem;
+    }
+    .field-row label { color: var(--muted); font-size: 11px; }
+    .field-row input, .field-row select {
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      padding: 0.35rem 0.45rem;
+      font: inherit;
+      background: #fff;
+    }
+    .session-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .session-list .pct {
+      font-size: 10px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .session-fold {
+      margin: 0 0 0.35rem;
+      border: none;
+    }
+    .session-fold > summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.35rem;
+      padding: 0.22rem 0.35rem;
+      border-radius: 3px;
+      font-weight: 600;
+      margin-top: 0.35rem;
+      color: var(--muted);
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      user-select: none;
+    }
+    .session-fold > summary::-webkit-details-marker { display: none; }
+    .session-fold > summary:hover { background: var(--chrome); }
+    .session-fold > summary .chev {
+      font-size: 9px;
+      color: var(--muted);
+      transform: rotate(90deg);
+      transition: transform 0.12s ease;
+    }
+    .session-fold:not([open]) > summary .chev { transform: rotate(0deg); }
+    .session-fold > summary .count {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--muted);
+      margin-left: auto;
+      margin-right: 0.35rem;
+    }
+    .session-fold .tree {
+      max-height: 7.5rem;
+      overflow-y: auto;
+      padding-right: 0.15rem;
+      margin-bottom: 0.15rem;
+    }
+    .session-active-pill {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.35rem;
+      padding: 0.3rem 0.4rem;
+      margin-bottom: 0.35rem;
+      border-radius: 3px;
+      background: var(--select);
+      font-weight: 600;
+      font-size: 11px;
+    }
+    .session-active-pill .pct {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .badge {
+      font-size: 9px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.1rem 0.3rem;
+      border-radius: 2px;
+      background: var(--warn-soft);
+      color: var(--warn);
+    }
+    .badge.ok {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .badge.lock {
+      background: var(--chrome);
+      color: var(--muted);
+    }
+    .hub-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    .hub-card {
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 0.75rem;
+      background: #fff;
+    }
+    .hub-card h4 {
+      margin: 0 0 0.35rem;
+      font-size: 13px;
+    }
+    .hub-card p {
+      margin: 0 0 0.55rem;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    .hub-card.disabled {
+      opacity: 0.55;
+      background: var(--readonly);
+    }
+    .hub-card .status {
+      font-size: 10px;
+      color: var(--accent);
+      margin-bottom: 0.45rem;
+    }
+    .hub-card.disabled .status { color: var(--warn); }
+    .heat-legend {
+      display: flex;
+      gap: 0.75rem;
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 0.35rem;
+    }
+    .swatch {
+      display: inline-block;
+      width: 12px;
+      height: 10px;
+      border-radius: 2px;
+      vertical-align: middle;
+      margin-right: 0.25rem;
+    }
+    .cov-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      margin-top: 0.5rem;
+    }
+    .cov-table th, .cov-table td {
+      border: 1px solid var(--line);
+      padding: 0.3rem 0.4rem;
+      text-align: center;
+    }
+    .cov-table th:first-child, .cov-table td:first-child { text-align: left; }
+    .cov-table .fill { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+    .cov-table .miss { background: #f5e8e8; color: var(--danger); }
+    .chart-mock {
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 0.75rem;
+      min-height: 160px;
+      background: #fff;
+    }
+    .cohort-bars {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 0.35rem 0.5rem;
+      align-items: center;
+      margin-top: 0.5rem;
+    }
+    .dual {
+      display: flex;
+      height: 14px;
+      border-radius: 2px;
+      overflow: hidden;
+      background: var(--chrome);
+    }
+    .dual span:first-child { background: var(--accent); }
+    .dual span:last-child { background: #4a6f8a; }
+    .settings-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row strong { display: block; font-size: 13px; }
+    .settings-row small { color: var(--muted); font-size: 11px; }
+    .connected { color: var(--accent); font-size: 11px; font-weight: 600; }
+    .not-connected { color: var(--warn); font-size: 11px; font-weight: 600; }
+    .path {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      align-items: center;
+      margin: 0 0 1rem;
+      max-width: 1120px;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-size: 12px;
+    }
+    .path .step {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.25rem 0.65rem;
+      color: var(--muted);
+    }
+    .path .step.on {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+    .path .arrow { color: var(--muted); }
+    .stack-wires {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-width: 1120px;
+    }
+    .step-label {
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 0.4rem;
+      font-weight: 600;
+    }
+    .callout {
+      position: relative;
+    }
+    .callout::after {
+      content: attr(data-callout);
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 6px);
+      transform: translateX(-50%);
+      white-space: nowrap;
+      background: var(--ink);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding: 0.25rem 0.45rem;
+      border-radius: 3px;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .callout::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 2px);
+      transform: translateX(-50%);
+      border: 4px solid transparent;
+      border-top-color: var(--ink);
+      z-index: 2;
+    }
+    .hit {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 4px rgba(47, 93, 80, 0.18);
+      background: #fff !important;
+      color: var(--ink) !important;
+      font-weight: 600 !important;
+      position: relative;
+      z-index: 1;
+    }
+    .menu-popup {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 2px;
+      min-width: 180px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      box-shadow: 0 8px 24px rgba(28, 27, 25, 0.16);
+      z-index: 5;
+      padding: 0.25rem 0;
+    }
+    .menu-popup div {
+      padding: 0.35rem 0.75rem;
+      color: var(--ink);
+    }
+    .menu-popup .dim { color: var(--muted); }
+    .menu-popup .hit-row {
+      background: var(--select);
+      font-weight: 600;
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+    .menubar .menu-wrap { position: relative; display: inline-block; }
+    .menubar .open { color: var(--ink); font-weight: 600; }
+    .alt-path {
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed var(--line);
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .alt-path strong { color: var(--ink); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Multi-user UI constructs</h1>
+    <p>
+      Mocks for anp-studio#11: Participants Roster, Session Context Switcher,
+      Import/Export Hub, Analysis Scope, Consensus/Variance, and Settings →
+      Connected accounts. Open in any browser; click tabs to compare surfaces.
+    </p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" aria-selected="true" data-tab="roster">1 · Roster</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="session">2 · Session</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="hub">3 · Import / Export</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="scope">4 · Network + Scope</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="consensus">5 · Consensus</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="oauth">Settings · OAuth</button>
+  </div>
+
+  <main>
+    <!-- 1 Roster -->
+    <article id="roster" class="active">
+      <div class="meta">
+        <div>
+          <div class="pill">Q1 · Where users are managed</div>
+          <h2>1 — Participants Roster</h2>
+          <p>
+            Model-level dialog (not app accounts). One roster for the whole
+            document; pairwise cells and ratings votes reference these people.
+            Scales stay shared.
+          </p>
+          <ul>
+            <li>Primary path: Judgments menubar → Participants → Manage participants…</li>
+            <li>Shortcuts from Session panel and Viewing bar (same dialog)</li>
+            <li>Empty roster keeps today’s single-judge UX</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">Click path</h2>
+          <ul>
+            <li>Step A: open Judgments, open Participants menu</li>
+            <li>Step B: choose Manage participants…</li>
+            <li>Step C: roster dialog for this model</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="path" aria-label="Click path">
+        <span class="step on">Judgments stage</span>
+        <span class="arrow">→</span>
+        <span class="step on">Participants menu</span>
+        <span class="arrow">→</span>
+        <span class="step on">Manage participants…</span>
+        <span class="arrow">→</span>
+        <span class="step on">Roster dialog</span>
+      </div>
+
+      <div class="stack-wires">
+        <div>
+          <p class="step-label">Step A–B · Where you click (Judgments)</p>
+          <div class="wire">
+            <div class="menubar">
+              File · Edit · View ·
+              <span class="menu-wrap">
+                <span class="open callout hit" data-callout="1 · Click here">Participants ▾</span>
+                <div class="menu-popup" role="menu">
+                  <div class="hit-row callout" data-callout="2 · Then this">Manage participants…</div>
+                  <div class="dim">Import / Export…</div>
+                  <div class="dim">Create survey…</div>
+                </div>
+              </span>
+              · Help
+            </div>
+            <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis · Researcher <span class="spacer"></span> hamburger.json ●</div>
+            <div class="scope-bar">
+              <label>Viewing</label>
+              <span class="fake-select">Alice Chen ▾</span>
+              <span class="chip on">Editable</span>
+              <span class="chip btn">Manage participants…</span>
+              <span class="chip btn">Import / Export…</span>
+            </div>
+            <div class="body">
+              <div class="col">
+                <h3>Nav</h3>
+                <ul class="tree">
+                  <li class="group">Node judgments</li>
+                  <li class="sel">Benefits → Alternatives</li>
+                  <li class="dim">Costs → Alternatives</li>
+                </ul>
+              </div>
+              <div class="col center-mock">
+                <h3>Center</h3>
+                <div class="toolbar">
+                  <span class="chip on">Matrix</span>
+                  <span class="chip">Questionnaire</span>
+                </div>
+                <div class="matrix" aria-hidden="true">
+                  <span></span><span>A</span><span>B</span><span>C</span>
+                  <span>A</span><span>1</span><span>3</span><span>1/2</span>
+                  <span>B</span><span></span><span>1</span><span>2</span>
+                  <span>C</span><span></span><span></span><span>1</span>
+                </div>
+              </div>
+              <div class="col">
+                <h3>Session</h3>
+                <ul class="tree session-list">
+                  <li class="sel">Alice Chen <span class="pct">86%</span></li>
+                  <li class="dim">Bob Rivera <span class="pct">100%</span></li>
+                  <li class="dim">Group average</li>
+                </ul>
+                <div class="alt-path">
+                  <strong>Alt:</strong> Session footer link
+                  <div style="margin-top:.35rem">
+                    <span class="chip btn hit callout" data-callout="Alt path">Manage participants…</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p class="step-label">Step C · Roster dialog opens (model-scoped)</p>
+          <div class="wire">
+            <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis · Researcher <span class="spacer"></span> hamburger.json ●</div>
+            <div class="body dialog-wrap">
+              <div class="dialog wide">
+                <div class="dialog-title">
+                  <span>Participants — hamburger.json</span>
+                  <span class="badge ok">Model roster</span>
+                </div>
+                <div class="dialog-body">
+                  <div style="display:flex;gap:.4rem;margin-bottom:.75rem;flex-wrap:wrap">
+                    <button type="button" class="btn primary">Add</button>
+                    <button type="button" class="btn">Rename</button>
+                    <button type="button" class="btn">Remove</button>
+                    <button type="button" class="btn">Manage groups…</button>
+                  </div>
+                  <table class="roster">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Groups</th>
+                        <th>Filled</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="sel">
+                        <td>Alice Chen</td>
+                        <td>alice@acme.co</td>
+                        <td><span class="tag">Executives</span><span class="tag blue">Ops</span></td>
+                        <td>12 / 14</td>
+                      </tr>
+                      <tr>
+                        <td>Bob Rivera</td>
+                        <td>bob@acme.co</td>
+                        <td><span class="tag">Executives</span></td>
+                        <td>14 / 14</td>
+                      </tr>
+                      <tr>
+                        <td>Carol Ng</td>
+                        <td>carol@acme.co</td>
+                        <td><span class="tag blue">Ops</span></td>
+                        <td>8 / 14</td>
+                      </tr>
+                      <tr>
+                        <td>Diego Silva</td>
+                        <td>—</td>
+                        <td><span class="tag blue">Ops</span></td>
+                        <td>0 / 14</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <p style="margin:.85rem 0 0;font-size:11px;color:var(--muted)">
+                    Groups are named subsets of this roster. They appear in Session,
+                    Analysis Scope, and Consensus — not as separate user lists.
+                  </p>
+                </div>
+                <div class="dialog-foot">
+                  <button type="button" class="btn ghost">Cancel</button>
+                  <button type="button" class="btn primary">Done</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Primary: <strong>Participants → Manage participants…</strong> on the Judgments menubar.
+        Same dialog from the Viewing bar chip or Session panel link. Users live on the model file;
+        Google/Microsoft login is only for Forms — see Settings tab.
+      </p>
+    </article>
+
+    <!-- 2 Session -->
+    <article id="session">
+      <div class="meta">
+        <div>
+          <div class="pill">Q2 / Q3 · Edit + average</div>
+          <h2>2 — Session Context Switcher</h2>
+          <p>
+            Right column on Judgments (wired Session panel) plus a header combo.
+            Pick whose judgments you are viewing or editing; Group average is
+            read-only.
+          </p>
+          <ul>
+            <li>Individual → editable matrix / ratings</li>
+            <li>Group average → derived, lock badge</li>
+            <li>Custom group → same named groups as roster</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">On this mock</h2>
+          <ul>
+            <li>Alice selected; matrix editable</li>
+            <li><strong>Edit…</strong> on Session opens the roster dialog</li>
+            <li>Individuals / Aggregates collapse; current pick stays pinned</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis · Researcher</div>
+        <div class="scope-bar">
+          <label>Viewing</label>
+          <span class="fake-select">Alice Chen ▾</span>
+          <span class="chip on">Editable</span>
+          <span class="chip btn">Import / Export…</span>
+        </div>
+        <div class="body">
+          <div class="col">
+            <h3>Nav</h3>
+            <ul class="tree">
+              <li class="group">Node judgments</li>
+              <li>
+                Benefits
+                <ul>
+                  <li class="sel">→ Alternatives · Pairwise</li>
+                  <li class="dim">→ Alternatives · Ratings</li>
+                </ul>
+              </li>
+              <li class="dim">Costs → Alternatives</li>
+            </ul>
+          </div>
+          <div class="col center-mock">
+            <h3>Center · Alice Chen</h3>
+            <div class="toolbar">
+              <span class="chip on">Matrix</span>
+              <span class="chip">Questionnaire</span>
+              <span class="chip">CR 0.04</span>
+            </div>
+            <div class="matrix" aria-hidden="true">
+              <span></span><span>A</span><span>B</span><span>C</span>
+              <span>A</span><span>1</span><span>3</span><span>1/2</span>
+              <span>B</span><span></span><span>1</span><span>2</span>
+              <span>C</span><span></span><span></span><span>1</span>
+            </div>
+          </div>
+          <div class="col">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:.35rem;margin-bottom:.5rem">
+              <h3 style="margin:0">Session</h3>
+              <button type="button" class="btn hit callout" data-callout="Opens roster" style="padding:.2rem .45rem;font-size:11px">Edit…</button>
+            </div>
+            <div class="session-active-pill">
+              <span>Alice Chen</span>
+              <span class="pct">86% · individual</span>
+            </div>
+            <details class="session-fold" open>
+              <summary>
+                <span>Individuals</span>
+                <span class="count">8</span>
+                <span class="chev" aria-hidden="true">▸</span>
+              </summary>
+              <ul class="tree session-list">
+                <li class="sel">Alice Chen <span class="pct">86%</span></li>
+                <li class="dim">Bob Rivera <span class="pct">100%</span></li>
+                <li class="dim">Carol Ng <span class="pct">57%</span></li>
+                <li class="dim">Diego Silva <span class="pct">0%</span></li>
+                <li class="dim">Elena Park <span class="pct">71%</span></li>
+                <li class="dim">Frank Okonkwo <span class="pct">93%</span></li>
+                <li class="dim">Grace Liu <span class="pct">43%</span></li>
+                <li class="dim">Hassan Ali <span class="pct">64%</span></li>
+              </ul>
+            </details>
+            <details class="session-fold">
+              <summary>
+                <span>Aggregates</span>
+                <span class="count">3</span>
+                <span class="chev" aria-hidden="true">▸</span>
+              </summary>
+              <ul class="tree session-list">
+                <li class="dim">Group average <span class="badge lock">ro</span></li>
+                <li class="dim">Executives <span class="badge lock">ro</span></li>
+                <li class="dim">Ops <span class="badge lock">ro</span></li>
+              </ul>
+            </details>
+            <p style="margin:.55rem 0 0;font-size:10px;color:var(--warn)">
+              <span class="badge">hint</span> High disagreement on A vs C
+            </p>
+            <h3 style="margin-top:1rem">Priorities</h3>
+            <div class="bars">
+              <div class="bar-row"><span>A</span><div class="bar" style="width:70%"></div><span>0.48</span></div>
+              <div class="bar-row"><span>B</span><div class="bar" style="width:45%"></div><span>0.31</span></div>
+              <div class="bar-row"><span>C</span><div class="bar" style="width:30%"></div><span>0.21</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        <strong>Edit…</strong> opens the roster. Individuals and Aggregates are
+        collapsible (Aggregates start closed here); the active person stays pinned
+        above so Priorities remain visible with long lists. Lists scroll when expanded.
+      </p>
+    </article>
+
+    <!-- 3 Hub -->
+    <article id="hub">
+      <div class="meta">
+        <div>
+          <div class="pill">Q2 · Bulk multi-user input</div>
+          <h2>3 — Import / Export Hub</h2>
+          <p>
+            Actions off Judgments / Session — not a separate stage. Excel always
+            available; live Forms only when that provider is connected in Settings.
+            CSV import works without OAuth.
+          </p>
+          <ul>
+            <li>Export/import Excel for one participant</li>
+            <li>Create survey → share URL; import responses</li>
+            <li>Disabled cards nudge Connect in Settings</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">On this mock</h2>
+          <ul>
+            <li>Target participant: Carol Ng</li>
+            <li>Google connected; Microsoft not</li>
+            <li>CSV path always on</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis</div>
+        <div class="body dialog-wrap">
+          <div class="dialog wide">
+            <div class="dialog-title">
+              <span>Import / Export judgments</span>
+              <span class="badge ok">Hub</span>
+            </div>
+            <div class="dialog-body">
+              <div class="field-row">
+                <label>Participant</label>
+                <select><option>Carol Ng</option><option>Alice Chen</option><option>All (import creates)</option></select>
+              </div>
+              <div class="hub-grid">
+                <div class="hub-card">
+                  <h4>Excel</h4>
+                  <p>Template with pairwise + ratings sheets for this person. No account needed.</p>
+                  <button type="button" class="btn">Export .xlsx…</button>
+                  <button type="button" class="btn">Import .xlsx…</button>
+                </div>
+                <div class="hub-card">
+                  <h4>Forms CSV</h4>
+                  <p>MVP path: download responses from Google/Microsoft Forms, then import.</p>
+                  <button type="button" class="btn">Import CSV…</button>
+                </div>
+                <div class="hub-card">
+                  <div class="status">● Google connected</div>
+                  <h4>Google Forms</h4>
+                  <p>Create a form from current structure; later pull responses into the roster.</p>
+                  <button type="button" class="btn primary">Create form…</button>
+                  <button type="button" class="btn">Import results…</button>
+                </div>
+                <div class="hub-card disabled">
+                  <div class="status">○ Microsoft not connected</div>
+                  <h4>Microsoft Forms</h4>
+                  <p>Connect in Settings → Connected accounts to enable live create/import.</p>
+                  <button type="button" class="btn">Connect Microsoft…</button>
+                </div>
+              </div>
+            </div>
+            <div class="dialog-foot">
+              <button type="button" class="btn ghost">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">OAuth is not required to use Excel or CSV. Live Forms cards appear only (or only fully enabled) after Settings connection.</p>
+    </article>
+
+    <!-- 4 Analysis scope -->
+    <article id="scope">
+      <div class="meta">
+        <div>
+          <div class="pill">Analysis + Researcher</div>
+          <h2>4 — Network + Scope</h2>
+          <p>
+            Both Analysis and Researcher keep the existing <strong>network
+            chooser</strong> and add a participant <strong>scope</strong>
+            beside it. Network = which subnet; Scope = whose judgments
+            (overall / individual / custom group).
+          </p>
+          <ul>
+            <li>Same dual bar on Analysis and Researcher</li>
+            <li>Scope is shared with Judgments Session (always; no sync button)</li>
+            <li>Changing network does not reset scope (and vice versa)</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">On this mock</h2>
+          <ul>
+            <li>Network: /Benefits (subnet)</li>
+            <li>Scope: Executives (Alice + Bob)</li>
+            <li>Second wire = Researcher with the same controls</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="stack-wires">
+        <div>
+          <p class="step-label">Analysis · network chooser + scope</p>
+          <div class="wire">
+            <div class="stage-strip">Structure · Judgments · <strong>Analysis</strong> · Researcher</div>
+            <div class="scope-bar">
+              <label>Network</label>
+              <span class="fake-select">/ · Benefits ▾</span>
+              <span style="width:1px;height:1.1rem;background:var(--select);margin:0 .15rem"></span>
+              <label>Scope</label>
+              <span class="fake-select">Custom group · Executives ▾</span>
+              <span class="chip on">Alice, Bob</span>
+            </div>
+            <div class="body analysis">
+              <div class="col">
+                <h3>Analysis</h3>
+                <ul class="tree">
+                  <li class="sel">Synthesis</li>
+                  <li class="dim">Sensitivity</li>
+                  <li class="dim">Influence</li>
+                  <li class="dim">Consensus / Variance</li>
+                </ul>
+              </div>
+              <div class="col center-mock">
+                <h3>Benefits · Executives</h3>
+                <div class="toolbar">
+                  <span class="chip on">Globals</span>
+                  <span class="chip">Limit</span>
+                  <span class="chip">Scaled</span>
+                </div>
+                <div class="chart-mock">
+                  <div class="bars" style="margin:0">
+                    <div class="bar-row"><span>A</span><div class="bar" style="width:62%"></div><span>0.41</span></div>
+                    <div class="bar-row"><span>B</span><div class="bar" style="width:52%"></div><span>0.34</span></div>
+                    <div class="bar-row"><span>C</span><div class="bar" style="width:38%"></div><span>0.25</span></div>
+                  </div>
+                  <p style="margin:.85rem 0 0;font-size:11px;color:var(--muted)">
+                    Calc on network <code>/</code>→Benefits using Executives’
+                    aggregated judgments.
+                  </p>
+                </div>
+              </div>
+              <div class="col">
+                <h3>Summary</h3>
+                <p style="margin:0;font-size:11px;color:var(--muted)">
+                  Network: /Benefits<br />Scope: Executives
+                </p>
+                <div class="bars">
+                  <div class="bar-row"><span>A</span><div class="bar" style="width:62%"></div><span></span></div>
+                  <div class="bar-row"><span>B</span><div class="bar" style="width:52%"></div><span></span></div>
+                  <div class="bar-row"><span>C</span><div class="bar" style="width:38%"></div><span></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p class="step-label">Researcher · same network + scope bar</p>
+          <div class="wire">
+            <div class="stage-strip">Structure · Judgments · Analysis · <strong>Researcher</strong></div>
+            <div class="scope-bar">
+              <label>Network</label>
+              <span class="fake-select">/ · Benefits ▾</span>
+              <span style="width:1px;height:1.1rem;background:var(--select);margin:0 .15rem"></span>
+              <label>Scope</label>
+              <span class="fake-select">Custom group · Executives ▾</span>
+              <span class="chip on">Alice, Bob</span>
+            </div>
+            <div class="body analysis">
+              <div class="col">
+                <h3>Notebooks</h3>
+                <ul class="tree">
+                  <li class="sel">cohort-check</li>
+                  <li class="dim">starter</li>
+                  <li class="dim">sensitivity-loop</li>
+                </ul>
+              </div>
+              <div class="col center-mock">
+                <h3>Console</h3>
+                <div class="chart-mock" style="font-family:ui-monospace,monospace;font-size:11px;line-height:1.55">
+                  <div style="color:var(--muted)"># bound to open document</div>
+                  <div><span style="color:var(--accent)">benefits ›</span> path</div>
+                  <div style="color:var(--muted)">/Benefits</div>
+                  <div><span style="color:var(--accent)">benefits ›</span> use-scope Executives</div>
+                  <div style="color:var(--muted)">scope = Executives (Alice, Bob)</div>
+                  <div><span style="color:var(--accent)">benefits ›</span> alt-scores</div>
+                  <div style="color:var(--muted)">A 0.41 · B 0.34 · C 0.25</div>
+                  <div style="margin-top:.5rem;padding-top:.45rem;border-top:1px dashed var(--line)">
+                    <span style="color:var(--accent)">benefits ›</span>
+                    <span style="opacity:.45">|</span>
+                  </div>
+                </div>
+              </div>
+              <div class="col">
+                <h3>Bindings</h3>
+                <p style="margin:0;font-size:11px;font-family:ui-monospace,monospace;line-height:1.5;color:var(--muted)">
+                  network = /Benefits<br />
+                  scope = Executives<br />
+                  model<br />
+                  results
+                </p>
+                <p style="margin:.75rem 0 0;font-size:10px;color:var(--muted)">
+                  DSL can still override with <code>use</code> / <code>use-scope</code>;
+                  the bar is the default context.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Network chooser and Scope sit together on Analysis and Researcher.
+        Scope is one shared document context with Judgments Session — pick
+        Executives once, all stages use it. Modes: overall average, individual,
+        custom groups.
+      </p>
+    </article>
+
+    <!-- 5 Consensus -->
+    <article id="consensus">
+      <div class="meta">
+        <div>
+          <div class="pill">Q4 · Variance / cohort</div>
+          <h2>5 — Consensus / Variance View</h2>
+          <p>
+            Lives under Analysis (not the editing surface). Coverage, cell-level
+            disagreement, cohort compare, and “equally distributed?” diagnostics.
+            Session only shows light hints; this pane owns the science.
+          </p>
+          <ul>
+            <li>Heat on pairwise cells = high variance across users</li>
+            <li>Coverage grid = who filled what</li>
+            <li>Cohort bars = Executives vs Ops priorities</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">On this mock</h2>
+          <ul>
+            <li>Parent: Benefits → Alternatives</li>
+            <li>A vs C is the hot cell</li>
+            <li>Diego still empty on this block</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="stage-strip">Structure · Judgments · <strong>Analysis</strong> · Researcher</div>
+        <div class="scope-bar">
+          <label>Network</label>
+          <span class="fake-select">/ · Benefits ▾</span>
+          <span style="width:1px;height:1.1rem;background:var(--select);margin:0 .15rem"></span>
+          <label>Compare</label>
+          <span class="fake-select">All participants ▾</span>
+          <span class="chip on">Disagreement heat</span>
+          <span class="chip">Coverage</span>
+          <span class="chip">Cohorts</span>
+        </div>
+        <div class="body analysis">
+          <div class="col">
+            <h3>Analysis</h3>
+            <ul class="tree">
+              <li class="dim">Synthesis</li>
+              <li class="dim">Sensitivity</li>
+              <li class="dim">Influence</li>
+              <li class="sel">Consensus / Variance</li>
+            </ul>
+          </div>
+          <div class="col center-mock">
+            <h3>Benefits → Alternatives · disagreement</h3>
+            <div class="matrix" aria-hidden="true">
+              <span></span><span>A</span><span>B</span><span>C</span>
+              <span>A</span><span>1</span><span>1.2</span><div class="heat" title="high variance">3.8×</div>
+              <span>B</span><span></span><span>1</span><span>1.4</span>
+              <span>C</span><span></span><span></span><span>1</span>
+            </div>
+            <div class="heat-legend">
+              <span><i class="swatch" style="background:#f0c9b0"></i> High variance</span>
+              <span><i class="swatch" style="background:var(--readonly)"></i> Low / agree</span>
+              <span>Ratio of max/min participant judgment</span>
+            </div>
+            <table class="cov-table">
+              <thead>
+                <tr><th>Participant</th><th>This block</th><th>All judgments</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Alice</td><td class="fill">✓</td><td class="fill">12/14</td></tr>
+                <tr><td>Bob</td><td class="fill">✓</td><td class="fill">14/14</td></tr>
+                <tr><td>Carol</td><td class="fill">✓</td><td class="miss">8/14</td></tr>
+                <tr><td>Diego</td><td class="miss">—</td><td class="miss">0/14</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="col">
+            <h3>Cohorts</h3>
+            <p style="margin:0 0 .35rem;font-size:10px;color:var(--muted)">
+              <span class="tag">Executives</span> vs <span class="tag blue">Ops</span>
+            </p>
+            <div class="cohort-bars">
+              <span>A</span><div class="dual"><span style="width:58%"></span><span style="width:42%"></span></div>
+              <span>B</span><div class="dual"><span style="width:40%"></span><span style="width:60%"></span></div>
+              <span>C</span><div class="dual"><span style="width:35%"></span><span style="width:65%"></span></div>
+            </div>
+            <p style="margin:.75rem 0 0;font-size:10px;color:var(--muted)">
+              Left = Executives, right = Ops (normalized pair).
+            </p>
+            <h3 style="margin-top:1rem">Distribution</h3>
+            <p style="margin:0;font-size:11px;color:var(--muted)">
+              A vs C judgments not equally distributed (skewed toward Alice/Bob).
+              Overall Shannon / range stats would land here.
+            </p>
+          </div>
+        </div>
+      </div>
+      <p class="note">Q4 answer: cohort, variance, and multi-user voting analysis happen here (+ Researcher), driven by scope — not inside the Pairwise editor.</p>
+    </article>
+
+    <!-- OAuth Settings -->
+    <article id="oauth">
+      <div class="meta">
+        <div>
+          <div class="pill">Q5 · Forms OAuth</div>
+          <h2>Settings — Connected accounts</h2>
+          <p>
+            App-level (not per model). Authenticate once; Import/Export Hub only
+            offers live Google/Microsoft create/import when connected. Excel and
+            CSV never need this.
+          </p>
+          <ul>
+            <li>Browser OAuth → tokens in OS keychain</li>
+            <li>If not connected, Hub shows Connect… on that card</li>
+            <li>Connecting at Hub time still lands here (persist, not one-shot)</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">On this mock</h2>
+          <ul>
+            <li>Google linked as alice@…</li>
+            <li>Microsoft disconnected</li>
+            <li>Separate from Participants Roster</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire">
+        <div class="menubar">File · Edit · View · <strong>Settings</strong> · Help</div>
+        <div class="stage-strip">Preferences</div>
+        <div class="body two-col">
+          <div class="col">
+            <h3>Settings</h3>
+            <ul class="tree">
+              <li class="dim">General</li>
+              <li class="dim">Appearance</li>
+              <li class="sel">Connected accounts</li>
+              <li class="dim">Advanced</li>
+            </ul>
+          </div>
+          <div class="col">
+            <h3>Connected accounts</h3>
+            <p style="margin:0 0 .75rem;font-size:11px;color:var(--muted);max-width:36rem">
+              Used only for live Google Forms / Microsoft Forms. Model participants
+              are managed under Judgments → Manage participants…
+            </p>
+            <div class="settings-row">
+              <div>
+                <strong>Google</strong>
+                <small>Forms create &amp; import results</small>
+              </div>
+              <div style="text-align:right">
+                <div class="connected">Connected · alice@acme.co</div>
+                <button type="button" class="btn" style="margin-top:.35rem">Disconnect</button>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div>
+                <strong>Microsoft</strong>
+                <small>Forms create &amp; import results</small>
+              </div>
+              <div style="text-align:right">
+                <div class="not-connected">Not connected</div>
+                <button type="button" class="btn primary" style="margin-top:.35rem">Connect…</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Recommended policy: Settings-first connection; Hub falls back to “Connect…” which persists into Settings. MVP can ship Excel + CSV with this pane stubbed.</p>
+    </article>
+  </main>
+
+  <script>
+    const tabs = document.querySelectorAll('.tabs button');
+    const articles = document.querySelectorAll('main article');
+    tabs.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-tab');
+        tabs.forEach((b) => b.setAttribute('aria-selected', String(b === btn)));
+        articles.forEach((a) => a.classList.toggle('active', a.id === id));
+      });
+    });
+  </script>
+</body>
+</html>
