@@ -3,6 +3,7 @@
 #include "canvas/network_canvas.hpp"
 #include "commands/network_commands.hpp"
 #include "document.hpp"
+#include "io/judgment_template_io.hpp"
 #include "panels/analysis_panel.hpp"
 #include "panels/inspector_panel.hpp"
 #include "panels/judgment_nav_panel.hpp"
@@ -149,6 +150,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   auto* participantsMenu = menuBar()->addMenu(QStringLiteral("&Participants"));
   participantsMenu->addAction(QStringLiteral("&Manage participants…"), this,
                               &MainWindow::onManageParticipants);
+  participantsMenu->addSeparator();
+  participantsMenu->addAction(QStringLiteral("Export Excel &templates…"),
+                              this, &MainWindow::onExportJudgmentTemplates);
+  participantsMenu->addAction(QStringLiteral("Import judgment t&emplates…"),
+                              this, &MainWindow::onImportJudgmentTemplates);
   auto* helpMenu = menuBar()->addMenu(QStringLiteral("&Help"));
   helpMenu->addAction(QStringLiteral("User Guide"), this,
                       &MainWindow::openUserGuide);
@@ -466,6 +472,106 @@ void MainWindow::onManageParticipants() {
 
 
 
+
+void MainWindow::onExportJudgmentTemplates() {
+  if (doc_->root().participants().empty()) {
+    QMessageBox::information(
+        this, QStringLiteral("Export Excel templates"),
+        QStringLiteral(
+            "Add participants first (Participants → Manage participants…)."));
+    return;
+  }
+
+  JudgmentTemplateExportOptions options;
+  {
+    QMessageBox box(this);
+    box.setWindowTitle(QStringLiteral("Export Excel templates"));
+    box.setIcon(QMessageBox::Question);
+    box.setText(QStringLiteral(
+        "Export one Excel workbook per participant into a folder."));
+    box.setInformativeText(QStringLiteral(
+        "Each file is named ANP_judgments_<Name>.xlsx for sharing. "
+        "Respondents fill the yellow \"Your rating\" column on the "
+        "Your judgments sheet. Identity is stored in a hidden _meta sheet "
+        "(not the filename).\n\n"
+        "Leave values blank for respondents to fill, or include their "
+        "current votes."));
+    auto* blankBtn =
+        box.addButton(QStringLiteral("Blank templates"), QMessageBox::AcceptRole);
+    auto* filledBtn = box.addButton(QStringLiteral("Include existing votes"),
+                                    QMessageBox::ActionRole);
+    box.addButton(QMessageBox::Cancel);
+    box.exec();
+    if (box.clickedButton() == filledBtn) {
+      options.includeExistingVotes = true;
+    } else if (box.clickedButton() != blankBtn) {
+      return;
+    }
+  }
+
+  const QString dir = QFileDialog::getExistingDirectory(
+      this, QStringLiteral("Folder for Excel templates"));
+  if (dir.isEmpty()) return;
+
+  const JudgmentTemplateExportResult result =
+      exportJudgmentTemplates(*doc_, dir, options);
+  if (!result.ok) {
+    QMessageBox::warning(this, QStringLiteral("Export Excel templates"),
+                         result.error);
+    return;
+  }
+
+  QMessageBox::information(
+      this, QStringLiteral("Export complete"),
+      QStringLiteral("Wrote %1 Excel template(s) to:\n%2\n\n"
+                     "Share each file with that person. When they return it, "
+                     "use Participants → Import judgment templates…")
+          .arg(result.filesWritten)
+          .arg(dir));
+}
+
+void MainWindow::onImportJudgmentTemplates() {
+  QFileDialog dlg(this, QStringLiteral("Import judgment templates"));
+  dlg.setFileMode(QFileDialog::ExistingFiles);  // multi-select
+  dlg.setNameFilter(
+      QStringLiteral("Excel templates (*.xlsx);;"
+                     "Judgment templates (*.xlsx *.csv);;"
+                     "CSV (legacy) (*.csv);;All files (*)"));
+  dlg.setLabelText(QFileDialog::Accept,
+                   QStringLiteral("Import"));
+  if (dlg.exec() != QDialog::Accepted) return;
+  const QStringList paths = dlg.selectedFiles();
+  if (paths.isEmpty()) return;
+
+  const JudgmentTemplateImportResult result =
+      importJudgmentTemplates(*doc_, paths);
+  if (!result.ok) {
+    QMessageBox::warning(this, QStringLiteral("Import judgment templates"),
+                         result.error);
+    return;
+  }
+
+  QString msg =
+      QStringLiteral(
+          "Processed %1 template(s).\n"
+          "Created %2 participant(s).\n"
+          "Set %3 judgment value(s).\n")
+          .arg(result.filesProcessed)
+          .arg(result.participantsCreated)
+          .arg(result.judgmentsSet);
+  if (result.judgmentsSkipped > 0) {
+    msg +=
+        QStringLiteral("Skipped %1 row(s).\n").arg(result.judgmentsSkipped);
+  }
+  if (!result.createdParticipantNames.isEmpty()) {
+    msg += QStringLiteral("\nNew participants:\n- ") +
+           result.createdParticipantNames.join(QStringLiteral("\n- "));
+  }
+  if (!result.notes.isEmpty()) {
+    msg += QStringLiteral("\n\n") + result.notes.join(QLatin1Char('\n'));
+  }
+  QMessageBox::information(this, QStringLiteral("Import complete"), msg);
+}
 
 void MainWindow::updateTitle() {
   QString title = QStringLiteral("ANP Studio");

@@ -1,0 +1,13 @@
+participant_id,participant_name,participant_email,kind,wrt,dest_cluster,alt_a,alt_b,value,anp_tag
+alice,Alice Chen,alice@example.com,pairwise,Goal,Alternatives,A,B,2,[anp:pw|Goal|Alternatives|A|B]
+alice,Alice Chen,alice@example.com,pairwise,Goal,Alternatives,A,C,3,[anp:pw|Goal|Alternatives|A|C]
+alice,Alice Chen,alice@example.com,pairwise,Goal,Alternatives,B,C,1,[anp:pw|Goal|Alternatives|B|C]
+bob,Bob Rivera,bob@example.com,pairwise,Goal,Alternatives,A,B,8,[anp:pw|Goal|Alternatives|A|B]
+bob,Bob Rivera,bob@example.com,pairwise,Goal,Alternatives,A,C,3,[anp:pw|Goal|Alternatives|A|C]
+bob,Bob Rivera,bob@example.com,pairwise,Goal,Alternatives,B,C,1,[anp:pw|Goal|Alternatives|B|C]
+carol,Carol Ng,carol@example.com,pairwise,Goal,Alternatives,A,B,0.5,[anp:pw|Goal|Alternatives|A|B]
+carol,Carol Ng,carol@example.com,pairwise,Goal,Alternatives,A,C,3,[anp:pw|Goal|Alternatives|A|C]
+carol,Carol Ng,carol@example.com,pairwise,Goal,Alternatives,B,C,1,[anp:pw|Goal|Alternatives|B|C]
+diego,Diego Soto,diego@example.com,pairwise,Goal,Alternatives,A,B,4,[anp:pw|Goal|Alternatives|A|B]
+diego,Diego Soto,diego@example.com,pairwise,Goal,Alternatives,A,C,2,[anp:pw|Goal|Alternatives|A|C]
+diego,Diego Soto,diego@example.com,pairwise,Goal,Alternatives,B,C,1,[anp:pw|Goal|Alternatives|B|C]
