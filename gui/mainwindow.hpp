@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <QList>
 #include <QMainWindow>
 
 class Document;
@@ -25,6 +26,7 @@ class QHBoxLayout;
 class QAction;
 class QMenu;
 class QComboBox;
+class QActionGroup;
 
 /**
  * @brief Primary window: stages Structure / Judgments / Analysis.
@@ -80,11 +82,14 @@ private:
   [[nodiscard]] bool openPath(const QString& path);
   [[nodiscard]] bool openSamplePath(const QString& path);
   void rememberRecentFile(const QString& path);
+  void syncRecentShortcutActions();
+  [[nodiscard]] QStringList loadExistingRecentFiles();
   void buildStagePages();
   [[nodiscard]] static QString samplesDirectory();
   [[nodiscard]] static QString sampleDisplayName(const QString& fileName);
 
   static constexpr int kMaxRecentFiles = 10;
+  static constexpr int kRecentShortcutCount = 9;
 
   Document* doc_ = nullptr;
   Stage stage_ = Stage::Structure;
@@ -99,6 +104,12 @@ private:
   QButtonGroup* structureModeButtons_ = nullptr;
   QMenu* recentMenu_ = nullptr;
   QMenu* sampleMenu_ = nullptr;
+  QList<QAction*> recentShortcutActions_;
+  QActionGroup* stageActionGroup_ = nullptr;
+  QAction* stageStructureAction_ = nullptr;
+  QAction* stageJudgmentsAction_ = nullptr;
+  QAction* stageAnalysisAction_ = nullptr;
+  QAction* stageResearcherAction_ = nullptr;
 
   NetworkCanvas* canvas_ = nullptr;
   InspectorPanel* inspector_ = nullptr;

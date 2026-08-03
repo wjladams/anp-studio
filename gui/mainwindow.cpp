@@ -19,6 +19,7 @@
 #include "io/judgment_template_io.hpp"
 
 #include <QAction>
+#include <QActionGroup>
 #include <QAbstractButton>
 #include <QApplication>
 #include <QButtonGroup>
@@ -31,6 +32,7 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
+#include <QKeySequence>
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
@@ -48,6 +50,46 @@
 
 namespace {
 constexpr auto kDocsBaseUrl = "https://bamath.org/anp-studio";
+
+const QString kFilterAnpstudio = QStringLiteral("ANP Studio (*.anpstudio)");
+const QString kFilterJson = QStringLiteral("ANP Studio JSON (*.json)");
+const QString kFilterAll = QStringLiteral("All files (*)");
+
+QString openNameFilters() {
+  return kFilterAnpstudio + QStringLiteral(";;") + kFilterJson +
+         QStringLiteral(";;") + kFilterAll;
+}
+
+/** @return True if @p dir contains model samples (.anpstudio or legacy .json). */
+bool dirHasModelSamples(const QDir& d) {
+  return !d.entryList({QStringLiteral("*.anpstudio"), QStringLiteral("*.json")},
+                      QDir::Files)
+              .isEmpty();
+}
+
+QStringList listModelSampleFiles(const QDir& d) {
+  return d.entryList({QStringLiteral("*.anpstudio"), QStringLiteral("*.json")},
+                     QDir::Files, QDir::Name);
+}
+
+/**
+ * @brief Ensures Save As path has a model suffix based on the chosen filter.
+ *
+ * Leaves existing .anpstudio / .json paths alone (no forced rename).
+ */
+QString ensureModelSaveSuffix(QString path, const QString& selectedFilter) {
+  const QFileInfo fi(path);
+  const QString suffix = fi.suffix().toLower();
+  if (suffix == QLatin1String("anpstudio") || suffix == QLatin1String("json")) {
+    return path;
+  }
+  const bool wantJson =
+      selectedFilter.contains(QStringLiteral("*.json"), Qt::CaseInsensitive);
+  if (wantJson) {
+    return path + QStringLiteral(".json");
+  }
+  return path + QStringLiteral(".anpstudio");
+}
 }  // namespace
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
@@ -118,6 +160,16 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   fileMenu->addAction(QStringLiteral("&Open…"), this, &MainWindow::openFile,
                       QKeySequence::Open);
   recentMenu_ = fileMenu->addMenu(QStringLiteral("Open &Recent"));
+  recentShortcutActions_.reserve(kRecentShortcutCount);
+  for (int i = 0; i < kRecentShortcutCount; ++i) {
+    auto* act = new QAction(this);
+    act->setShortcut(QKeySequence(Qt::CTRL | static_cast<Qt::Key>(Qt::Key_1 + i)));
+    act->setShortcutContext(Qt::WindowShortcut);
+    act->setEnabled(false);
+    connect(act, &QAction::triggered, this, &MainWindow::openRecentFile);
+    addAction(act);
+    recentShortcutActions_.append(act);
+  }
   connect(recentMenu_, &QMenu::aboutToShow, this, &MainWindow::rebuildRecentMenu);
   rebuildRecentMenu();
   sampleMenu_ = fileMenu->addMenu(QStringLiteral("Open &Sample…"));
@@ -128,16 +180,43 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   fileMenu->addAction(QStringLiteral("Save &As…"), this, &MainWindow::saveFileAs,
                       QKeySequence::SaveAs);
   fileMenu->addSeparator();
-  fileMenu->addAction(QStringLiteral("Setti&ngs…"), this, &MainWindow::onSettings);
+  auto* settingsAction = fileMenu->addAction(
+      QStringLiteral("Setti&ngs…"), this, &MainWindow::onSettings);
+  settingsAction->setShortcut(QKeySequence::Preferences);
+  settingsAction->setMenuRole(QAction::PreferencesRole);
   fileMenu->addSeparator();
-  fileMenu->addAction(QStringLiteral("&Quit"), this, &QWidget::close,
-                      QKeySequence::Quit);
+  fileMenu->addAction(QStringLiteral("&Close"), this, &QWidget::close,
+                      QKeySequence::Close);
+  auto* quitAction = fileMenu->addAction(QStringLiteral("&Quit"), this,
+                                         &QWidget::close, QKeySequence::Quit);
+  quitAction->setMenuRole(QAction::QuitRole);
 
   auto* editMenu = menuBar()->addMenu(QStringLiteral("&Edit"));
   editMenu->addAction(doc_->undoStack()->createUndoAction(
       this, QStringLiteral("Undo")));
   editMenu->addAction(doc_->undoStack()->createRedoAction(
       this, QStringLiteral("Redo")));
+
+  auto* viewMenu = menuBar()->addMenu(QStringLiteral("&View"));
+  stageActionGroup_ = new QActionGroup(this);
+  stageActionGroup_->setExclusive(true);
+  auto addStageAction = [&](const QString& text, Stage stage, Qt::Key digit) {
+    auto* act = viewMenu->addAction(text);
+    act->setCheckable(true);
+    act->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | digit));
+    act->setShortcutContext(Qt::WindowShortcut);
+    stageActionGroup_->addAction(act);
+    connect(act, &QAction::triggered, this, [this, stage]() { setStage(stage); });
+    return act;
+  };
+  stageStructureAction_ =
+      addStageAction(QStringLiteral("&Structure"), Stage::Structure, Qt::Key_1);
+  stageJudgmentsAction_ =
+      addStageAction(QStringLiteral("&Judgments"), Stage::Judgments, Qt::Key_2);
+  stageAnalysisAction_ =
+      addStageAction(QStringLiteral("&Analysis"), Stage::Analysis, Qt::Key_3);
+  stageResearcherAction_ =
+      addStageAction(QStringLiteral("&Researcher"), Stage::Researcher, Qt::Key_4);
 
   auto* netMenu = menuBar()->addMenu(QStringLiteral("&Network"));
   connectModeAction_ =
@@ -168,8 +247,15 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   });
 
   auto* helpMenu = menuBar()->addMenu(QStringLiteral("&Help"));
-  helpMenu->addAction(QStringLiteral("User Guide"), this,
-                      &MainWindow::openUserGuide);
+  auto* guideAction = helpMenu->addAction(QStringLiteral("User Guide"), this,
+                                          &MainWindow::openUserGuide);
+#ifndef Q_OS_MACOS
+  guideAction->setShortcuts(
+      {QKeySequence(QKeySequence::HelpContents),
+       QKeySequence(Qt::CTRL | Qt::Key_H)});
+#else
+  guideAction->setShortcut(QKeySequence::HelpContents);
+#endif
   helpMenu->addAction(QStringLiteral("Glossary"), this,
                       &MainWindow::openGlossary);
   helpMenu->addSeparator();
@@ -306,6 +392,26 @@ void MainWindow::setStage(Stage stage) {
   stages_->setCurrentIndex(static_cast<int>(stage));
   if (auto* b = stageButtons_->button(static_cast<int>(stage))) {
     b->setChecked(true);
+  }
+  if (stageStructureAction_ != nullptr) {
+    QAction* checked = nullptr;
+    switch (stage) {
+      case Stage::Structure:
+        checked = stageStructureAction_;
+        break;
+      case Stage::Judgments:
+        checked = stageJudgmentsAction_;
+        break;
+      case Stage::Analysis:
+        checked = stageAnalysisAction_;
+        break;
+      case Stage::Researcher:
+        checked = stageResearcherAction_;
+        break;
+    }
+    if (checked != nullptr) {
+      checked->setChecked(true);
+    }
   }
   if (connectModeAction_ != nullptr) {
     connectModeAction_->setEnabled(stage == Stage::Structure);
@@ -957,8 +1063,7 @@ void MainWindow::newFile() {
 void MainWindow::openFile() {
   if (!maybeSave()) return;
   const QString path = QFileDialog::getOpenFileName(
-      this, QStringLiteral("Open Network"), {},
-      QStringLiteral("ANP Studio JSON (*.json);;All files (*)"));
+      this, QStringLiteral("Open Network"), {}, openNameFilters());
   if (path.isEmpty()) return;
   (void)openPath(path);
 }
@@ -1002,7 +1107,7 @@ QString MainWindow::samplesDirectory() {
     const QFileInfo fi(dir);
     if (!fi.isDir()) continue;
     const QDir d(fi.absoluteFilePath());
-    if (!d.entryList({QStringLiteral("*.json")}, QDir::Files).isEmpty()) {
+    if (dirHasModelSamples(d)) {
       return fi.absoluteFilePath();
     }
   }
@@ -1014,7 +1119,7 @@ QString MainWindow::samplesDirectory() {
     const QString cmake = walk.filePath(QStringLiteral("CMakeLists.txt"));
     if (QFileInfo::exists(cmake) && QFileInfo(samples).isDir()) {
       const QDir d(samples);
-      if (!d.entryList({QStringLiteral("*.json")}, QDir::Files).isEmpty()) {
+      if (dirHasModelSamples(d)) {
         return QFileInfo(samples).absoluteFilePath();
       }
     }
@@ -1049,8 +1154,7 @@ void MainWindow::rebuildSampleMenu() {
   }
 
   QDir dir(dirPath);
-  const QStringList files =
-      dir.entryList({QStringLiteral("*.json")}, QDir::Files, QDir::Name);
+  const QStringList files = listModelSampleFiles(dir);
   if (files.isEmpty()) {
     auto* empty = sampleMenu_->addAction(QStringLiteral("(No samples found)"));
     empty->setEnabled(false);
@@ -1094,10 +1198,27 @@ bool MainWindow::saveFile() {
 }
 
 bool MainWindow::saveFileAs() {
-  const QString path = QFileDialog::getSaveFileName(
-      this, QStringLiteral("Save Network"), {},
-      QStringLiteral("ANP Studio JSON (*.json);;All files (*)"));
+  QFileDialog dlg(this, QStringLiteral("Save Network"));
+  dlg.setAcceptMode(QFileDialog::AcceptSave);
+  dlg.setNameFilters(
+      QStringList{kFilterAnpstudio, kFilterJson, kFilterAll});
+  dlg.selectNameFilter(kFilterAnpstudio);
+  dlg.setDefaultSuffix(QStringLiteral("anpstudio"));
+  QObject::connect(&dlg, &QFileDialog::filterSelected, &dlg,
+                   [&dlg](const QString& filter) {
+                     if (filter.contains(QStringLiteral("*.json"),
+                                         Qt::CaseInsensitive)) {
+                       dlg.setDefaultSuffix(QStringLiteral("json"));
+                     } else if (filter.contains(QStringLiteral("*.anpstudio"),
+                                                Qt::CaseInsensitive)) {
+                       dlg.setDefaultSuffix(QStringLiteral("anpstudio"));
+                     }
+                   });
+  if (dlg.exec() != QDialog::Accepted) return false;
+  QString path = dlg.selectedFiles().value(0);
   if (path.isEmpty()) return false;
+  path = ensureModelSaveSuffix(path, dlg.selectedNameFilter());
+
   canvas_->persistLayout();
   QString err;
   if (!doc_->saveToFile(path, &err)) {
@@ -1120,12 +1241,10 @@ void MainWindow::rememberRecentFile(const QString& path) {
     recent.removeLast();
   }
   settings.setValue(QStringLiteral("recentFiles"), recent);
+  syncRecentShortcutActions();
 }
 
-void MainWindow::rebuildRecentMenu() {
-  if (recentMenu_ == nullptr) return;
-  recentMenu_->clear();
-
+QStringList MainWindow::loadExistingRecentFiles() {
   QSettings settings;
   QStringList recent = settings.value(QStringLiteral("recentFiles")).toStringList();
   QStringList existing;
@@ -1138,24 +1257,53 @@ void MainWindow::rebuildRecentMenu() {
   if (existing.size() != recent.size()) {
     settings.setValue(QStringLiteral("recentFiles"), existing);
   }
+  return existing;
+}
 
+void MainWindow::syncRecentShortcutActions() {
+  if (recentShortcutActions_.size() != kRecentShortcutCount) return;
+  const QStringList existing = loadExistingRecentFiles();
+  for (int i = 0; i < kRecentShortcutCount; ++i) {
+    QAction* act = recentShortcutActions_[i];
+    if (i < existing.size()) {
+      const QString& path = existing.at(i);
+      act->setText(QStringLiteral("&%1 %2")
+                       .arg(i + 1)
+                       .arg(QFileInfo(path).fileName()));
+      act->setData(path);
+      act->setToolTip(path);
+      act->setEnabled(true);
+    } else {
+      act->setText(QStringLiteral("&%1").arg(i + 1));
+      act->setData(QString());
+      act->setToolTip(QString());
+      act->setEnabled(false);
+    }
+  }
+}
+
+void MainWindow::rebuildRecentMenu() {
+  if (recentMenu_ == nullptr) return;
+  recentMenu_->clear();
+  syncRecentShortcutActions();
+
+  const QStringList existing = loadExistingRecentFiles();
   if (existing.isEmpty()) {
     auto* empty = recentMenu_->addAction(QStringLiteral("(No recent files)"));
     empty->setEnabled(false);
     return;
   }
 
-  int i = 0;
-  for (const QString& path : existing) {
-    QString label = QFileInfo(path).fileName();
-    if (i < 9) {
-      label = QStringLiteral("&%1 %2").arg(i + 1).arg(label);
+  for (int i = 0; i < existing.size(); ++i) {
+    if (i < kRecentShortcutCount) {
+      recentMenu_->addAction(recentShortcutActions_[i]);
+    } else {
+      const QString& path = existing.at(i);
+      auto* act = recentMenu_->addAction(QFileInfo(path).fileName());
+      act->setData(path);
+      act->setToolTip(path);
+      connect(act, &QAction::triggered, this, &MainWindow::openRecentFile);
     }
-    auto* act = recentMenu_->addAction(label);
-    act->setData(path);
-    act->setToolTip(path);
-    connect(act, &QAction::triggered, this, &MainWindow::openRecentFile);
-    ++i;
   }
   recentMenu_->addSeparator();
   recentMenu_->addAction(QStringLiteral("Clear Recent"), this,
@@ -1178,6 +1326,7 @@ void MainWindow::openRecentFile() {
     recent.removeAll(QFileInfo(path).absoluteFilePath());
     recent.removeAll(path);
     settings.setValue(QStringLiteral("recentFiles"), recent);
+    syncRecentShortcutActions();
     return;
   }
   (void)openPath(path);
@@ -1186,6 +1335,7 @@ void MainWindow::openRecentFile() {
 void MainWindow::clearRecentFiles() {
   QSettings settings;
   settings.remove(QStringLiteral("recentFiles"));
+  syncRecentShortcutActions();
   rebuildRecentMenu();
 }
 
