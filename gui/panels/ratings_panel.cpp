@@ -208,6 +208,7 @@ RatingsPanel::RatingsPanel(Document* doc, QWidget* parent)
           &RatingsPanel::onVoteValueChanged);
   connect(doc_, &Document::modelChanged, this, &RatingsPanel::refresh);
   connect(doc_, &Document::viewNetworkChanged, this, &RatingsPanel::refresh);
+  connect(doc_, &Document::sessionChanged, this, &RatingsPanel::refresh);
   connect(store_, &RatingPresetStore::changed, this,
           &RatingsPanel::rebuildScaleMenu);
 
@@ -709,10 +710,13 @@ void RatingsPanel::rebuildVotes() {
   // Clear cell widgets.
   votesTable_->setRowCount(0);
 
+  const bool readOnly = doc_->judgmentReadOnly();
   const bool categorical =
       rt->mode() == anpcpp::RatingsPrioritizer::Mode::Categorical;
-  votesLabel_->setText(categorical ? QStringLiteral("Ratings")
-                                   : QStringLiteral("Ratings (raw values)"));
+  votesLabel_->setText(
+      (categorical ? QStringLiteral("Ratings") : QStringLiteral("Ratings (raw values)")) +
+      (readOnly ? QStringLiteral(" — viewing aggregate (read-only)")
+               : QString()));
   votesTable_->setColumnCount(categorical ? 2 : 3);
   if (categorical) {
     votesTable_->setHorizontalHeaderLabels(
@@ -748,6 +752,7 @@ void RatingsPanel::rebuildVotes() {
       }
       const int idx = box->findData(curId);
       box->setCurrentIndex(idx >= 0 ? idx : 0);
+      box->setEnabled(!readOnly);
       votesTable_->setCellWidget(row, 1, box);
       connect(box, QOverload<int>::of(&QComboBox::currentIndexChanged), this,
               [this, row](int) { onVoteComboChanged(row); });
@@ -756,7 +761,9 @@ void RatingsPanel::rebuildVotes() {
       if (auto raw = rt->value(rt->alternatives()[i])) {
         v = QString::number(*raw);
       }
-      votesTable_->setItem(row, 1, new QTableWidgetItem(v));
+      auto* valueItem = new QTableWidgetItem(v);
+      if (readOnly) valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable);
+      votesTable_->setItem(row, 1, valueItem);
       const double sc = i < scores.size() ? scores[i] : 0.0;
       auto* scoreItem =
           new QTableWidgetItem(QString::number(sc, 'f', 3));
@@ -767,7 +774,7 @@ void RatingsPanel::rebuildVotes() {
 }
 
 void RatingsPanel::onVoteComboChanged(int row) {
-  if (updating_) return;
+  if (updating_ || doc_->judgmentReadOnly()) return;
   auto* rt = activeRatings();
   if (rt == nullptr) return;
   auto* box = qobject_cast<QComboBox*>(votesTable_->cellWidget(row, 1));
@@ -776,8 +783,20 @@ void RatingsPanel::onVoteComboChanged(int row) {
   const QString alt = altItem->text();
   const QString id = box->currentData().toString();
   try {
-    doc_->undoStack()->push(
-        new SetRatingVoteCmd(doc_, parent_, destCluster_, alt, id));
+    const QString userId = doc_->activeParticipantId();
+    if (!userId.isEmpty()) {
+      // Effective rating already mirrors the active participant's own vote
+      // (rebuild copies it through), so it is also the prior value.
+      QString oldId;
+      if (auto cur = rt->rating(alt.toStdString())) {
+        oldId = QString::fromStdString(*cur);
+      }
+      doc_->undoStack()->push(
+          new SetRatingVoteForCmd(doc_, userId, parent_, alt, id, oldId));
+    } else {
+      doc_->undoStack()->push(
+          new SetRatingVoteCmd(doc_, parent_, destCluster_, alt, id));
+    }
   } catch (const std::exception& e) {
     QMessageBox::warning(this, QStringLiteral("Invalid vote"),
                          QString::fromUtf8(e.what()));
@@ -786,7 +805,7 @@ void RatingsPanel::onVoteComboChanged(int row) {
 }
 
 void RatingsPanel::onVoteValueChanged(int row, int col) {
-  if (updating_ || col != 1) return;
+  if (updating_ || col != 1 || doc_->judgmentReadOnly()) return;
   auto* rt = activeRatings();
   if (rt == nullptr) return;
   if (rt->mode() == anpcpp::RatingsPrioritizer::Mode::Categorical) return;
@@ -795,9 +814,20 @@ void RatingsPanel::onVoteValueChanged(int row, int col) {
   if (altItem == nullptr) return;
   const QString alt = altItem->text();
   const QString text = valItem ? valItem->text().trimmed() : QString();
+
+  const QString userId = doc_->activeParticipantId();
+  const auto oldRaw = rt->value(alt.toStdString());
+  const bool hadOld = oldRaw.has_value();
+  const double oldValue = hadOld ? *oldRaw : 0.0;
+
   if (text.isEmpty()) {
-    doc_->undoStack()->push(
-        new SetRatingValueCmd(doc_, parent_, destCluster_, alt, true, 0.0));
+    if (!userId.isEmpty()) {
+      doc_->undoStack()->push(new SetRatingValueForCmd(
+          doc_, userId, parent_, alt, /*clear=*/true, 0.0, hadOld, oldValue));
+    } else {
+      doc_->undoStack()->push(
+          new SetRatingValueCmd(doc_, parent_, destCluster_, alt, true, 0.0));
+    }
   } else {
     bool ok = false;
     const double v = text.toDouble(&ok);
@@ -805,8 +835,13 @@ void RatingsPanel::onVoteValueChanged(int row, int col) {
       refresh();
       return;
     }
-    doc_->undoStack()->push(
-        new SetRatingValueCmd(doc_, parent_, destCluster_, alt, false, v));
+    if (!userId.isEmpty()) {
+      doc_->undoStack()->push(new SetRatingValueForCmd(
+          doc_, userId, parent_, alt, /*clear=*/false, v, hadOld, oldValue));
+    } else {
+      doc_->undoStack()->push(
+          new SetRatingValueCmd(doc_, parent_, destCluster_, alt, false, v));
+    }
   }
 }
 

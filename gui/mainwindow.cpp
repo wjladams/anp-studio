@@ -8,14 +8,19 @@
 #include "panels/judgment_nav_panel.hpp"
 #include "panels/judgment_priorities_panel.hpp"
 #include "panels/pairwise_panel.hpp"
+#include "panels/participants_roster_dialog.hpp"
 #include "panels/ratings_panel.hpp"
 #include "panels/researcher_panel.hpp"
+#include "panels/session_panel.hpp"
 
 #include <QAction>
+#include <QAbstractButton>
+#include <QApplication>
 #include <QButtonGroup>
 #include <QCloseEvent>
 #include <QComboBox>
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QDesktopServices>
 #include <QDir>
 #include <QFileDialog>
@@ -94,6 +99,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
           &MainWindow::onDocumentSelectionChanged);
   connect(doc_, &Document::viewNetworkChanged, this, &MainWindow::updateBreadcrumb);
   connect(doc_, &Document::modelChanged, this, &MainWindow::updateBreadcrumb);
+  connect(doc_, &Document::sessionChanged, this, &MainWindow::updateBreadcrumb);
 
   connect(judgmentNav_, &JudgmentNavPanel::nodeJudgmentSelected, this,
           &MainWindow::onJudgmentNodeSelected);
@@ -115,6 +121,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
                       QKeySequence::Save);
   fileMenu->addAction(QStringLiteral("Save &As…"), this, &MainWindow::saveFileAs,
                       QKeySequence::SaveAs);
+  fileMenu->addSeparator();
   fileMenu->addSeparator();
   fileMenu->addAction(QStringLiteral("&Quit"), this, &QWidget::close,
                       QKeySequence::Quit);
@@ -139,14 +146,9 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   netMenu->addAction(QStringLiteral("Root Network"), doc_,
                      &Document::popToRoot);
 
-  auto* computeMenu = menuBar()->addMenu(QStringLiteral("&Compute"));
-  computeMenu->addAction(QStringLiteral("Show Analysis"), this, [this]() {
-    setStage(Stage::Analysis);
-  }, QKeySequence(Qt::Key_F5));
-  computeMenu->addAction(QStringLiteral("Show Researcher"), this, [this]() {
-    setStage(Stage::Researcher);
-  });
-
+  auto* participantsMenu = menuBar()->addMenu(QStringLiteral("&Participants"));
+  participantsMenu->addAction(QStringLiteral("&Manage participants…"), this,
+                              &MainWindow::onManageParticipants);
   auto* helpMenu = menuBar()->addMenu(QStringLiteral("&Help"));
   helpMenu->addAction(QStringLiteral("User Guide"), this,
                       &MainWindow::openUserGuide);
@@ -239,14 +241,22 @@ void MainWindow::buildStagePages() {
   sLay->addWidget(sSplit, 1);
   stages_->addWidget(structurePage);
 
-  // Judgments: left config dock | pairwise/ratings | priorities chart
+  // Judgments: left config dock | pairwise/ratings | session + priorities chart
   judgmentNav_ = new JudgmentNavPanel(doc_, this);
   pairwise_ = new PairwisePanel(doc_, this);
   ratings_ = new RatingsPanel(doc_, this);
+  sessionPanel_ = new SessionPanel(doc_, this);
   judgmentPriorities_ = new JudgmentPrioritiesPanel(doc_, this);
   judgmentCenter_ = new QStackedWidget(this);
   judgmentCenter_->addWidget(pairwise_);
   judgmentCenter_->addWidget(ratings_);
+
+  auto* rightSplit = new QSplitter(Qt::Vertical, this);
+  rightSplit->addWidget(sessionPanel_);
+  rightSplit->addWidget(judgmentPriorities_);
+  rightSplit->setStretchFactor(0, 2);
+  rightSplit->setStretchFactor(1, 1);
+
   auto* judgmentsPage = new QWidget(stages_);
   auto* jLay = new QVBoxLayout(judgmentsPage);
   jLay->setContentsMargins(0, 0, 0, 0);
@@ -254,7 +264,7 @@ void MainWindow::buildStagePages() {
   auto* jSplit = new QSplitter(Qt::Horizontal, judgmentsPage);
   jSplit->addWidget(judgmentNav_);
   jSplit->addWidget(judgmentCenter_);
-  jSplit->addWidget(judgmentPriorities_);
+  jSplit->addWidget(rightSplit);
   jSplit->setStretchFactor(0, 0);
   jSplit->setStretchFactor(1, 4);
   jSplit->setStretchFactor(2, 1);
@@ -285,6 +295,7 @@ void MainWindow::setStage(Stage stage) {
   }
   // Apply any coalesced model refresh before stage-specific UI reads state.
   doc_->flushModelChanged();
+  updateBreadcrumb();
   if (stage == Stage::Structure) {
     canvas_->select(doc_->selectedCluster(), doc_->selectedNode());
   } else if (stage == Stage::Judgments) {
@@ -373,12 +384,88 @@ void MainWindow::updateBreadcrumb() {
     }
   }
   breadcrumbLay_->addStretch();
+
+  // Phase 2 (light): Scope combo beside the network chooser on Analysis and
+  // Researcher — same document session as Judgments, no separate sync.
+  scopeCombo_ = nullptr;
+  if ((stage_ == Stage::Analysis || stage_ == Stage::Researcher) &&
+      doc_->hasParticipants()) {
+    auto* sep = new QLabel(QStringLiteral("·"), breadcrumbBar_);
+    sep->setObjectName(QStringLiteral("breadcrumbSep"));
+    breadcrumbLay_->addWidget(sep);
+    auto* scopeCaption = new QLabel(QStringLiteral("Scope:"), breadcrumbBar_);
+    scopeCaption->setObjectName(QStringLiteral("breadcrumbCaption"));
+    breadcrumbLay_->addWidget(scopeCaption);
+
+    scopeCombo_ = new QComboBox(breadcrumbBar_);
+    scopeCombo_->setMinimumWidth(160);
+    const anpcpp::JudgmentSession session = doc_->judgmentSession();
+    int curIdx = 0;
+    scopeCombo_->addItem(QStringLiteral("Group average"));
+    scopeCombo_->setItemData(0, QString(), Qt::UserRole);
+    scopeCombo_->setItemData(0, QStringLiteral("average"), Qt::UserRole + 1);
+    if (session.kind == anpcpp::JudgmentScopeKind::Average) curIdx = 0;
+    for (const auto& p : doc_->participants()) {
+      const int i = scopeCombo_->count();
+      scopeCombo_->addItem(QString::fromStdString(p.name));
+      scopeCombo_->setItemData(i, QString::fromStdString(p.id), Qt::UserRole);
+      scopeCombo_->setItemData(i, QStringLiteral("participant"),
+                              Qt::UserRole + 1);
+      if (session.kind == anpcpp::JudgmentScopeKind::Participant &&
+          session.id == p.id) {
+        curIdx = i;
+      }
+    }
+    for (const auto& g : doc_->judgmentGroups()) {
+      const int i = scopeCombo_->count();
+      scopeCombo_->addItem(QString::fromStdString(g.name));
+      scopeCombo_->setItemData(i, QString::fromStdString(g.id), Qt::UserRole);
+      scopeCombo_->setItemData(i, QStringLiteral("group"), Qt::UserRole + 1);
+      if (session.kind == anpcpp::JudgmentScopeKind::Group &&
+          session.id == g.id) {
+        curIdx = i;
+      }
+    }
+    scopeCombo_->setCurrentIndex(curIdx);
+    connect(scopeCombo_, QOverload<int>::of(&QComboBox::activated), this,
+            &MainWindow::onScopeChosen);
+    breadcrumbLay_->addWidget(scopeCombo_);
+    breadcrumbLay_->addStretch();
+  }
 }
 
 void MainWindow::onNetworkPathChosen(int index) {
   if (networkPathCombo_ == nullptr || index < 0) return;
   doc_->navigateToNetworkPath(networkPathCombo_->itemText(index));
 }
+
+void MainWindow::onScopeChosen(int index) {
+  if (scopeCombo_ == nullptr || index < 0) return;
+  const QString kind = scopeCombo_->itemData(index, Qt::UserRole + 1).toString();
+  const QString id = scopeCombo_->itemData(index, Qt::UserRole).toString();
+  anpcpp::JudgmentSession session;
+  if (kind == QLatin1String("participant")) {
+    session.kind = anpcpp::JudgmentScopeKind::Participant;
+    session.id = id.toStdString();
+  } else if (kind == QLatin1String("group")) {
+    session.kind = anpcpp::JudgmentScopeKind::Group;
+    session.id = id.toStdString();
+  } else {
+    session.kind = anpcpp::JudgmentScopeKind::Average;
+  }
+  doc_->setJudgmentSession(session);
+}
+
+void MainWindow::onManageParticipants() {
+  showParticipantsRosterDialog(this, doc_);
+}
+
+
+
+
+
+
+
 
 void MainWindow::updateTitle() {
   QString title = QStringLiteral("ANP Studio");

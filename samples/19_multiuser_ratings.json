@@ -1,0 +1,159 @@
+{
+  "format": "anpcpp",
+  "network": {
+    "alternatives_cluster": "Alternatives",
+    "clusters": [
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Alternatives"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Criteria",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Quality",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "A",
+                  "B",
+                  "C"
+                ],
+                "interpreter": {
+                  "kind": "identity"
+                },
+                "mode": "numeric",
+                "type": "ratings",
+                "users": {
+                  "alice": {
+                    "alternatives": [
+                      "A",
+                      "B",
+                      "C"
+                    ],
+                    "mode": "numeric",
+                    "values": {
+                      "A": 0.2,
+                      "B": 0.4,
+                      "C": 0.9
+                    }
+                  },
+                  "bob": {
+                    "alternatives": [
+                      "A",
+                      "B",
+                      "C"
+                    ],
+                    "mode": "numeric",
+                    "values": {
+                      "A": 0.8,
+                      "B": 0.6,
+                      "C": 0.7
+                    }
+                  },
+                  "carol": {
+                    "alternatives": [
+                      "A",
+                      "B",
+                      "C"
+                    ],
+                    "mode": "numeric",
+                    "values": {
+                      "A": 0.5,
+                      "B": 0.5
+                    }
+                  }
+                },
+                "values": {
+                  "A": 0.5,
+                  "B": 0.5,
+                  "C": 0.8
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [],
+          "matrix": []
+        },
+        "description": "",
+        "name": "Alternatives",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "A",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "B",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "C",
+            "node_prioritizers": {}
+          }
+        ]
+      }
+    ],
+    "description": "Numeric ratings with Identity interpreter; overall average uses arithmetic mean of scores.",
+    "judgment_session": {
+      "id": "",
+      "kind": "average"
+    },
+    "limit_matrix": {
+      "error": 1e-10,
+      "max_count": 1000,
+      "max_iters": 5000,
+      "method": "calculus",
+      "start_pow": 0,
+      "straight_normalizer": true,
+      "use_hierarchy_formula": true,
+      "with_limit": false
+    },
+    "name": "Multi-user ratings",
+    "participants": [
+      {
+        "email": "",
+        "id": "alice",
+        "name": "Alice"
+      },
+      {
+        "email": "",
+        "id": "bob",
+        "name": "Bob"
+      },
+      {
+        "email": "",
+        "id": "carol",
+        "name": "Carol"
+      },
+      {
+        "email": "",
+        "id": "diego",
+        "name": "Diego"
+      }
+    ],
+    "synthesis": {
+      "custom_expr": "",
+      "kind": "additive"
+    }
+  },
+  "version": 2
+}

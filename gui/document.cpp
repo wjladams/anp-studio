@@ -11,6 +11,7 @@
 #include <QMetaObject>
 #include <QtGlobal>
 
+#include <algorithm>
 #include <functional>
 #include <stdexcept>
 #include <utility>
@@ -113,6 +114,86 @@ void Document::clearResearcherSession() {
   researcherActiveIndex_ = 0;
 }
 
+void Document::addLinkedGoogleForm(const LinkedGoogleForm& form) {
+  if (form.formId.isEmpty()) return;
+  for (int i = 0; i < linkedGoogleForms_.size(); ++i) {
+    if (linkedGoogleForms_[i].formId == form.formId) {
+      linkedGoogleForms_[i] = form;
+      setDirty(true);
+      emit linkedFormsChanged();
+      return;
+    }
+  }
+  linkedGoogleForms_.push_back(form);
+  setDirty(true);
+  emit linkedFormsChanged();
+}
+
+void Document::removeLinkedGoogleForm(const QString& formId) {
+  const auto before = linkedGoogleForms_.size();
+  linkedGoogleForms_.erase(
+      std::remove_if(linkedGoogleForms_.begin(), linkedGoogleForms_.end(),
+                     [&](const LinkedGoogleForm& f) {
+                       return f.formId == formId;
+                     }),
+      linkedGoogleForms_.end());
+  if (linkedGoogleForms_.size() != before) {
+    setDirty(true);
+    emit linkedFormsChanged();
+  }
+}
+
+const LinkedGoogleForm* Document::latestLinkedGoogleForm() const {
+  if (linkedGoogleForms_.isEmpty()) return nullptr;
+  return &linkedGoogleForms_.back();
+}
+
+QVector<LinkedGoogleForm> Document::parseLinkedGoogleForms(
+    const QByteArray& fileBytes) {
+  QVector<LinkedGoogleForm> out;
+  QJsonParseError err;
+  const QJsonDocument doc = QJsonDocument::fromJson(fileBytes, &err);
+  if (err.error != QJsonParseError::NoError || !doc.isObject()) return out;
+  const QJsonObject root = doc.object();
+  if (!root.contains(QStringLiteral("google_forms"))) return out;
+  const QJsonValue gf = root.value(QStringLiteral("google_forms"));
+  QJsonArray arr;
+  if (gf.isArray()) {
+    arr = gf.toArray();
+  } else if (gf.isObject()) {
+    arr = gf.toObject().value(QStringLiteral("forms")).toArray();
+  }
+  for (const QJsonValue& v : arr) {
+    if (!v.isObject()) continue;
+    const QJsonObject o = v.toObject();
+    LinkedGoogleForm f;
+    f.formId = o.value(QStringLiteral("formId")).toString();
+    f.title = o.value(QStringLiteral("title")).toString();
+    f.responderUrl = o.value(QStringLiteral("responderUrl")).toString();
+    f.editUrl = o.value(QStringLiteral("editUrl")).toString();
+    f.createdAtIso = o.value(QStringLiteral("createdAt")).toString();
+    f.structureFingerprint =
+        o.value(QStringLiteral("structureFingerprint")).toString();
+    const QJsonArray tags = o.value(QStringLiteral("questionTags")).toArray();
+    for (const QJsonValue& tv : tags) {
+      const QString t = tv.toString();
+      if (!t.isEmpty()) f.questionTags.push_back(t);
+    }
+    const QJsonArray ids = o.value(QStringLiteral("questionIds")).toArray();
+    for (const QJsonValue& iv : ids) {
+      const QString id = iv.toString();
+      if (!id.isEmpty()) f.questionIds.push_back(id);
+    }
+    const QJsonArray mapped = o.value(QStringLiteral("mappedTags")).toArray();
+    for (const QJsonValue& mv : mapped) {
+      const QString t = mv.toString();
+      if (!t.isEmpty()) f.mappedTags.push_back(t);
+    }
+    if (!f.formId.isEmpty()) out.push_back(f);
+  }
+  return out;
+}
+
 bool Document::researcherSessionIsTrivial() const {
   if (researcherNotebooks_.isEmpty()) return true;
   if (researcherNotebooks_.size() != 1) return false;
@@ -201,6 +282,43 @@ QByteArray Document::buildFileBytes() const {
     researcher.insert(QStringLiteral("notebooks"), notebooks);
     root.insert(QStringLiteral("researcher"), researcher);
   }
+  if (!linkedGoogleForms_.isEmpty()) {
+    QJsonArray forms;
+    for (const LinkedGoogleForm& f : linkedGoogleForms_) {
+      QJsonObject o;
+      o.insert(QStringLiteral("formId"), f.formId);
+      o.insert(QStringLiteral("title"), f.title);
+      o.insert(QStringLiteral("responderUrl"), f.responderUrl);
+      o.insert(QStringLiteral("editUrl"), f.editUrl);
+      o.insert(QStringLiteral("createdAt"), f.createdAtIso);
+      if (!f.structureFingerprint.isEmpty()) {
+        o.insert(QStringLiteral("structureFingerprint"),
+                 f.structureFingerprint);
+      }
+      if (!f.questionTags.isEmpty()) {
+        QJsonArray tags;
+        for (const QString& t : f.questionTags) tags.append(t);
+        o.insert(QStringLiteral("questionTags"), tags);
+      }
+      if (!f.questionIds.isEmpty()) {
+        QJsonArray ids;
+        for (const QString& id : f.questionIds) ids.append(id);
+        o.insert(QStringLiteral("questionIds"), ids);
+      }
+      if (!f.mappedTags.isEmpty()) {
+        QJsonArray mapped;
+        for (const QString& t : f.mappedTags) mapped.append(t);
+        o.insert(QStringLiteral("mappedTags"), mapped);
+      }
+      forms.push_back(o);
+    }
+    QJsonObject block;
+    block.insert(QStringLiteral("version"), 2);
+    block.insert(QStringLiteral("forms"), forms);
+    root.insert(QStringLiteral("google_forms"), block);
+  } else {
+    root.remove(QStringLiteral("google_forms"));
+  }
   doc.setObject(root);
   return doc.toJson(QJsonDocument::Indented);
 }
@@ -218,11 +336,13 @@ void Document::replaceRoot(std::unique_ptr<anpcpp::AnpNetwork> net) {
   resultsStale_ = false;
   researcherNotebooks_.clear();
   researcherActiveIndex_ = 0;
+  linkedGoogleForms_.clear();
   setDirty(false);
   emit selectionChanged(selectedCluster_, selectedNode_);
   emit resultsFreshnessChanged();
   emitViewSwitch();
   emit researcherSessionChanged();
+  emit linkedFormsChanged();
 }
 
 void Document::emitViewSwitch() {
@@ -254,13 +374,16 @@ bool Document::loadFromFile(const QString& path, QString* error) {
 
     auto net = anpcpp::network_from_json(bytes.toStdString());
     const ResearcherSessionData session = parseResearcherSession(bytes);
+    const QVector<LinkedGoogleForm> forms = parseLinkedGoogleForms(bytes);
 
     path_ = path;
     emit pathChanged(path_);
     replaceRoot(std::move(net));
     researcherNotebooks_ = session.notebooks;
     researcherActiveIndex_ = session.activeIndex;
+    linkedGoogleForms_ = forms;
     emit researcherSessionChanged();
+    emit linkedFormsChanged();
     setDirty(false);
     return true;
   } catch (const std::exception& e) {
@@ -478,6 +601,85 @@ void Document::invalidateResults() {
   if (resultsStale_) return;
   resultsStale_ = true;
   emit resultsFreshnessChanged();
+}
+
+void Document::setJudgmentSession(const anpcpp::JudgmentSession& session) {
+  if (root_ == nullptr) return;
+  const anpcpp::JudgmentSession cur = root_->judgment_session();
+  if (cur.kind == session.kind && cur.id == session.id) return;
+  root_->set_judgment_session(session);
+  root_->rebuild_effective_judgments();
+  setDirty(true);
+  emit sessionChanged();
+  notifyChanged();
+}
+
+anpcpp::JudgmentParticipant& Document::addParticipant(const QString& id,
+                                                      const QString& name,
+                                                      const QString& email) {
+  anpcpp::JudgmentParticipant& p = root_->add_participant(
+      id.toStdString(), name.toStdString(), email.toStdString());
+  root_->ensure_multiuser_initialized();
+  root_->rebuild_effective_judgments();
+  setDirty(true);
+  emit sessionChanged();
+  notifyChanged();
+  return p;
+}
+
+void Document::removeParticipant(const QString& id) {
+  if (root_ == nullptr) return;
+  root_->remove_participant(id.toStdString());
+  root_->rebuild_effective_judgments();
+  setDirty(true);
+  emit sessionChanged();
+  notifyChanged();
+}
+
+anpcpp::JudgmentGroup& Document::setJudgmentGroup(const QString& id,
+                                                  const QString& name,
+                                                  const QStringList& memberIds) {
+  std::vector<std::string> members;
+  members.reserve(static_cast<std::size_t>(memberIds.size()));
+  for (const QString& m : memberIds) members.push_back(m.toStdString());
+  anpcpp::JudgmentGroup& g = root_->add_judgment_group(
+      id.toStdString(), name.toStdString(), std::move(members));
+  root_->rebuild_effective_judgments();
+  setDirty(true);
+  emit sessionChanged();
+  notifyChanged();
+  return g;
+}
+
+void Document::removeJudgmentGroup(const QString& id) {
+  if (root_ == nullptr) return;
+  root_->remove_judgment_group(id.toStdString());
+  root_->rebuild_effective_judgments();
+  setDirty(true);
+  emit sessionChanged();
+  notifyChanged();
+}
+
+void Document::rebuildEffectiveJudgments() {
+  if (root_ == nullptr) return;
+  root_->rebuild_effective_judgments();
+  setDirty(true);
+  notifyChanged();
+}
+
+QString Document::activeParticipantId() const {
+  if (root_ == nullptr) return {};
+  const anpcpp::JudgmentSession session = root_->judgment_session();
+  if (session.kind == anpcpp::JudgmentScopeKind::Participant &&
+      !session.id.empty()) {
+    return QString::fromStdString(session.id);
+  }
+  return {};
+}
+
+bool Document::judgmentReadOnly() const {
+  if (root_ == nullptr || root_->participants().empty()) return false;
+  return root_->judgment_session().kind != anpcpp::JudgmentScopeKind::Participant;
 }
 
 void Document::clearSelectionIfInvalid() {

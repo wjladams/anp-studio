@@ -1,0 +1,201 @@
+{
+  "format": "anpcpp",
+  "network": {
+    "alternatives_cluster": "Alternatives",
+    "clusters": [
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Alternatives"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Criteria",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Goal",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "A",
+                  "B",
+                  "C"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    2.0
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    1.0
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise",
+                "users": {
+                  "alice": {
+                    "alternatives": [
+                      "A",
+                      "B",
+                      "C"
+                    ],
+                    "matrix": [
+                      [
+                        1.0,
+                        4.0,
+                        2.0
+                      ],
+                      [
+                        0.25,
+                        1.0,
+                        1.0
+                      ],
+                      [
+                        0.5,
+                        1.0,
+                        1.0
+                      ]
+                    ]
+                  },
+                  "bob": {
+                    "alternatives": [
+                      "A",
+                      "B",
+                      "C"
+                    ],
+                    "matrix": [
+                      [
+                        1.0,
+                        1.0,
+                        2.0
+                      ],
+                      [
+                        1.0,
+                        1.0,
+                        1.0
+                      ],
+                      [
+                        0.5,
+                        1.0,
+                        1.0
+                      ]
+                    ]
+                  },
+                  "carol": {
+                    "alternatives": [
+                      "A",
+                      "B",
+                      "C"
+                    ],
+                    "matrix": [
+                      [
+                        1.0,
+                        0.0,
+                        2.0
+                      ],
+                      [
+                        0.0,
+                        1.0,
+                        1.0
+                      ],
+                      [
+                        0.5,
+                        1.0,
+                        1.0
+                      ]
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [],
+          "matrix": []
+        },
+        "description": "",
+        "name": "Alternatives",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "A",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "B",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "C",
+            "node_prioritizers": {}
+          }
+        ]
+      }
+    ],
+    "description": "Sparse judgments: Carol has no A vs B; Diego empty. Aggregation skips missing cells.",
+    "judgment_session": {
+      "id": "",
+      "kind": "average"
+    },
+    "limit_matrix": {
+      "error": 1e-10,
+      "max_count": 1000,
+      "max_iters": 5000,
+      "method": "calculus",
+      "start_pow": 0,
+      "straight_normalizer": true,
+      "use_hierarchy_formula": true,
+      "with_limit": false
+    },
+    "name": "Multi-user partial coverage",
+    "participants": [
+      {
+        "email": "",
+        "id": "alice",
+        "name": "Alice"
+      },
+      {
+        "email": "",
+        "id": "bob",
+        "name": "Bob"
+      },
+      {
+        "email": "",
+        "id": "carol",
+        "name": "Carol"
+      },
+      {
+        "email": "",
+        "id": "diego",
+        "name": "Diego"
+      }
+    ],
+    "synthesis": {
+      "custom_expr": "",
+      "kind": "additive"
+    }
+  },
+  "version": 2
+}

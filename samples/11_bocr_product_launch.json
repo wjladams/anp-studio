@@ -211,6 +211,20 @@
                   ]
                 }
               ],
+              "judgment_session": {
+                "id": "",
+                "kind": "average"
+              },
+              "limit_matrix": {
+                "error": 1e-10,
+                "max_count": 1000,
+                "max_iters": 5000,
+                "method": "calculus",
+                "start_pow": 0,
+                "straight_normalizer": true,
+                "use_hierarchy_formula": true,
+                "with_limit": false
+              },
               "synthesis": {
                 "custom_expr": "",
                 "kind": "additive"
@@ -360,6 +374,20 @@
                   ]
                 }
               ],
+              "judgment_session": {
+                "id": "",
+                "kind": "average"
+              },
+              "limit_matrix": {
+                "error": 1e-10,
+                "max_count": 1000,
+                "max_iters": 5000,
+                "method": "calculus",
+                "start_pow": 0,
+                "straight_normalizer": true,
+                "use_hierarchy_formula": true,
+                "with_limit": false
+              },
               "synthesis": {
                 "custom_expr": "",
                 "kind": "additive"
@@ -509,6 +537,20 @@
                   ]
                 }
               ],
+              "judgment_session": {
+                "id": "",
+                "kind": "average"
+              },
+              "limit_matrix": {
+                "error": 1e-10,
+                "max_count": 1000,
+                "max_iters": 5000,
+                "method": "calculus",
+                "start_pow": 0,
+                "straight_normalizer": true,
+                "use_hierarchy_formula": true,
+                "with_limit": false
+              },
               "synthesis": {
                 "custom_expr": "",
                 "kind": "additive"
@@ -658,6 +700,20 @@
                   ]
                 }
               ],
+              "judgment_session": {
+                "id": "",
+                "kind": "average"
+              },
+              "limit_matrix": {
+                "error": 1e-10,
+                "max_count": 1000,
+                "max_iters": 5000,
+                "method": "calculus",
+                "start_pow": 0,
+                "straight_normalizer": true,
+                "use_hierarchy_formula": true,
+                "with_limit": false
+              },
               "synthesis": {
                 "custom_expr": "",
                 "kind": "additive"
@@ -667,10 +723,24 @@
         ]
       }
     ],
+    "judgment_session": {
+      "id": "",
+      "kind": "average"
+    },
+    "limit_matrix": {
+      "error": 1e-10,
+      "max_count": 1000,
+      "max_iters": 5000,
+      "method": "calculus",
+      "start_pow": 0,
+      "straight_normalizer": true,
+      "use_hierarchy_formula": true,
+      "with_limit": false
+    },
     "synthesis": {
       "custom_expr": "Benefits * Opportunities / (Costs * Risks)",
       "kind": "custom"
     }
   },
-  "version": 1
+  "version": 2
 }

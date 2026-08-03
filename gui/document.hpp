@@ -33,6 +33,32 @@ struct ResearcherNotebook {
 };
 
 /**
+ * @brief A Google Form created from this model (Studio extension; for reopen + import).
+ *
+ * @c structureFingerprint pins the form to the judgment question set at create
+ * time. Changing nodes/links/alternatives/scales makes the form out of date
+ * (compare via @c googleFormFingerprintMatches). Judgment *values* do not.
+ */
+struct LinkedGoogleForm {
+  QString formId;
+  QString title;
+  QString responderUrl;
+  QString editUrl;
+  QString createdAtIso;  // Qt::ISODate
+  /** SHA-256 hex of sorted [anp:…] judgment tags at create time. */
+  QString structureFingerprint;
+  /** Judgment tags present on the form (for diagnostics / matching). */
+  QStringList questionTags;
+  /**
+   * Forms questionIds parallel to @c mappedTags (identity + judgments).
+   * Empty for legacy forms — import falls back to [anp:] tags in titles.
+   */
+  QStringList questionIds;
+  /** Tags aligned with @c questionIds (includes respondent / email tags). */
+  QStringList mappedTags;
+};
+
+/**
  * @brief Owns the root @c anpcpp::AnpNetwork, undo stack, file path, and dirty flag.
  *
  * Subnet navigation maintains a stack of @c AnpNetwork* frames pointing into
@@ -83,6 +109,17 @@ public:
   /** @brief Clears Researcher notebooks without emitting session changed. */
   void clearResearcherSession();
 
+  /** @return Google Forms linked to this model (newest last). */
+  [[nodiscard]] const QVector<LinkedGoogleForm>& linkedGoogleForms() const {
+    return linkedGoogleForms_;
+  }
+  /** @brief Appends a linked form and marks dirty. Emits @ref linkedFormsChanged. */
+  void addLinkedGoogleForm(const LinkedGoogleForm& form);
+  /** @brief Removes by form id. */
+  void removeLinkedGoogleForm(const QString& formId);
+  /** @return Most recently linked form, or nullptr. */
+  [[nodiscard]] const LinkedGoogleForm* latestLinkedGoogleForm() const;
+
   void pushSubnet(const QString& nodeName);
   void popSubnet();
   void popToRoot();
@@ -121,7 +158,70 @@ public:
   void markResultsCurrent();
   void invalidateResults();
 
+  // --- Multi-user judgment session (Phase 1) --------------------------------
+
+  /** @return True if the model has any judgment participants defined. */
+  [[nodiscard]] bool hasParticipants() const {
+    return !root().participants().empty();
+  }
+  /** @return Model participants (shared roster owned by the root network). */
+  [[nodiscard]] const std::vector<anpcpp::JudgmentParticipant>& participants()
+      const {
+    return root().participants();
+  }
+  /** @return Named judgment groups. */
+  [[nodiscard]] const std::vector<anpcpp::JudgmentGroup>& judgmentGroups()
+      const {
+    return root().judgment_groups();
+  }
+  /** @return Current document-wide judgment session scope. */
+  [[nodiscard]] anpcpp::JudgmentSession judgmentSession() const {
+    return root().judgment_session();
+  }
+  /**
+   * @brief Sets the session scope, rebuilds effective judgments on the root
+   *        network, and marks the document dirty. Emits @ref sessionChanged.
+   */
+  void setJudgmentSession(const anpcpp::JudgmentSession& session);
+
+  /**
+   * @brief Adds (or renames, if @p id already exists) a participant.
+   * Ensures per-user judgment tables exist and rebuilds effective judgments.
+   */
+  anpcpp::JudgmentParticipant& addParticipant(const QString& id,
+                                              const QString& name,
+                                              const QString& email = {});
+  /** @brief Removes a participant and their judgment tables. */
+  void removeParticipant(const QString& id);
+  /** @brief Adds or updates a named group of participant ids. */
+  anpcpp::JudgmentGroup& setJudgmentGroup(const QString& id,
+                                          const QString& name,
+                                          const QStringList& memberIds);
+  /** @brief Removes a named group. */
+  void removeJudgmentGroup(const QString& id);
+
+  /**
+   * @brief Rebuilds effective judgments from the root network downward.
+   *
+   * Call after any per-participant judgment edit (via @c *_for network
+   * calls). Marks the document dirty and triggers a UI refresh.
+   */
+  void rebuildEffectiveJudgments();
+
+  /**
+   * @return Active participant id for editing, or empty when the session is
+   *         an aggregate (Average / Group) — those views are read-only.
+   */
+  [[nodiscard]] QString activeParticipantId() const;
+  /**
+   * @return True if judgment editors should be read-only: participants exist
+   *         and the session scope is an aggregate (Average or Group).
+   */
+  [[nodiscard]] bool judgmentReadOnly() const;
+
 signals:
+  /** @brief Emitted when the judgment session scope or roster changes. */
+  void sessionChanged();
   void modelChanged();
   void dirtyChanged(bool dirty);
   void pathChanged(const QString& path);
@@ -134,6 +234,8 @@ signals:
    * Not emitted for incremental edits via @c setResearcherSession().
    */
   void researcherSessionChanged();
+  /** @brief Emitted when the linked Google Forms list changes. */
+  void linkedFormsChanged();
 
 private:
   struct Frame {
@@ -153,6 +255,8 @@ private:
 
   [[nodiscard]] static ResearcherSessionData parseResearcherSession(
       const QByteArray& fileBytes);
+  [[nodiscard]] static QVector<LinkedGoogleForm> parseLinkedGoogleForms(
+      const QByteArray& fileBytes);
   [[nodiscard]] QByteArray buildFileBytes() const;
   [[nodiscard]] bool researcherSessionIsTrivial() const;
 
@@ -169,4 +273,5 @@ private:
   bool resultsStale_ = false;
   QVector<ResearcherNotebook> researcherNotebooks_;
   int researcherActiveIndex_ = 0;
+  QVector<LinkedGoogleForm> linkedGoogleForms_;
 };

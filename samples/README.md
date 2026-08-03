@@ -45,10 +45,28 @@ cmake --build ../libanpcpp/build --target export_sample_models
 | `15_ahp_project_portfolio.json` | AHP hierarchy | Project portfolio prioritization |
 | `16_ahp_smartphone_ratings.json` | Mixed pairwise + ratings | Smartphone choice with ratings for battery / price / storage |
 | `17_anp_water_reservoir.json` | ANP policy | Dam water-level style criteria (flood, supply, environment, recreation) |
+| `18_multiuser_pairwise_ahp.json` | Multi-user AHP | 3 judges; pairwise geometric mean (A vs B → 2) |
+| `19_multiuser_ratings.json` | Multi-user ratings | Numeric ratings; arithmetic mean of scores |
+| `20_multiuser_mixed.json` | Multi-user mixed | Pairwise + ratings; Executives group |
+| `21_multiuser_partial.json` | Multi-user sparse | Missing judgments skipped in aggregation |
+
+### Import fixtures (`import/`)
+
+CSV / Excel files for testing multi-user vote import against sample 18. See
+[`import/README.md`](import/README.md).
+
+| File | Notes |
+|------|--------|
+| `import/18_forms_responses.csv` | Google Forms–style wide export (`[anp:]` column titles) |
+| `import/18_votes_long.csv` | One row per pairwise judgment |
+| `import/18_votes.xlsx` | All participants + per-person sheets + blank template (legacy) |
+| `import/18_carol_only.xlsx` | Single-participant Excel (Carol), legacy sheet |
+| `import/single_user/ANP_judgments_*.xlsx` | Respondent Excel templates (Your judgments + `_meta`; new votes + Eve) |
 
 ## Notes
 
-- Format: `anpcpp` JSON v1 (`node_prioritizers` with pairwise or ratings).
+- Format: `anpcpp` JSON v2 (v1 still loads). Multi-user samples include `participants`, `groups`, `judgment_session`, and per-user `users` under prioritizers.
+- Pairwise group aggregation: **geometric mean** of ratios. Ratings: **arithmetic mean** of scores.
 - Except where noted (Hamburger), judgment values are **illustrative** reconstructions of well-known *structures*, not verbatim proprietary SuperDecisions `.sdmod` dumps.
 - Hamburger local priorities follow the published SuperDecisions tutorial unweighted-supermatrix / cluster-weight tables reconstituted as pairwise ratios.
-- Suggested first opens: `02_ahp_best_car.json` (simple hierarchy), then `01_hamburger_marketshare.json` (full ANP), then `11_bocr_product_launch.json` (BOCR).
+- Suggested first opens: `02_ahp_best_car.json` (simple hierarchy), then `01_hamburger_marketshare.json` (full ANP), then `18_multiuser_pairwise_ahp.json` (multi-user).

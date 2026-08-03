@@ -158,6 +158,7 @@ PairwisePanel::PairwisePanel(Document* doc, QWidget* parent)
           &PairwisePanel::onCellChanged);
   connect(doc_, &Document::modelChanged, this, &PairwisePanel::refresh);
   connect(doc_, &Document::viewNetworkChanged, this, &PairwisePanel::refresh);
+  connect(doc_, &Document::sessionChanged, this, &PairwisePanel::refresh);
 }
 
 void PairwisePanel::selectNodeParent(const QString& name) {
@@ -252,6 +253,7 @@ void PairwisePanel::rebuildViews() {
 }
 
 void PairwisePanel::rebuildMatrix(const anpcpp::PairwiseJudgments* pw) {
+  const bool readOnly = doc_->judgmentReadOnly();
   const auto& names = pw->alternatives();
   const int n = static_cast<int>(names.size());
   table_->setRowCount(n);
@@ -267,19 +269,24 @@ void PairwisePanel::rebuildMatrix(const anpcpp::PairwiseJudgments* pw) {
           QString::number(pw->comparison(static_cast<std::size_t>(i),
                                          static_cast<std::size_t>(j)),
                           'g', 6));
-      if (i == j) item->setFlags(item->flags() & ~Qt::ItemIsEditable);
+      if (i == j || readOnly) item->setFlags(item->flags() & ~Qt::ItemIsEditable);
       table_->setItem(i, j, item);
     }
   }
 }
 
 void PairwisePanel::rebuildQuestionnaire(const anpcpp::PairwiseJudgments* pw) {
+  const bool readOnly = doc_->judgmentReadOnly();
   const auto& names = pw->alternatives();
   const int n = static_cast<int>(names.size());
 
   auto* hint = new QLabel(
-      QStringLiteral(
-          "Mark toward the alternative that is more important / preferred."),
+      readOnly
+          ? QStringLiteral("Viewing an aggregate scope — read-only. Pick a "
+                           "participant in Session to edit.")
+          : QStringLiteral(
+                "Mark toward the alternative that is more important / "
+                "preferred."),
       questionnaireHost_);
   hint->setObjectName(QStringLiteral("selectorMuted"));
   hint->setWordWrap(true);
@@ -326,6 +333,7 @@ void PairwisePanel::rebuildQuestionnaire(const anpcpp::PairwiseJudgments* pw) {
         btn->setFixedSize(28, 28);
         btn->setFocusPolicy(Qt::NoFocus);
         btn->setStyleSheet(saatyButtonStyle(id));
+        btn->setEnabled(!readOnly);
         scaleGroup->addButton(btn, id);
         rowLay->addWidget(btn);
       };
@@ -387,17 +395,37 @@ void PairwisePanel::updateInfo(const anpcpp::PairwiseJudgments* pw) {
                  .arg(QString::fromStdString(names[i]))
                  .arg(pri[i], 0, 'f', 4);
   }
-  info_->setText(QStringLiteral("Priorities: %1\nCR: %2")
-                     .arg(parts.join(QStringLiteral(", ")))
-                     .arg(pw->consistency_ratio(), 0, 'f', 4));
+  QString text = QStringLiteral("Priorities: %1\nCR: %2")
+                    .arg(parts.join(QStringLiteral(", ")))
+                    .arg(pw->consistency_ratio(), 0, 'f', 4);
+  if (doc_->judgmentReadOnly()) {
+    text += QStringLiteral("\nViewing an aggregate scope (read-only).");
+  }
+  info_->setText(text);
 }
 
 void PairwisePanel::applyComparison(const QString& a, const QString& b,
                                     double value) {
+  if (doc_->judgmentReadOnly()) return;
   const anpcpp::PairwiseJudgments* pw = currentPairwise();
   if (pw == nullptr || pw->size() == 0) return;
   const double old = pw->comparison(a.toStdString(), b.toStdString());
   if (std::abs(old - value) < 1e-12) return;
+
+  // When a participant scope is active, the effective table already mirrors
+  // that participant's own judgments (rebuild copies it through), so `old`
+  // above is also their prior value.
+  const QString userId = doc_->activeParticipantId();
+  if (!userId.isEmpty()) {
+    if (nodeMode()) {
+      doc_->undoStack()->push(new SetNodeComparisonForCmd(
+          doc_, userId, parent_, a, b, value, old));
+    } else {
+      doc_->undoStack()->push(new SetClusterComparisonForCmd(
+          doc_, userId, parent_, a, b, value, old));
+    }
+    return;
+  }
 
   if (nodeMode()) {
     doc_->undoStack()->push(

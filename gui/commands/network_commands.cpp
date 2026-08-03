@@ -118,6 +118,135 @@ void SetClusterComparisonCmd::undo() {
   doc_->notifyChanged();
 }
 
+// Participant-scoped variants: mutate one user's judgment table, then rebuild
+// effective judgments (aggregate or single-participant copy) from the root.
+
+SetNodeComparisonForCmd::SetNodeComparisonForCmd(Document* doc,
+                                                 QString userId,
+                                                 QString wrt,
+                                                 QString a,
+                                                 QString b,
+                                                 double value,
+                                                 double oldValue)
+    : QUndoCommand(QStringLiteral("Set node comparison (%1)").arg(userId)),
+      doc_(doc),
+      userId_(std::move(userId)),
+      wrt_(std::move(wrt)),
+      a_(std::move(a)),
+      b_(std::move(b)),
+      value_(value),
+      oldValue_(oldValue) {}
+
+void SetNodeComparisonForCmd::redo() {
+  doc_->network().set_node_comparison_for(userId_.toStdString(),
+                                          wrt_.toStdString(), a_.toStdString(),
+                                          b_.toStdString(), value_);
+  doc_->rebuildEffectiveJudgments();
+}
+
+void SetNodeComparisonForCmd::undo() {
+  doc_->network().set_node_comparison_for(userId_.toStdString(),
+                                          wrt_.toStdString(), a_.toStdString(),
+                                          b_.toStdString(), oldValue_);
+  doc_->rebuildEffectiveJudgments();
+}
+
+SetClusterComparisonForCmd::SetClusterComparisonForCmd(Document* doc,
+                                                       QString userId,
+                                                       QString wrt,
+                                                       QString a,
+                                                       QString b,
+                                                       double value,
+                                                       double oldValue)
+    : QUndoCommand(QStringLiteral("Set cluster comparison (%1)").arg(userId)),
+      doc_(doc),
+      userId_(std::move(userId)),
+      wrt_(std::move(wrt)),
+      a_(std::move(a)),
+      b_(std::move(b)),
+      value_(value),
+      oldValue_(oldValue) {}
+
+void SetClusterComparisonForCmd::redo() {
+  doc_->network().set_cluster_comparison_for(
+      userId_.toStdString(), wrt_.toStdString(), a_.toStdString(),
+      b_.toStdString(), value_);
+  doc_->rebuildEffectiveJudgments();
+}
+
+void SetClusterComparisonForCmd::undo() {
+  doc_->network().set_cluster_comparison_for(
+      userId_.toStdString(), wrt_.toStdString(), a_.toStdString(),
+      b_.toStdString(), oldValue_);
+  doc_->rebuildEffectiveJudgments();
+}
+
+SetRatingVoteForCmd::SetRatingVoteForCmd(Document* doc,
+                                         QString userId,
+                                         QString wrt,
+                                         QString alt,
+                                         QString categoryId,
+                                         QString oldCategoryId)
+    : QUndoCommand(QStringLiteral("Set rating vote (%1)").arg(userId)),
+      doc_(doc),
+      userId_(std::move(userId)),
+      wrt_(std::move(wrt)),
+      alt_(std::move(alt)),
+      categoryId_(std::move(categoryId)),
+      oldCategoryId_(std::move(oldCategoryId)) {}
+
+void SetRatingVoteForCmd::apply(const QString& categoryId) {
+  // Category ids are stable and non-empty; "clear" is spelled empty here.
+  doc_->network().set_node_rating_for(userId_.toStdString(),
+                                      wrt_.toStdString(), alt_.toStdString(),
+                                      categoryId.toStdString());
+  doc_->rebuildEffectiveJudgments();
+}
+
+void SetRatingVoteForCmd::redo() { apply(categoryId_); }
+
+void SetRatingVoteForCmd::undo() { apply(oldCategoryId_); }
+
+SetRatingValueForCmd::SetRatingValueForCmd(Document* doc,
+                                           QString userId,
+                                           QString wrt,
+                                           QString alt,
+                                           bool clear,
+                                           double value,
+                                           bool hadOld,
+                                           double oldValue)
+    : QUndoCommand(QStringLiteral("Set rating value (%1)").arg(userId)),
+      doc_(doc),
+      userId_(std::move(userId)),
+      wrt_(std::move(wrt)),
+      alt_(std::move(alt)),
+      clear_(clear),
+      value_(value),
+      hadOld_(hadOld),
+      oldValue_(oldValue) {}
+
+void SetRatingValueForCmd::apply(bool clear, double value) {
+  auto& net = doc_->network();
+  if (!clear) {
+    net.set_node_rating_value_for(userId_.toStdString(), wrt_.toStdString(),
+                                  alt_.toStdString(), value);
+  } else {
+    anpcpp::AnpNode& wrt = net.node(wrt_.toStdString());
+    const anpcpp::AnpNode& dest = net.node(alt_.toStdString());
+    anpcpp::NodePrioritizerSlot* slot =
+        wrt.node_prioritizer(dest.cluster()->name());
+    if (slot != nullptr) {
+      slot->ensure_user_ratings(userId_.toStdString())
+          .clear_value(alt_.toStdString());
+    }
+  }
+  doc_->rebuildEffectiveJudgments();
+}
+
+void SetRatingValueForCmd::redo() { apply(clear_, value_); }
+
+void SetRatingValueForCmd::undo() { apply(!hadOld_, oldValue_); }
+
 SetSynthesisOptionsCmd::SetSynthesisOptionsCmd(Document* doc,
                                                anpcpp::SynthesisOptions neu,
                                                anpcpp::SynthesisOptions old)

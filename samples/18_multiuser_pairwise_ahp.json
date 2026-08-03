@@ -1,0 +1,206 @@
+{
+  "format": "anpcpp",
+  "network": {
+    "alternatives_cluster": "Alternatives",
+    "clusters": [
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Alternatives"
+          ],
+          "matrix": [
+            [
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Criteria",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Goal",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "A",
+                  "B",
+                  "C"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    2.0,
+                    3.0000000000000004
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    1.0
+                  ],
+                  [
+                    0.33333333333333326,
+                    1.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise",
+                "users": {
+                  "alice": {
+                    "alternatives": [
+                      "A",
+                      "B",
+                      "C"
+                    ],
+                    "matrix": [
+                      [
+                        1.0,
+                        2.0,
+                        3.0
+                      ],
+                      [
+                        0.5,
+                        1.0,
+                        1.0
+                      ],
+                      [
+                        0.3333333333333333,
+                        1.0,
+                        1.0
+                      ]
+                    ]
+                  },
+                  "bob": {
+                    "alternatives": [
+                      "A",
+                      "B",
+                      "C"
+                    ],
+                    "matrix": [
+                      [
+                        1.0,
+                        8.0,
+                        3.0
+                      ],
+                      [
+                        0.125,
+                        1.0,
+                        1.0
+                      ],
+                      [
+                        0.3333333333333333,
+                        1.0,
+                        1.0
+                      ]
+                    ]
+                  },
+                  "carol": {
+                    "alternatives": [
+                      "A",
+                      "B",
+                      "C"
+                    ],
+                    "matrix": [
+                      [
+                        1.0,
+                        0.5,
+                        3.0
+                      ],
+                      [
+                        2.0,
+                        1.0,
+                        1.0
+                      ],
+                      [
+                        0.3333333333333333,
+                        1.0,
+                        1.0
+                      ]
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [],
+          "matrix": []
+        },
+        "description": "",
+        "name": "Alternatives",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "A",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "B",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "C",
+            "node_prioritizers": {}
+          }
+        ]
+      }
+    ],
+    "description": "Three participants; Goal→Alternatives pairwise. Overall average uses geometric mean of ratios.",
+    "groups": [
+      {
+        "id": "exec",
+        "members": [
+          "alice",
+          "bob"
+        ],
+        "name": "Executives"
+      }
+    ],
+    "judgment_session": {
+      "id": "",
+      "kind": "average"
+    },
+    "limit_matrix": {
+      "error": 1e-10,
+      "max_count": 1000,
+      "max_iters": 5000,
+      "method": "calculus",
+      "start_pow": 0,
+      "straight_normalizer": true,
+      "use_hierarchy_formula": true,
+      "with_limit": false
+    },
+    "name": "Multi-user pairwise AHP",
+    "participants": [
+      {
+        "email": "alice@example.com",
+        "id": "alice",
+        "name": "Alice Chen"
+      },
+      {
+        "email": "bob@example.com",
+        "id": "bob",
+        "name": "Bob Rivera"
+      },
+      {
+        "email": "carol@example.com",
+        "id": "carol",
+        "name": "Carol Ng"
+      }
+    ],
+    "synthesis": {
+      "custom_expr": "",
+      "kind": "additive"
+    }
+  },
+  "version": 2
+}

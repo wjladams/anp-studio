@@ -102,6 +102,7 @@ private:
   QDoubleSpinBox* inflDeltaTotal_ = nullptr;
   QTableWidget* inflTableTotal_ = nullptr;
 
+
   bool updating_ = false;
   bool navigating_ = false;
   /** True when heavy panes need rebuild after edits made while hidden. */

@@ -1,0 +1,347 @@
+{
+  "format": "anpcpp",
+  "network": {
+    "alternatives_cluster": "Alternatives",
+    "clusters": [
+      {
+        "cluster_pairwise": {
+          "alternatives": [
+            "Criteria",
+            "Alternatives"
+          ],
+          "matrix": [
+            [
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.0
+            ]
+          ]
+        },
+        "description": "",
+        "name": "Criteria",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Goal",
+            "node_prioritizers": {
+              "Criteria": {
+                "alternatives": [
+                  "Cost",
+                  "Quality"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    1.0
+                  ],
+                  [
+                    1.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise",
+                "users": {
+                  "alice": {
+                    "alternatives": [
+                      "Cost",
+                      "Quality"
+                    ],
+                    "matrix": [
+                      [
+                        1.0,
+                        2.0
+                      ],
+                      [
+                        0.5,
+                        1.0
+                      ]
+                    ]
+                  },
+                  "bob": {
+                    "alternatives": [
+                      "Cost",
+                      "Quality"
+                    ],
+                    "matrix": [
+                      [
+                        1.0,
+                        0.5
+                      ],
+                      [
+                        2.0,
+                        1.0
+                      ]
+                    ]
+                  },
+                  "carol": {
+                    "alternatives": [
+                      "Cost",
+                      "Quality"
+                    ],
+                    "matrix": [
+                      [
+                        1.0,
+                        1.0
+                      ],
+                      [
+                        1.0,
+                        1.0
+                      ]
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Cost",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "Plan1",
+                  "Plan2",
+                  "Plan3"
+                ],
+                "interpreter": {
+                  "kind": "identity"
+                },
+                "mode": "numeric",
+                "type": "ratings",
+                "users": {
+                  "alice": {
+                    "alternatives": [
+                      "Plan1",
+                      "Plan2",
+                      "Plan3"
+                    ],
+                    "mode": "numeric",
+                    "values": {
+                      "Plan1": 0.3,
+                      "Plan2": 0.6
+                    }
+                  },
+                  "bob": {
+                    "alternatives": [
+                      "Plan1",
+                      "Plan2",
+                      "Plan3"
+                    ],
+                    "mode": "numeric",
+                    "values": {
+                      "Plan1": 0.5,
+                      "Plan2": 0.6
+                    }
+                  },
+                  "carol": {
+                    "alternatives": [
+                      "Plan1",
+                      "Plan2",
+                      "Plan3"
+                    ],
+                    "mode": "numeric",
+                    "values": {
+                      "Plan1": 0.4,
+                      "Plan2": 0.6
+                    }
+                  }
+                },
+                "values": {
+                  "Plan1": 0.4000000000000001,
+                  "Plan2": 0.6
+                }
+              }
+            }
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Quality",
+            "node_prioritizers": {
+              "Alternatives": {
+                "alternatives": [
+                  "Plan1",
+                  "Plan2",
+                  "Plan3"
+                ],
+                "matrix": [
+                  [
+                    1.0,
+                    1.0,
+                    2.0
+                  ],
+                  [
+                    1.0,
+                    1.0,
+                    1.0
+                  ],
+                  [
+                    0.5,
+                    1.0,
+                    1.0
+                  ]
+                ],
+                "type": "pairwise",
+                "users": {
+                  "alice": {
+                    "alternatives": [
+                      "Plan1",
+                      "Plan2",
+                      "Plan3"
+                    ],
+                    "matrix": [
+                      [
+                        1.0,
+                        3.0,
+                        2.0
+                      ],
+                      [
+                        0.3333333333333333,
+                        1.0,
+                        1.0
+                      ],
+                      [
+                        0.5,
+                        1.0,
+                        1.0
+                      ]
+                    ]
+                  },
+                  "bob": {
+                    "alternatives": [
+                      "Plan1",
+                      "Plan2",
+                      "Plan3"
+                    ],
+                    "matrix": [
+                      [
+                        1.0,
+                        0.3333333333333333,
+                        2.0
+                      ],
+                      [
+                        3.0,
+                        1.0,
+                        1.0
+                      ],
+                      [
+                        0.5,
+                        1.0,
+                        1.0
+                      ]
+                    ]
+                  },
+                  "carol": {
+                    "alternatives": [
+                      "Plan1",
+                      "Plan2",
+                      "Plan3"
+                    ],
+                    "matrix": [
+                      [
+                        1.0,
+                        1.0,
+                        2.0
+                      ],
+                      [
+                        1.0,
+                        1.0,
+                        1.0
+                      ],
+                      [
+                        0.5,
+                        1.0,
+                        1.0
+                      ]
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "cluster_pairwise": {
+          "alternatives": [],
+          "matrix": []
+        },
+        "description": "",
+        "name": "Alternatives",
+        "nodes": [
+          {
+            "description": "",
+            "invert": false,
+            "name": "Plan1",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Plan2",
+            "node_prioritizers": {}
+          },
+          {
+            "description": "",
+            "invert": false,
+            "name": "Plan3",
+            "node_prioritizers": {}
+          }
+        ]
+      }
+    ],
+    "description": "Criteria compared pairwise (geometric mean); alts rated under Cost (arithmetic mean). Executives group = Alice+Bob.",
+    "groups": [
+      {
+        "id": "exec",
+        "members": [
+          "alice",
+          "bob"
+        ],
+        "name": "Executives"
+      }
+    ],
+    "judgment_session": {
+      "id": "",
+      "kind": "average"
+    },
+    "limit_matrix": {
+      "error": 1e-10,
+      "max_count": 1000,
+      "max_iters": 5000,
+      "method": "calculus",
+      "start_pow": 0,
+      "straight_normalizer": true,
+      "use_hierarchy_formula": true,
+      "with_limit": false
+    },
+    "name": "Multi-user mixed pairwise + ratings",
+    "participants": [
+      {
+        "email": "",
+        "id": "alice",
+        "name": "Alice"
+      },
+      {
+        "email": "",
+        "id": "bob",
+        "name": "Bob"
+      },
+      {
+        "email": "",
+        "id": "carol",
+        "name": "Carol"
+      }
+    ],
+    "synthesis": {
+      "custom_expr": "",
+      "kind": "additive"
+    }
+  },
+  "version": 2
+}

@@ -16,6 +16,7 @@ class InspectorPanel;
 class JudgmentNavPanel;
 class RatingsPanel;
 class JudgmentPrioritiesPanel;
+class SessionPanel;
 class QStackedWidget;
 class QButtonGroup;
 class QWidget;
@@ -48,6 +49,8 @@ private slots:
   void updateTitle();
   void updateBreadcrumb();
   void onNetworkPathChosen(int index);
+  void onScopeChosen(int index);
+  void onManageParticipants();
   void onDocumentSelectionChanged(const QString& cluster, const QString& node);
   void onJudgmentNodeSelected(const QString& parent,
                               const QString& destCluster,
@@ -82,6 +85,7 @@ private:
   QWidget* breadcrumbBar_ = nullptr;
   QHBoxLayout* breadcrumbLay_ = nullptr;
   QComboBox* networkPathCombo_ = nullptr;
+  QComboBox* scopeCombo_ = nullptr;
   QAction* connectModeAction_ = nullptr;
   QButtonGroup* structureModeButtons_ = nullptr;
   QMenu* recentMenu_ = nullptr;
@@ -94,6 +98,7 @@ private:
   PairwisePanel* pairwise_ = nullptr;
   RatingsPanel* ratings_ = nullptr;
   JudgmentPrioritiesPanel* judgmentPriorities_ = nullptr;
+  SessionPanel* sessionPanel_ = nullptr;
   QStackedWidget* judgmentCenter_ = nullptr;
 
   AnalysisPanel* analysis_ = nullptr;

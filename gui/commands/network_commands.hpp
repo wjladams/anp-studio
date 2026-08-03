@@ -92,6 +92,88 @@ private:
   double oldValue_;
 };
 
+/** @brief Sets one participant's node pairwise comparison, then rebuilds. */
+class SetNodeComparisonForCmd : public QUndoCommand {
+public:
+  SetNodeComparisonForCmd(Document* doc,
+                          QString userId,
+                          QString wrt,
+                          QString a,
+                          QString b,
+                          double value,
+                          double oldValue);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString userId_, wrt_, a_, b_;
+  double value_;
+  double oldValue_;
+};
+
+/** @brief Sets one participant's cluster pairwise comparison, then rebuilds. */
+class SetClusterComparisonForCmd : public QUndoCommand {
+public:
+  SetClusterComparisonForCmd(Document* doc,
+                             QString userId,
+                             QString wrt,
+                             QString a,
+                             QString b,
+                             double value,
+                             double oldValue);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString userId_, wrt_, a_, b_;
+  double value_;
+  double oldValue_;
+};
+
+/** @brief Sets (or clears) one participant's categorical rating vote. */
+class SetRatingVoteForCmd : public QUndoCommand {
+public:
+  SetRatingVoteForCmd(Document* doc,
+                      QString userId,
+                      QString wrt,
+                      QString alt,
+                      QString categoryId,
+                      QString oldCategoryId);
+  void redo() override;
+  void undo() override;
+
+private:
+  void apply(const QString& categoryId);
+  Document* doc_;
+  QString userId_, wrt_, alt_, categoryId_, oldCategoryId_;
+};
+
+/** @brief Sets (or clears) one participant's numeric rating value. */
+class SetRatingValueForCmd : public QUndoCommand {
+public:
+  SetRatingValueForCmd(Document* doc,
+                       QString userId,
+                       QString wrt,
+                       QString alt,
+                       bool clear,
+                       double value,
+                       bool hadOld,
+                       double oldValue);
+  void redo() override;
+  void undo() override;
+
+private:
+  void apply(bool clear, double value);
+  Document* doc_;
+  QString userId_, wrt_, alt_;
+  bool clear_;
+  double value_;
+  bool hadOld_;
+  double oldValue_;
+};
+
 class SetSynthesisOptionsCmd : public QUndoCommand {
 public:
   SetSynthesisOptionsCmd(Document* doc,
