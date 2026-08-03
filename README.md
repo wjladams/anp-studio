@@ -96,6 +96,9 @@ cmake --build build --target anpstudio
 ./build/gui/anpstudio
 ```
 
+Use **`build/`** as the only default binary directory (see [`AGENTS.md`](AGENTS.md)).
+Avoid parallel trees like `build-anpstudio2` unless you need a separate config.
+
 CMake automatically uses `../libanpcpp` when that tree exists. Override with
 `-DANPCPP_SOURCE_DIR=/path/to/libanpcpp` if needed.
 
