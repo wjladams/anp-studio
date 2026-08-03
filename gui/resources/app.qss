@@ -163,6 +163,24 @@ QLabel#breadcrumbCurrent {
   padding: 4px 2px;
 }
 
+QLabel#scopeModeChipEditable {
+  color: #174ea6;
+  background-color: #e8f0fe;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+QLabel#scopeModeChipReadonly {
+  color: #5f6368;
+  background-color: #f1f3f4;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
 QTreeWidget#analysisNav {
   background-color: #f8f9fa;
   border: none;
@@ -279,7 +297,7 @@ QLabel#selectorMuted {
   background-color: transparent;
 }
 
-/* —— Session panel —— */
+/* —— Scope rail (Judgments) —— */
 QLabel#sessionActivePill {
   background-color: #e8f0fe;
   color: #174ea6;

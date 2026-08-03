@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scope chrome unify options — ANP Studio</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --ink: #1c1b19;
+      --muted: #5c574e;
+      --line: #d4cfc4;
+      --panel: #fffdf8;
+      --accent: #2f5d50;
+      --accent-soft: #e4efe9;
+      --select: #c8ddd4;
+      --chrome: #ebe6dc;
+      --warn: #8a5a2b;
+      --warn-soft: #f3e6d4;
+      --readonly: #f0ede6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.45 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    header {
+      padding: 1.75rem 2rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+    header h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.65rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      margin: 0;
+      max-width: 48rem;
+      color: var(--muted);
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      padding: 1rem 2rem 0;
+    }
+    .tabs button {
+      font: inherit;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      padding: 0.45rem 0.85rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .tabs button[aria-selected="true"] {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    main { padding: 1rem 2rem 3rem; }
+    article { display: none; max-width: 1120px; }
+    article.active { display: block; }
+    .meta {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    @media (max-width: 860px) {
+      .meta { grid-template-columns: 1fr; }
+    }
+    .meta h2 { margin: 0 0 0.4rem; font-size: 1.25rem; }
+    .meta p, .meta li { color: var(--muted); }
+    .meta ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+    .pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--select);
+      background: var(--accent-soft);
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      margin-bottom: 0.5rem;
+    }
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 900px) {
+      .compare { grid-template-columns: 1fr; }
+    }
+    .wire {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      overflow: hidden;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-size: 12px;
+    }
+    .wire-label {
+      margin: 0 0 0.35rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-weight: 600;
+    }
+    .stage-strip {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.55rem 0.75rem;
+      background: var(--chrome);
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      align-items: center;
+    }
+    .stage-strip strong { color: var(--ink); }
+    .scope-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      align-items: center;
+      padding: 0.45rem 0.75rem;
+      border-bottom: 1px solid var(--line);
+      background: #faf8f3;
+    }
+    .scope-bar label {
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .fake-select {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 3px;
+      padding: 0.25rem 0.55rem;
+      color: var(--ink);
+      min-width: 7.5rem;
+    }
+    .chip {
+      border: 1px solid var(--line);
+      padding: 0.2rem 0.45rem;
+      border-radius: 3px;
+      background: #fff;
+      color: var(--muted);
+    }
+    .chip.on {
+      background: var(--accent-soft);
+      border-color: var(--select);
+      color: var(--ink);
+      font-weight: 600;
+    }
+    .chip.btn {
+      cursor: default;
+      border-style: dashed;
+    }
+    .chip.lock {
+      background: var(--readonly);
+      color: var(--muted);
+    }
+    .body {
+      display: grid;
+      grid-template-columns: 170px 1fr 190px;
+      min-height: 280px;
+    }
+    .body.slim-right { grid-template-columns: 170px 1fr 150px; }
+    .body.no-right { grid-template-columns: 170px 1fr; }
+    .body.analysis { grid-template-columns: 160px 1fr 160px; }
+    .col {
+      border-right: 1px solid var(--line);
+      padding: 0.55rem;
+      background: var(--panel);
+    }
+    .col:last-child { border-right: none; }
+    .col h3 {
+      margin: 0 0 0.45rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .tree { list-style: none; margin: 0; padding: 0; }
+    .tree li {
+      padding: 0.2rem 0.35rem;
+      border-radius: 3px;
+      margin: 0.06rem 0;
+    }
+    .tree .sel { background: var(--select); font-weight: 600; }
+    .tree .dim { color: var(--muted); }
+    .matrix {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+      max-width: 220px;
+      font-size: 11px;
+      text-align: center;
+    }
+    .matrix span {
+      background: var(--readonly);
+      padding: 0.35rem 0.2rem;
+      border-radius: 2px;
+    }
+    .session-active-pill {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.35rem;
+      padding: 0.4rem 0.5rem;
+      background: var(--accent-soft);
+      border: 1px solid var(--select);
+      border-radius: 4px;
+      margin-bottom: 0.45rem;
+      font-weight: 600;
+    }
+    .session-active-pill .pct {
+      font-weight: 500;
+      color: var(--muted);
+      font-size: 10px;
+    }
+    .session-fold {
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      margin-bottom: 0.35rem;
+      overflow: hidden;
+    }
+    .session-fold > summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.4rem;
+      background: var(--chrome);
+      cursor: default;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .session-fold > summary::-webkit-details-marker { display: none; }
+    .session-fold .count {
+      margin-left: auto;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .session-list { padding: 0.25rem; }
+    .btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 3px;
+      padding: 0.2rem 0.45rem;
+      font-size: 11px;
+      font-family: inherit;
+      color: var(--ink);
+    }
+    .note {
+      margin: 0.85rem 0 0;
+      color: var(--muted);
+      max-width: 52rem;
+      font-size: 0.95rem;
+    }
+    .today-callout {
+      border: 1px dashed var(--line);
+      background: var(--warn-soft);
+      color: var(--warn);
+      padding: 0.65rem 0.85rem;
+      border-radius: 4px;
+      margin-bottom: 1.1rem;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-size: 12px;
+    }
+    .today-callout strong { color: var(--ink); }
+    .bars { margin-top: 0.35rem; }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 1.2rem 1fr 2rem;
+      gap: 0.35rem;
+      align-items: center;
+      margin: 0.2rem 0;
+      font-size: 11px;
+    }
+    .bar {
+      height: 8px;
+      background: var(--accent);
+      border-radius: 2px;
+      opacity: 0.75;
+    }
+    footer {
+      padding: 0 2rem 2.5rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      max-width: 48rem;
+    }
+    footer code {
+      font-family: ui-monospace, monospace;
+      font-size: 0.85em;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Unify Scope chrome</h1>
+    <p>
+      Two options for issue #11 polish: one shared way to pick
+      <em>whose judgments</em> across Judgments, Analysis, and Researcher.
+      Data is already shared (<code>JudgmentSession</code>); these mocks only
+      change presentation.
+    </p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" aria-selected="true" data-tab="today">Today (split)</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="a">A · Breadcrumb Scope everywhere</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="b">B · Shared Scope bar + slim Session</button>
+  </div>
+
+  <main>
+    <!-- Today -->
+    <article id="today" class="active">
+      <div class="meta">
+        <div>
+          <div class="pill">Current shipping</div>
+          <h2>Split chrome (the problem)</h2>
+          <p>
+            Same session, two UIs: Judgments uses a rich <strong>Session</strong>
+            panel; Analysis / Researcher use a breadcrumb <strong>Scope</strong>
+            combo. Names differ; density differs; Judgments has no Scope in the
+            breadcrumb at all.
+          </p>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">Goal for A / B</h2>
+          <ul>
+            <li>One word: always <strong>Scope</strong> (or always Session)</li>
+            <li>Same primary control shape on every stage</li>
+            <li>Roster manage stays one click away</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="today-callout">
+        <strong>Today:</strong> left = Judgments Session panel &nbsp;·&nbsp;
+        right = Analysis “Network · Scope” breadcrumb. Both change the same
+        document session.
+      </div>
+
+      <div class="compare">
+        <div>
+          <p class="wire-label">Judgments · Session panel</p>
+          <div class="wire">
+            <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis · Researcher</div>
+            <div class="scope-bar">
+              <label>Network</label>
+              <span class="fake-select">Root ▾</span>
+              <span class="chip" style="opacity:.45">no Scope here</span>
+            </div>
+            <div class="body">
+              <div class="col">
+                <h3>Nav</h3>
+                <ul class="tree">
+                  <li class="sel">Benefits → Alts</li>
+                  <li class="dim">Costs → Alts</li>
+                </ul>
+              </div>
+              <div class="col">
+                <h3>Matrix · Alice</h3>
+                <div class="matrix" aria-hidden="true">
+                  <span></span><span>A</span><span>B</span><span>C</span>
+                  <span>A</span><span>1</span><span>3</span><span>½</span>
+                  <span>B</span><span></span><span>1</span><span>2</span>
+                  <span>C</span><span></span><span></span><span>1</span>
+                </div>
+              </div>
+              <div class="col">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">
+                  <h3 style="margin:0">Session</h3>
+                  <span class="btn">Edit…</span>
+                </div>
+                <div class="session-active-pill">
+                  <span>Alice Chen</span>
+                  <span class="pct">individual</span>
+                </div>
+                <details class="session-fold" open>
+                  <summary><span>Individuals</span><span class="count">4</span></summary>
+                  <ul class="tree session-list">
+                    <li class="sel">Alice Chen</li>
+                    <li class="dim">Bob Rivera</li>
+                    <li class="dim">Carol Ng</li>
+                    <li class="dim">Diego Silva</li>
+                  </ul>
+                </details>
+                <details class="session-fold">
+                  <summary><span>Aggregates</span><span class="count">2</span></summary>
+                </details>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p class="wire-label">Analysis · Scope combo</p>
+          <div class="wire">
+            <div class="stage-strip">Structure · Judgments · <strong>Analysis</strong> · Researcher</div>
+            <div class="scope-bar">
+              <label>Network</label>
+              <span class="fake-select">Root ▾</span>
+              <span style="width:1px;height:1rem;background:var(--line)"></span>
+              <label>Scope</label>
+              <span class="fake-select">Alice Chen ▾</span>
+            </div>
+            <div class="body analysis">
+              <div class="col">
+                <h3>Analysis</h3>
+                <ul class="tree">
+                  <li class="sel">Synthesis</li>
+                  <li class="dim">Consensus</li>
+                </ul>
+              </div>
+              <div class="col">
+                <h3>Results · Alice</h3>
+                <div class="bars">
+                  <div class="bar-row"><span>A</span><div class="bar" style="width:70%"></div><span></span></div>
+                  <div class="bar-row"><span>B</span><div class="bar" style="width:45%"></div><span></span></div>
+                  <div class="bar-row"><span>C</span><div class="bar" style="width:30%"></div><span></span></div>
+                </div>
+              </div>
+              <div class="col">
+                <h3>Summary</h3>
+                <p style="margin:0;font-size:11px;color:var(--muted)">
+                  Scope lives only in the breadcrumb — no Session panel.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Option A -->
+    <article id="a">
+      <div class="meta">
+        <div>
+          <div class="pill">Option A</div>
+          <h2>Breadcrumb Scope on every stage</h2>
+          <p>
+            Promote the Analysis/Researcher pattern to Judgments too. One
+            <strong>Scope</strong> combo beside Network on all stages. The
+            Judgments right column keeps Priorities and a short “Manage
+            participants…” link — the long Individuals/Aggregates list moves
+            out of the primary chrome (or becomes optional / collapsed).
+          </p>
+          <ul>
+            <li>Same control, same label, same place</li>
+            <li>Lowest implementation cost (extend existing combo)</li>
+            <li>Tradeoff: Judgments loses the rich list affordance</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">On this mock</h2>
+          <ul>
+            <li>Judgments + Analysis both show Network · Scope</li>
+            <li>Scope = Alice Chen · Editable chip on Judgments</li>
+            <li>Right rail = priorities + manage only</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="compare">
+        <div>
+          <p class="wire-label">Judgments</p>
+          <div class="wire">
+            <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis · Researcher</div>
+            <div class="scope-bar">
+              <label>Network</label>
+              <span class="fake-select">Root ▾</span>
+              <span style="width:1px;height:1rem;background:var(--line)"></span>
+              <label>Scope</label>
+              <span class="fake-select">Alice Chen ▾</span>
+              <span class="chip on">Editable</span>
+              <span class="chip btn">Manage participants…</span>
+            </div>
+            <div class="body slim-right">
+              <div class="col">
+                <h3>Nav</h3>
+                <ul class="tree">
+                  <li class="sel">Benefits → Alts</li>
+                  <li class="dim">Costs → Alts</li>
+                </ul>
+              </div>
+              <div class="col">
+                <h3>Matrix · Alice</h3>
+                <div class="matrix" aria-hidden="true">
+                  <span></span><span>A</span><span>B</span><span>C</span>
+                  <span>A</span><span>1</span><span>3</span><span>½</span>
+                  <span>B</span><span></span><span>1</span><span>2</span>
+                  <span>C</span><span></span><span></span><span>1</span>
+                </div>
+              </div>
+              <div class="col">
+                <h3>Priorities</h3>
+                <div class="bars">
+                  <div class="bar-row"><span>A</span><div class="bar" style="width:70%"></div><span>0.48</span></div>
+                  <div class="bar-row"><span>B</span><div class="bar" style="width:45%"></div><span>0.31</span></div>
+                  <div class="bar-row"><span>C</span><div class="bar" style="width:30%"></div><span>0.21</span></div>
+                </div>
+                <p style="margin:.75rem 0 0;font-size:10px;color:var(--muted)">
+                  Roster / groups via Manage — not a second Scope UI.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p class="wire-label">Analysis (unchanged pattern)</p>
+          <div class="wire">
+            <div class="stage-strip">Structure · Judgments · <strong>Analysis</strong> · Researcher</div>
+            <div class="scope-bar">
+              <label>Network</label>
+              <span class="fake-select">Root ▾</span>
+              <span style="width:1px;height:1rem;background:var(--line)"></span>
+              <label>Scope</label>
+              <span class="fake-select">Alice Chen ▾</span>
+              <span class="chip lock">Read-only calc</span>
+            </div>
+            <div class="body analysis">
+              <div class="col">
+                <h3>Analysis</h3>
+                <ul class="tree">
+                  <li class="sel">Synthesis</li>
+                  <li class="dim">Consensus</li>
+                </ul>
+              </div>
+              <div class="col">
+                <h3>Results · Alice</h3>
+                <div class="bars">
+                  <div class="bar-row"><span>A</span><div class="bar" style="width:70%"></div><span></span></div>
+                  <div class="bar-row"><span>B</span><div class="bar" style="width:45%"></div><span></span></div>
+                  <div class="bar-row"><span>C</span><div class="bar" style="width:30%"></div><span></span></div>
+                </div>
+              </div>
+              <div class="col">
+                <h3>Summary</h3>
+                <p style="margin:0;font-size:11px;color:var(--muted)">
+                  Network: Root<br />Scope: Alice Chen
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        <strong>Why A:</strong> one muscle memory — change person in the bar,
+        everywhere. Best if the Session list feels redundant once the combo
+        lists everyone + groups.
+      </p>
+    </article>
+
+    <!-- Option B -->
+    <article id="b">
+      <div class="meta">
+        <div>
+          <div class="pill">Option B</div>
+          <h2>Shared Scope bar + slim Session rail</h2>
+          <p>
+            Keep a dedicated Judgments rail for coverage / quick picks, but
+            rename it to match and mirror the breadcrumb. Every stage gets the
+            same <strong>Scope</strong> combo in the bar; Judgments adds a slim
+            “Scope” rail that reflects the bar (not a second independent model).
+            Selecting in either place updates both.
+          </p>
+          <ul>
+            <li>Consistent naming: always Scope</li>
+            <li>Judgments keeps coverage % and fast list switching</li>
+            <li>Slightly more chrome than A; clearer for heavy multi-user work</li>
+          </ul>
+        </div>
+        <div>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">On this mock</h2>
+          <ul>
+            <li>Bar Scope + rail both say Alice</li>
+            <li>Rail header: Scope · Manage…</li>
+            <li>Analysis still bar-only (no rail)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="compare">
+        <div>
+          <p class="wire-label">Judgments · bar + slim Scope rail</p>
+          <div class="wire">
+            <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis · Researcher</div>
+            <div class="scope-bar">
+              <label>Network</label>
+              <span class="fake-select">Root ▾</span>
+              <span style="width:1px;height:1rem;background:var(--line)"></span>
+              <label>Scope</label>
+              <span class="fake-select">Alice Chen ▾</span>
+              <span class="chip on">Editable</span>
+            </div>
+            <div class="body">
+              <div class="col">
+                <h3>Nav</h3>
+                <ul class="tree">
+                  <li class="sel">Benefits → Alts</li>
+                  <li class="dim">Costs → Alts</li>
+                </ul>
+              </div>
+              <div class="col">
+                <h3>Matrix · Alice</h3>
+                <div class="matrix" aria-hidden="true">
+                  <span></span><span>A</span><span>B</span><span>C</span>
+                  <span>A</span><span>1</span><span>3</span><span>½</span>
+                  <span>B</span><span></span><span>1</span><span>2</span>
+                  <span>C</span><span></span><span></span><span>1</span>
+                </div>
+              </div>
+              <div class="col">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">
+                  <h3 style="margin:0">Scope</h3>
+                  <span class="btn">Manage…</span>
+                </div>
+                <div class="session-active-pill">
+                  <span>Alice Chen</span>
+                  <span class="pct">86%</span>
+                </div>
+                <details class="session-fold" open>
+                  <summary><span>Individuals</span><span class="count">4</span></summary>
+                  <ul class="tree session-list">
+                    <li class="sel">Alice Chen <span style="float:right;color:var(--muted)">86%</span></li>
+                    <li class="dim">Bob Rivera <span style="float:right;color:var(--muted)">100%</span></li>
+                    <li class="dim">Carol Ng <span style="float:right;color:var(--muted)">57%</span></li>
+                    <li class="dim">Diego Silva <span style="float:right;color:var(--muted)">0%</span></li>
+                  </ul>
+                </details>
+                <details class="session-fold">
+                  <summary><span>Aggregates</span><span class="count">3</span></summary>
+                  <ul class="tree session-list">
+                    <li class="dim">Group average</li>
+                    <li class="dim">Executives</li>
+                    <li class="dim">Ops</li>
+                  </ul>
+                </details>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p class="wire-label">Analysis · same bar, no rail</p>
+          <div class="wire">
+            <div class="stage-strip">Structure · Judgments · <strong>Analysis</strong> · Researcher</div>
+            <div class="scope-bar">
+              <label>Network</label>
+              <span class="fake-select">Root ▾</span>
+              <span style="width:1px;height:1rem;background:var(--line)"></span>
+              <label>Scope</label>
+              <span class="fake-select">Alice Chen ▾</span>
+            </div>
+            <div class="body analysis">
+              <div class="col">
+                <h3>Analysis</h3>
+                <ul class="tree">
+                  <li class="sel">Synthesis</li>
+                  <li class="dim">Consensus</li>
+                </ul>
+              </div>
+              <div class="col">
+                <h3>Results · Alice</h3>
+                <div class="bars">
+                  <div class="bar-row"><span>A</span><div class="bar" style="width:70%"></div><span></span></div>
+                  <div class="bar-row"><span>B</span><div class="bar" style="width:45%"></div><span></span></div>
+                  <div class="bar-row"><span>C</span><div class="bar" style="width:30%"></div><span></span></div>
+                </div>
+                <p style="margin:.75rem 0 0;font-size:11px;color:var(--muted)">
+                  Same Scope combo as Judgments — switch stage, pick stays.
+                </p>
+              </div>
+              <div class="col">
+                <h3>Summary</h3>
+                <p style="margin:0;font-size:11px;color:var(--muted)">
+                  Scope: Alice Chen<br />
+                  <span style="opacity:.8">Rail only on Judgments</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        <strong>Why B:</strong> unifies language and the primary bar control,
+        without throwing away coverage % and one-click person switching while
+        filling judgments. Closest to the existing Session panel + mock
+        “Viewing” bar hybrid.
+      </p>
+    </article>
+  </main>
+
+  <footer>
+    Open locally:
+    <code>docs/scope-chrome-unify-options.html</code>
+    · Companion to
+    <code>docs/multi-user-ui-constructs.html</code>
+    (tabs 2 Session / 4 Network + Scope).
+  </footer>
+
+  <script>
+    const tabs = document.querySelectorAll(".tabs button");
+    const articles = document.querySelectorAll("main article");
+    tabs.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-tab");
+        tabs.forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
+        articles.forEach((a) => a.classList.toggle("active", a.id === id));
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 /**
  * @file session_panel.hpp
- * @brief Judgments right column: active judgment session (whose judgments).
+ * @brief Judgments right column: Scope rail (whose judgments).
  */
 
 #pragma once
@@ -15,11 +15,12 @@ class QListWidgetItem;
 class QToolBox;
 
 /**
- * @brief Shows and switches the document's judgment session scope.
+ * @brief Shows and switches the document's judgment Scope on Judgments.
  *
- * Individuals (per-participant, editable) and Aggregates (Group average and
- * named groups, read-only) live in collapsible sections. Edit… opens the
- * Participants roster; Collect… opens the Collect judgments hub.
+ * Mirrors the breadcrumb Scope combo (same @c JudgmentSession). Individuals
+ * (per-participant, editable) and Aggregates (Group average and named groups,
+ * read-only) live in collapsible sections. Manage… opens the Participants
+ * roster; Collect… opens the Collect judgments hub.
  */
 class SessionPanel : public QWidget {
   Q_OBJECT

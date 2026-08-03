@@ -129,7 +129,7 @@ With a Google account connected and a model open:
    `[anp:…]` tags. The link stores a **questionId → tag** map for import, plus
    a **structure fingerprint** (hash of judgment questions / scales at create
    time). Legacy forms that still embed tags in titles continue to import.
-   Open via **Participants → Collect judgments…** or Session → **Collect…**.
+   Open via **Participants → Collect judgments…** or Scope → **Collect…**.
 2. Collect responses in Google Forms (respondents enter name and optionally
    email).
 3. **Collect judgments… → Import results…** — pulls responses for the

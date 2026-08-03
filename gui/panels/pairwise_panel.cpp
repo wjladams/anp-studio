@@ -283,7 +283,7 @@ void PairwisePanel::rebuildQuestionnaire(const anpcpp::PairwiseJudgments* pw) {
   auto* hint = new QLabel(
       readOnly
           ? QStringLiteral("Viewing an aggregate scope — read-only. Pick a "
-                           "participant in Session to edit.")
+                           "participant in Scope to edit.")
           : QStringLiteral(
                 "Mark toward the alternative that is more important / "
                 "preferred."),

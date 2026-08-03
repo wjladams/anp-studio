@@ -405,10 +405,11 @@ void MainWindow::updateBreadcrumb() {
   }
   breadcrumbLay_->addStretch();
 
-  // Phase 2 (light): Scope combo beside the network chooser on Analysis and
-  // Researcher — same document session as Judgments, no separate sync.
+  // Shared Scope combo beside Network on Judgments, Analysis, and Researcher
+  // (Option B). Same JudgmentSession as the Judgments Scope rail.
   scopeCombo_ = nullptr;
-  if ((stage_ == Stage::Analysis || stage_ == Stage::Researcher) &&
+  if ((stage_ == Stage::Judgments || stage_ == Stage::Analysis ||
+       stage_ == Stage::Researcher) &&
       doc_->hasParticipants()) {
     auto* sep = new QLabel(QStringLiteral("·"), breadcrumbBar_);
     sep->setObjectName(QStringLiteral("breadcrumbSep"));
@@ -450,6 +451,19 @@ void MainWindow::updateBreadcrumb() {
     connect(scopeCombo_, QOverload<int>::of(&QComboBox::activated), this,
             &MainWindow::onScopeChosen);
     breadcrumbLay_->addWidget(scopeCombo_);
+
+    if (stage_ == Stage::Judgments) {
+      auto* modeChip = new QLabel(breadcrumbBar_);
+      if (session.kind == anpcpp::JudgmentScopeKind::Participant) {
+        modeChip->setObjectName(QStringLiteral("scopeModeChipEditable"));
+        modeChip->setText(QStringLiteral("Editable"));
+      } else {
+        modeChip->setObjectName(QStringLiteral("scopeModeChipReadonly"));
+        modeChip->setText(QStringLiteral("Read-only"));
+      }
+      breadcrumbLay_->addWidget(modeChip);
+    }
+
     breadcrumbLay_->addStretch();
   }
 }

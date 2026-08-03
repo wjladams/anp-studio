@@ -317,7 +317,8 @@ void showParticipantsRosterDialog(QWidget* parent, Document* doc) {
   auto* hint = new QLabel(
       QStringLiteral(
           "Participants live on this model file (not app accounts). "
-          "Groups are named subsets used by Session and Analysis scope."),
+          "Groups are named subsets used by Scope (Session / Analysis / "
+          "Researcher)."),
       &dlg);
   hint->setObjectName(QStringLiteral("selectorMuted"));
   hint->setWordWrap(true);

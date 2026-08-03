@@ -28,11 +28,11 @@ SessionPanel::SessionPanel(Document* doc, QWidget* parent)
   layout->setSpacing(6);
 
   auto* headerRow = new QHBoxLayout;
-  auto* title = new QLabel(QStringLiteral("Session"), this);
+  auto* title = new QLabel(QStringLiteral("Scope"), this);
   title->setObjectName(QStringLiteral("selectorCaption"));
   headerRow->addWidget(title);
   headerRow->addStretch();
-  editBtn_ = new QPushButton(QStringLiteral("Edit…"), this);
+  editBtn_ = new QPushButton(QStringLiteral("Manage…"), this);
   editBtn_->setToolTip(QStringLiteral("Manage participants…"));
   headerRow->addWidget(editBtn_);
   collectBtn_ = new QPushButton(QStringLiteral("Collect…"), this);
@@ -48,7 +48,7 @@ SessionPanel::SessionPanel(Document* doc, QWidget* parent)
   emptyHint_ = new QLabel(
       QStringLiteral(
           "No participants yet. Single-judge editing is active. Click "
-          "Edit… to add participants for multi-user judgments."),
+          "Manage… to add participants for multi-user judgments."),
       this);
   emptyHint_->setObjectName(QStringLiteral("selectorMuted"));
   emptyHint_->setWordWrap(true);
