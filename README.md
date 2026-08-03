@@ -221,11 +221,14 @@ GitHub Actions builds portable binaries for each **published** release:
 
 1. Merge the changes you want on `main`.
 2. On GitHub open the repo → **Releases** → **Draft a new release**.
-3. Under **Choose a tag**, create a new tag such as `0.3.0` (target: `main`).
-4. Set the release title (e.g. `ANP Studio 0.3.0`) and optional notes.
+3. Under **Choose a tag**, create a new tag such as `v0.4.0` (target: `main`).
+   Use the **`v` prefix** (same as libanpcpp). Older releases `0.1.0`–`0.3.0`
+   lacked it; new tags should not.
+4. Set the release title (e.g. `ANP Studio 0.4.0`) and optional notes.
 5. Click **Publish release** (not “Save draft”—drafts do not start the build).
 6. Open the **Actions** tab and watch **Release builds** (Windows, macOS, Linux).
-7. When the jobs finish, refresh the Release page; the three assets appear under the release.
+7. When the jobs finish, refresh the Release page; the three assets appear under the release
+   (filenames include the full tag, e.g. `anpstudio-v0.4.0-windows-x64.zip`).
 
 **Test a build without publishing:** **Actions** → **Release builds** → **Run workflow**.
 Download artifacts from the workflow run page; nothing is attached to a Release.
