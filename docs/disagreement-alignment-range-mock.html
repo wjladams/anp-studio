@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Disagreement — alignment score + vote range</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --ink: #1c1b19;
+      --muted: #5c574e;
+      --line: #d4cfc4;
+      --panel: #fffdf8;
+      --track: #ebe6dc;
+      --median: #2f5d50;
+      --band: rgba(47, 93, 80, 0.18);
+      --vote: #5c574e;
+      /* Option 2 — traffic light */
+      --ok: #b7d9b4;
+      --ok-ink: #143018;
+      --watch: #f0e08a;
+      --watch-ink: #3a3010;
+      --hot: #e08a7a;
+      --hot-ink: #2a1010;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.45 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+    header h1 { margin: 0 0 .35rem; font-size: 1.5rem; font-weight: 600; }
+    header p { margin: 0 0 .5rem; color: var(--muted); max-width: 52rem; }
+    header .meta {
+      font: 12px/1.4 system-ui, sans-serif;
+      color: var(--muted);
+      max-width: 52rem;
+    }
+    header code {
+      font-size: 11px;
+      background: #efeae2;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+    main { padding: 1.25rem 2rem 2.5rem; max-width: 960px; }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem 1rem;
+      align-items: center;
+      margin-bottom: 1rem;
+      font: 13px/1.3 system-ui, sans-serif;
+      color: var(--muted);
+    }
+    .toolbar strong { color: var(--ink); font-weight: 600; }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font: 13px/1.3 system-ui, sans-serif;
+    }
+    thead th {
+      text-align: left;
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      padding: .75rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: #f3efe7;
+    }
+    tbody td {
+      padding: .85rem 1rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    .pair {
+      font-weight: 600;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .pair span {
+      font-weight: 400;
+      color: var(--muted);
+      font-size: 12px;
+      display: block;
+      margin-top: 2px;
+    }
+
+    .align {
+      min-width: 6.5rem;
+    }
+    .align-chip {
+      display: inline-flex;
+      align-items: baseline;
+      gap: .35rem;
+      padding: .4rem .6rem;
+      border-radius: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .align-chip .align-val {
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+    .align-chip.ok {
+      background: var(--ok);
+      color: var(--ok-ink);
+    }
+    .align-chip.watch {
+      background: var(--watch);
+      color: var(--watch-ink);
+    }
+    .align-chip.hot {
+      background: var(--hot);
+      color: var(--hot-ink);
+    }
+    .align-hint {
+      margin-top: 4px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .45rem 1rem;
+      margin: 0 0 1rem;
+      font: 12px/1.3 system-ui, sans-serif;
+      color: var(--muted);
+    }
+    .legend i {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      vertical-align: -3px;
+      margin-right: 4px;
+      border: 1px solid rgba(0,0,0,.08);
+    }
+    .scale-bar {
+      height: 8px;
+      border-radius: 2px;
+      margin: .35rem 0 .15rem;
+      max-width: 220px;
+      background: linear-gradient(90deg, var(--hot), var(--watch), var(--ok));
+      border: 1px solid rgba(0,0,0,.06);
+    }
+
+    /* Range track: log scale 1/9 … 9 */
+    .range-wrap { min-width: 280px; }
+    .range {
+      position: relative;
+      height: 36px;
+      background: var(--track);
+      border-radius: 4px;
+      border: 1px solid #ddd6ca;
+    }
+    .range .band {
+      position: absolute;
+      top: 8px;
+      bottom: 8px;
+      background: var(--band);
+      border-radius: 2px;
+    }
+    .range .median {
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      width: 3px;
+      margin-left: -1.5px;
+      background: var(--median);
+      border-radius: 1px;
+      z-index: 2;
+    }
+    .range .vote {
+      position: absolute;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      margin: -4px 0 0 -4px;
+      border-radius: 50%;
+      background: var(--vote);
+      border: 1.5px solid #fff;
+      box-shadow: 0 0 0 1px rgba(138, 90, 43, .35);
+      z-index: 3;
+    }
+    .range .vote.dup {
+      /* stacked slightly when same value */
+      box-shadow: 0 0 0 1px rgba(138, 90, 43, .35), 2px 0 0 0 #c49a6c;
+    }
+    .ticks {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 4px;
+      font-size: 10px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .statline {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .statline b { color: var(--ink); font-weight: 600; }
+
+    section.notes {
+      margin-top: 1.5rem;
+      padding: 1rem 1.15rem;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font: 13px/1.45 system-ui, sans-serif;
+      color: var(--muted);
+    }
+    section.notes h2 {
+      margin: 0 0 .5rem;
+      font: 600 14px/1.2 "Iowan Old Style", Palatino, Georgia, serif;
+      color: var(--ink);
+    }
+    section.notes ul { margin: 0; padding-left: 1.2rem; }
+    section.notes li { margin-bottom: .35rem; }
+    section.notes code {
+      font-size: 11px;
+      background: #efeae2;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    /* Ratings variant card */
+    h2.section {
+      margin: 2rem 0 .75rem;
+      font-size: 1.15rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Disagreement as rows: alignment + vote range</h1>
+    <p>
+      Each comparison is a table row: who vs who, an alignment score (0–100%),
+      and a range strip of individual votes on a truncated Saaty scale with
+      geometric median and ±1 geometric SD (pairwise).
+    </p>
+    <p class="meta">
+      Alignment (draft formula for this mock):
+      <code>100 × (1 − ln(max/min) / ln(81))</code>
+      clamped to 0–100, with <code>81 = 9 ÷ (1/9)</code> as the full visual span.
+      Identical votes → 100%. Full 1/9 vs 9 spread → 0%.
+      Chip colors use heat-map <b>Option 2 (traffic light)</b>:
+      green = aligned, yellow = watch, red = unaligned.
+    </p>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <span><strong>Block</strong> Goal → Alternatives</span>
+      <span><strong>Compare</strong> All participants</span>
+      <span>Alice · Bob · Carol · Diego</span>
+    </div>
+
+    <div class="legend">
+      <span><i style="background:#b7d9b4"></i>OK · high alignment (~70–100%)</span>
+      <span><i style="background:#f0e08a"></i>Watch · mid (~35–70%)</span>
+      <span><i style="background:#e08a7a"></i>Hot · low alignment (~0–35%)</span>
+      <span class="scale-bar" title="0% → 100%" style="display:inline-block;width:140px;vertical-align:middle;margin:0"></span>
+      <span>0% → 100%</span>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:18%">Comparison</th>
+            <th style="width:18%">Alignment</th>
+            <th>Vote range <span style="font-weight:400;text-transform:none;letter-spacing:0">(1/9 … 9, truncated)</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <!--
+            Sample votes A vs B: 2, 8, 0.5 → max/min=16
+            align = 100*(1 - ln(16)/ln(81)) ≈ 100*(1 - 2.773/4.394) ≈ 36.9%
+          -->
+          <tr>
+            <td>
+              <div class="pair">A vs B
+                <span>3 votes · Alice 2, Bob 8, Carol 1/2</span>
+              </div>
+            </td>
+            <td class="align watch">
+              <div class="align-chip watch"><span class="align-val">37%</span></div>
+              <div class="align-hint">max/min = 16×</div>
+            </td>
+            <td>
+              <div class="range-wrap">
+                <div class="range" title="Track is log-scaled from 1/9 to 9">
+                  <div class="band" style="left:25%; width:50%"></div>
+                  <div class="median" style="left:50%" title="Geometric median = 2"></div>
+                  <div class="vote" style="left:25%" title="Carol: 1/2"></div>
+                  <div class="vote" style="left:50%" title="Alice: 2"></div>
+                  <div class="vote" style="left:75%" title="Bob: 8"></div>
+                </div>
+                <div class="ticks">
+                  <span>1/9</span><span>1/3</span><span>1</span><span>3</span><span>9</span>
+                </div>
+                <div class="statline">
+                  Median <b>2</b> (geometric) · ±1 SD band <b>1/2 – 8</b>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="pair">A vs C
+                <span>3 votes · all = 3</span>
+              </div>
+            </td>
+            <td class="align ok">
+              <div class="align-chip ok"><span class="align-val">100%</span></div>
+              <div class="align-hint">max/min = 1×</div>
+            </td>
+            <td>
+              <div class="range-wrap">
+                <div class="range">
+                  <div class="band" style="left:calc(50% + 12.5% - 1px); width:2px; opacity:.5"></div>
+                  <div class="median" style="left:62.5%" title="Geometric median = 3"></div>
+                  <div class="vote dup" style="left:62.5%" title="Alice, Bob, Carol: 3"></div>
+                </div>
+                <div class="ticks">
+                  <span>1/9</span><span>1/3</span><span>1</span><span>3</span><span>9</span>
+                </div>
+                <div class="statline">
+                  Median <b>3</b> · ±1 SD band collapsed (perfect agreement)
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="pair">B vs C
+                <span>2 votes · Alice 1, Bob 1 · Diego empty</span>
+              </div>
+            </td>
+            <td class="align ok">
+              <div class="align-chip ok"><span class="align-val">100%</span></div>
+              <div class="align-hint">among voters only</div>
+            </td>
+            <td>
+              <div class="range-wrap">
+                <div class="range">
+                  <div class="median" style="left:50%" title="Geometric median = 1"></div>
+                  <div class="vote dup" style="left:50%" title="Alice &amp; Bob: 1"></div>
+                </div>
+                <div class="ticks">
+                  <span>1/9</span><span>1/3</span><span>1</span><span>3</span><span>9</span>
+                </div>
+                <div class="statline">
+                  Median <b>1</b> · n=2 · missing votes excluded from score &amp; band
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="pair">A vs D <span style="color:#8a5a2b">(illustrative)</span>
+                <span>2 votes · 1/9 and 9 · also a 12 truncated to 9</span>
+              </div>
+            </td>
+            <td class="align hot">
+              <div class="align-chip hot"><span class="align-val">0%</span></div>
+              <div class="align-hint">full visual span</div>
+            </td>
+            <td>
+              <div class="range-wrap">
+                <div class="range">
+                  <div class="band" style="left:0%; width:100%"></div>
+                  <div class="median" style="left:50%" title="Geometric median = 1"></div>
+                  <div class="vote" style="left:0%" title="1/9"></div>
+                  <div class="vote" style="left:100%" title="9 (12 truncated)"></div>
+                </div>
+                <div class="ticks">
+                  <span>1/9</span><span>1/3</span><span>1</span><span>3</span><span>9</span>
+                </div>
+                <div class="statline">
+                  Votes outside <b>1/9–9</b> clamped for the strip only; raw values still drive the score if you prefer (TBD)
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="section">Ratings variant (arithmetic)</h2>
+    <p style="margin:-.35rem 0 1rem;color:var(--muted);font:13px/1.4 system-ui,sans-serif;max-width:40rem">
+      Same row layout; track is linear intensity (here 0–1). Median and ±1 SD are arithmetic.
+      Alignment uses a parallel idea: <code style="font-size:11px;background:#efeae2;padding:1px 4px;border-radius:3px">100 × (1 − range / fullScale)</code>.
+      Same Option&nbsp;2 traffic-light chips.
+    </p>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:18%">Alternative</th>
+            <th style="width:18%">Alignment</th>
+            <th>Score range <span style="font-weight:400;text-transform:none;letter-spacing:0">(0 … 1)</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="pair">A
+                <span>Alice 0.2 · Bob 0.8 · Carol 0.5</span>
+              </div>
+            </td>
+            <td class="align watch">
+              <div class="align-chip watch"><span class="align-val">40%</span></div>
+              <div class="align-hint">range 0.6 / scale 1</div>
+            </td>
+            <td>
+              <div class="range-wrap">
+                <div class="range">
+                  <div class="band" style="left:25.5%; width:49%"></div>
+                  <div class="median" style="left:50%" title="Arithmetic median = 0.5"></div>
+                  <div class="vote" style="left:20%" title="0.2"></div>
+                  <div class="vote" style="left:50%" title="0.5"></div>
+                  <div class="vote" style="left:80%" title="0.8"></div>
+                </div>
+                <div class="ticks">
+                  <span>0</span><span>0.25</span><span>0.5</span><span>0.75</span><span>1</span>
+                </div>
+                <div class="statline">
+                  Median <b>0.5</b> (arithmetic) · ±1 SD band ≈ <b>0.26 – 0.75</b>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section class="notes">
+      <h2>Design notes (for when we implement)</h2>
+      <ul>
+        <li><b>Chip colors (Option 2):</b> map alignment % to green / yellow / red bands (thresholds in the legend are illustrative).</li>
+        <li><b>Strip geometry (pairwise):</b> position = log-lerp between 1/9 and 9. Values &lt;1/9 or &gt;9 clamp to the ends for drawing only.</li>
+        <li><b>Median:</b> geometric median of positive votes for pairwise (median of logs → exp); arithmetic median for ratings.</li>
+        <li><b>±1 SD band:</b> pairwise in log-space (geometric SD); ratings in raw score space. Band also truncated to the visible track.</li>
+        <li><b>Dots:</b> one per participant vote; overlapping votes can stack or use a small count badge.</li>
+        <li><b>Alignment formula</b> above is a draft so 0% / 100% match the visual scale ends—easy to swap for a geo-SD-based score if you prefer.</li>
+        <li>This can replace the matrix heat, or sit as a fourth mode / detail drill-down from a hot cell.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

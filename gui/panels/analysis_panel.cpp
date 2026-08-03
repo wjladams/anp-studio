@@ -2,6 +2,7 @@
 
 #include "document.hpp"
 #include "html_report.hpp"
+#include "panels/consensus_analysis_widget.hpp"
 #include "panels/sensitivity_chart_widget.hpp"
 
 #include "anpcpp/limit_matrix.hpp"
@@ -284,6 +285,10 @@ AnalysisPanel::AnalysisPanel(Document* doc, QWidget* parent)
   inflTotalLay->addWidget(inflTableTotal_, 1);
   stack_->addWidget(inflTotalPage);
 
+  // --- Consensus / Variance ---
+  consensus_ = new ConsensusAnalysisWidget(doc_, stack_);
+  stack_->addWidget(consensus_);
+
   root->addWidget(stack_, 1);
 
   connect(doc_, &Document::modelChanged, this, &AnalysisPanel::refresh);
@@ -365,6 +370,10 @@ void AnalysisPanel::buildNavTree() {
   makeNavItem(inflItem, QStringLiteral("Rank"), Page::InflRank);
   makeNavItem(inflItem, QStringLiteral("Marginal"), Page::InflMarginal);
   makeNavItem(inflItem, QStringLiteral("Total"), Page::InflTotal);
+
+  nav_->addTopLevelItem(
+      makeNavItem(nullptr, QStringLiteral("Consensus / Variance"),
+                  Page::Consensus));
 
   nav_->expandAll();
 }
@@ -458,6 +467,7 @@ void AnalysisPanel::refresh() {
   refreshSynthesisHtml();
   refreshSensitivity();
   refreshInfluence();
+  if (consensus_) consensus_->refresh();
   if (stack_->currentIndex() == static_cast<int>(Page::Synthesis) &&
       !synthAnchor_.isEmpty()) {
     QTimer::singleShot(0, this, [this]() {

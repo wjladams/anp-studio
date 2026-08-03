@@ -20,6 +20,7 @@ class QSpinBox;
 class QTreeWidget;
 class QTreeWidgetItem;
 class SensitivityChartWidget;
+class ConsensusAnalysisWidget;
 
 /**
  * @brief Full Analysis stage: hierarchical left nav and stacked calculation panes.
@@ -37,6 +38,7 @@ public:
     InflRank,
     InflMarginal,
     InflTotal,
+    Consensus,
   };
 
   explicit AnalysisPanel(Document* doc, QWidget* parent = nullptr);
@@ -102,6 +104,7 @@ private:
   QDoubleSpinBox* inflDeltaTotal_ = nullptr;
   QTableWidget* inflTableTotal_ = nullptr;
 
+  ConsensusAnalysisWidget* consensus_ = nullptr;
 
   bool updating_ = false;
   bool navigating_ = false;

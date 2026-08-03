@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vote range strip — three visual options</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --ink: #1c1b19;
+      --muted: #5c574e;
+      --line: #d4cfc4;
+      --panel: #fffdf8;
+      --track: #ebe6dc;
+      --median: #2f5d50;
+      --range: rgba(47, 93, 80, 0.28);
+      --sd: rgba(212, 168, 45, 0.55);
+      --sd-edge: #b8860b;
+      --vote: #3d3a34;
+      --ok: #b7d9b4;
+      --ok-ink: #143018;
+      --watch: #f0e08a;
+      --watch-ink: #3a3010;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.45 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+    header h1 { margin: 0 0 .35rem; font-size: 1.5rem; font-weight: 600; }
+    header p { margin: 0 0 .4rem; color: var(--muted); max-width: 54rem; }
+    header .meta {
+      font: 12px/1.45 system-ui, sans-serif;
+      color: var(--muted);
+      max-width: 54rem;
+    }
+    header code {
+      font-size: 11px;
+      background: #efeae2;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+    main { padding: 1.25rem 2rem 3rem; max-width: 980px; }
+
+    .tabs {
+      display: flex;
+      gap: .35rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+      font: 13px/1.2 system-ui, sans-serif;
+    }
+    .tabs button {
+      border: 1px solid var(--line);
+      background: #efeae2;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: .4rem .9rem;
+      cursor: pointer;
+      font: inherit;
+    }
+    .tabs button[aria-selected="true"] {
+      background: var(--ink);
+      color: #fff;
+      border-color: var(--ink);
+    }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .intro {
+      font: 13px/1.45 system-ui, sans-serif;
+      color: var(--muted);
+      margin: 0 0 1rem;
+      max-width: 52rem;
+    }
+    .intro strong { color: var(--ink); }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font: 13px/1.3 system-ui, sans-serif;
+    }
+    thead th {
+      text-align: left;
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      padding: .65rem .85rem;
+      border-bottom: 1px solid var(--line);
+      background: #f3efe7;
+    }
+    td {
+      padding: .75rem .85rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    .cmp { min-width: 11rem; }
+    .cmp .title { font-weight: 600; margin-bottom: .2rem; }
+    .cmp .votes { color: var(--muted); font-size: 12px; }
+
+    .chip {
+      display: inline-block;
+      min-width: 3.2rem;
+      text-align: center;
+      padding: .35rem .55rem;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .chip.watch { background: var(--watch); color: var(--watch-ink); }
+    .chip.ok { background: var(--ok); color: var(--ok-ink); }
+
+    .strip-cell { min-width: 22rem; }
+    .strip-wrap { position: relative; height: 56px; }
+    .strip-svg { width: 100%; height: 56px; display: block; }
+    .stats {
+      margin-top: .25rem;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .75rem 1.25rem;
+      font: 12px/1.3 system-ui, sans-serif;
+      color: var(--muted);
+      padding: .85rem 1rem;
+      border-top: 1px solid var(--line);
+      background: #faf8f4;
+    }
+    .legend span { display: inline-flex; align-items: center; gap: .4rem; }
+    .swatch {
+      width: 22px; height: 12px; border-radius: 2px;
+      display: inline-block;
+    }
+    .swatch.range { background: var(--range); border: 1px solid rgba(47,93,80,.35); }
+    .swatch.sd { background: var(--sd); border: 1px solid var(--sd-edge); }
+    .swatch.median {
+      width: 3px; height: 16px; background: var(--median); border-radius: 1px;
+    }
+    .dot-demo {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--vote); border: 1.5px solid #fff;
+      box-shadow: 0 0 0 1px rgba(0,0,0,.15);
+    }
+
+    .pros {
+      margin: 0;
+      padding-left: 1.1rem;
+      font: 13px/1.45 system-ui, sans-serif;
+      color: var(--muted);
+    }
+    .pros li { margin-bottom: .25rem; }
+    .pros strong { color: var(--ink); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Vote range strip — options</h1>
+    <p>
+      Compare treatments for <strong>min→max (green)</strong>,
+      <strong>mean tick</strong>, and
+      <strong>stacked votes</strong> (hybrid size + late digits).
+      Example data matches Consensus on Goal → Alternatives (incl. two votes at 8 on A vs B).
+    </p>
+    <p class="meta">
+      Log Saaty track 1/9…9. Geometric mean for pairwise.
+      Open locally: <code>docs/vote-range-strip-options.html</code>
+    </p>
+  </header>
+
+  <main>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" aria-selected="true" data-tab="d">D · Hybrid size + number if n≥5</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="a">A · Nested bands + fat dots</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="b">B · Range rail + SD capsule</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="c">C · Track fill + count badges</button>
+    </div>
+
+    <!-- ========== OPTION D (hybrid) ========== -->
+    <section class="panel active" id="panel-d" role="tabpanel">
+      <p class="intro">
+        <strong>D — Hybrid size + late numbers (shipped), mean on top.</strong>
+        Green full-height bar = min→max.
+        Dots first, then teal <strong>mean tick with white halo</strong> so it stays
+        visible when it falls on a large stack.
+        Dots: diameter scales from <strong>1/5 of bar height</strong> (n=1) up to
+        <strong>full bar height</strong> at n=5; for <strong>n≥5</strong> the count
+        is drawn on the (max-sized) dot.
+      </p>
+      <div class="card" id="card-d"></div>
+      <ul class="pros">
+        <li><strong>Pro:</strong> Small stacks read by size; large stacks stay readable via digits.</li>
+        <li><strong>Con:</strong> At n=5 both cues fire (max size + digit) — intentional redundancy.</li>
+      </ul>
+    </section>
+
+    <!-- ========== OPTION A ========== -->
+    <section class="panel" id="panel-a" role="tabpanel">
+      <p class="intro">
+        <strong>A — Nested bands.</strong>
+        Full-height teal rectangle = observed min→max.
+        Smaller yellow rectangle nested inside = ±1 SD.
+        Teal mean tick. Dots: radius scales with √n (1→4.5px … 10→~14px).
+      </p>
+      <div class="card" id="card-a"></div>
+      <ul class="pros">
+        <li><strong>Pro:</strong> Clearest “range vs dispersion” nesting; matches current layout.</li>
+        <li><strong>Con:</strong> When SD extends past min/max (clamped), yellow can look clipped oddly.</li>
+      </ul>
+    </section>
+
+    <!-- ========== OPTION B ========== -->
+    <section class="panel" id="panel-b" role="tabpanel">
+      <p class="intro">
+        <strong>B — Range rail + SD capsule.</strong>
+        Thin teal line with end caps = min→max (whisker).
+        Soft yellow capsule = ±1 SD (can sit above/behind the rail).
+        Mean as diamond. Dots: discrete sizes + white ring; n≥2 gets a soft glow.
+      </p>
+      <div class="card" id="card-b"></div>
+      <ul class="pros">
+        <li><strong>Pro:</strong> Range vs SD use different shapes — less “two green bars” confusion.</li>
+        <li><strong>Con:</strong> Slightly busier; end caps need enough vertical space.</li>
+      </ul>
+    </section>
+
+    <!-- ========== OPTION C ========== -->
+    <section class="panel" id="panel-c" role="tabpanel">
+      <p class="intro">
+        <strong>C — Track segment fill + count badges.</strong>
+        Teal tint fills the track only between min and max.
+        Yellow ±1 SD drawn as a shorter rounded bar on the midline.
+        Votes: sized by n; for n≥2 a tiny <strong>n</strong> badge sits on the dot.
+      </p>
+      <div class="card" id="card-c"></div>
+      <ul class="pros">
+        <li><strong>Pro:</strong> Multiplicity is unambiguous (read the digit); good for 5–10 stacks.</li>
+        <li><strong>Con:</strong> Badges need ~56px row height; can clutter dense rows.</li>
+      </ul>
+    </section>
+  </main>
+
+  <script>
+    // Log map 1/9 .. 9 → 0..1
+    function posOf(v) {
+      const lo = Math.log(1 / 9), hi = Math.log(9);
+      const c = Math.min(9, Math.max(1 / 9, v));
+      return (Math.log(c) - lo) / (hi - lo);
+    }
+    function xAt(v, x0, x1) { return x0 + posOf(v) * (x1 - x0); }
+
+    function fmtPair(v) {
+      if (Math.abs(v - 1) < 1e-9) return "1";
+      if (v < 1) {
+        const inv = 1 / v;
+        if (Math.abs(inv - Math.round(inv)) < 1e-6) return "1/" + Math.round(inv);
+      }
+      if (Math.abs(v - Math.round(v)) < 1e-6) return String(Math.round(v));
+      return v.toPrecision(3);
+    }
+
+    // Geometric / arithmetic mean + sample SD on logs (pairwise) — matches lib
+    function summarize(values) {
+      const vals = values.filter(v => v > 0 && isFinite(v));
+      const logs = vals.map(Math.log);
+      const meanLog = logs.reduce((a, b) => a + b, 0) / logs.length;
+      let sumSq = 0;
+      for (const L of logs) {
+        const d = L - meanLog;
+        sumSq += d * d;
+      }
+      const sdLog = logs.length < 2 ? 0 : Math.sqrt(sumSq / (logs.length - 1));
+      return {
+        values: vals,
+        min: Math.min(...vals),
+        max: Math.max(...vals),
+        mean: Math.exp(meanLog),
+        bandLow: Math.exp(meanLog - sdLog),
+        bandHigh: Math.exp(meanLog + sdLog),
+      };
+    }
+
+    function stack(values) {
+      const map = new Map();
+      for (const v of values) {
+        const key = String(+v.toPrecision(12));
+        map.set(key, (map.get(key) || { v, n: 0 }));
+        map.get(key).n++;
+      }
+      return [...map.values()];
+    }
+
+    const rows = [
+      {
+        title: "A vs B",
+        votesLabel: "4 votes: 2, 8, 1/2, 8",
+        values: [2, 8, 0.5, 8],
+        align: 37,
+        band: "watch",
+      },
+      {
+        title: "A vs C",
+        votesLabel: "4 votes: 3, 3, 3, 4",
+        values: [3, 3, 3, 4],
+        align: 93,
+        band: "ok",
+      },
+      {
+        title: "B vs C",
+        votesLabel: "4 votes: 1, 1, 1, 1/5",
+        values: [1, 1, 1, 0.2],
+        align: 63,
+        band: "watch",
+      },
+    ];
+
+    function ticksSvg(x0, x1, y) {
+      const marks = [
+        [1 / 9, "1/9"],
+        [1 / 3, "1/3"],
+        [1, "1"],
+        [3, "3"],
+        [9, "9"],
+      ];
+      return marks.map(([v, lab]) => {
+        const x = xAt(v, x0, x1);
+        return `<line x1="${x}" y1="${y}" x2="${x}" y2="${y + 4}" stroke="#b0a898" stroke-width="1"/>
+          <text x="${x}" y="${y + 14}" text-anchor="middle" fill="#8a8478" font-size="9" font-family="system-ui">${lab}</text>`;
+      }).join("");
+    }
+
+    function radiusForN(n, mode) {
+      if (mode === "a") return 3.2 + Math.sqrt(n) * 2.6; // ~5.8 @1, ~9.4 @4, ~11.4 @10
+      if (mode === "b") {
+        if (n <= 1) return 4.5;
+        if (n === 2) return 6.5;
+        if (n === 3) return 8;
+        if (n <= 5) return 10;
+        return 12.5;
+      }
+      // c
+      return 4 + Math.min(n, 10) * 0.9;
+    }
+
+    function stripA(s, W) {
+      const H = 56, trackY = 8, trackH = 26;
+      const x0 = 12, x1 = W - 12;
+      const cy = trackY + trackH / 2;
+      const xmin = xAt(s.min, x0, x1);
+      const xmax = xAt(s.max, x0, x1);
+      const bl = xAt(Math.max(1 / 9, Math.min(9, s.bandLow)), x0, x1);
+      const bh = xAt(Math.max(1 / 9, Math.min(9, s.bandHigh)), x0, x1);
+      const mx = xAt(s.mean, x0, x1);
+      const stacks = stack(s.values);
+
+      let dots = stacks.map(({ v, n }) => {
+        const x = xAt(v, x0, x1);
+        const r = radiusForN(n, "a");
+        return `<circle cx="${x}" cy="${cy}" r="${r}" fill="#3d3a34" stroke="#fff" stroke-width="1.5"/>`;
+      }).join("");
+
+      return `<svg class="strip-svg" viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none">
+        <rect x="${x0 - 4}" y="${trackY}" width="${x1 - x0 + 8}" height="${trackH}" rx="4" fill="#ebe6dc" stroke="#ddd6ca"/>
+        <rect x="${Math.min(xmin, xmax)}" y="${trackY + 3}" width="${Math.max(2, Math.abs(xmax - xmin))}" height="${trackH - 6}" rx="2" fill="rgba(47,93,80,0.30)"/>
+        <rect x="${Math.min(bl, bh)}" y="${trackY + 7}" width="${Math.max(2, Math.abs(bh - bl))}" height="${trackH - 14}" rx="2" fill="rgba(212,168,45,0.62)" stroke="#b8860b" stroke-width="0.75"/>
+        <rect x="${mx - 1.5}" y="${trackY + 2}" width="3" height="${trackH - 4}" fill="#2f5d50"/>
+        ${dots}
+        ${ticksSvg(x0, x1, trackY + trackH + 2)}
+      </svg>`;
+    }
+
+    function stripB(s, W) {
+      const H = 56, trackY = 10, trackH = 22;
+      const x0 = 12, x1 = W - 12;
+      const cy = trackY + trackH / 2;
+      const xmin = xAt(s.min, x0, x1);
+      const xmax = xAt(s.max, x0, x1);
+      const bl = xAt(Math.max(1 / 9, Math.min(9, s.bandLow)), x0, x1);
+      const bh = xAt(Math.max(1 / 9, Math.min(9, s.bandHigh)), x0, x1);
+      const mx = xAt(s.mean, x0, x1);
+      const stacks = stack(s.values);
+
+      const dots = stacks.map(({ v, n }) => {
+        const x = xAt(v, x0, x1);
+        const r = radiusForN(n, "b");
+        const glow = n >= 2
+          ? `<circle cx="${x}" cy="${cy}" r="${r + 3}" fill="rgba(61,58,52,0.18)"/>`
+          : "";
+        return `${glow}<circle cx="${x}" cy="${cy}" r="${r}" fill="#3d3a34" stroke="#fff" stroke-width="2"/>`;
+      }).join("");
+
+      const yRail = cy;
+      return `<svg class="strip-svg" viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none">
+        <rect x="${x0 - 4}" y="${trackY}" width="${x1 - x0 + 8}" height="${trackH}" rx="4" fill="#ebe6dc" stroke="#ddd6ca"/>
+        <rect x="${Math.min(bl, bh)}" y="${cy - 6}" width="${Math.max(2, Math.abs(bh - bl))}" height="12" rx="6" fill="rgba(212,168,45,0.55)" stroke="#b8860b" stroke-width="0.75"/>
+        <line x1="${xmin}" y1="${yRail}" x2="${xmax}" y2="${yRail}" stroke="#2f5d50" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="${xmin}" y1="${cy - 7}" x2="${xmin}" y2="${cy + 7}" stroke="#2f5d50" stroke-width="2.5"/>
+        <line x1="${xmax}" y1="${cy - 7}" x2="${xmax}" y2="${cy + 7}" stroke="#2f5d50" stroke-width="2.5"/>
+        <polygon points="${mx},${cy - 7} ${mx + 5},${cy} ${mx},${cy + 7} ${mx - 5},${cy}" fill="#2f5d50"/>
+        ${dots}
+        ${ticksSvg(x0, x1, trackY + trackH + 2)}
+      </svg>`;
+    }
+
+    function stripC(s, W) {
+      const H = 56, trackY = 8, trackH = 26;
+      const x0 = 12, x1 = W - 12;
+      const cy = trackY + trackH / 2;
+      const xmin = xAt(s.min, x0, x1);
+      const xmax = xAt(s.max, x0, x1);
+      const bl = xAt(Math.max(1 / 9, Math.min(9, s.bandLow)), x0, x1);
+      const bh = xAt(Math.max(1 / 9, Math.min(9, s.bandHigh)), x0, x1);
+      const mx = xAt(s.mean, x0, x1);
+      const stacks = stack(s.values);
+
+      const dots = stacks.map(({ v, n }) => {
+        const x = xAt(v, x0, x1);
+        const r = radiusForN(n, "c");
+        const badge = n >= 2
+          ? `<circle cx="${x + r * 0.65}" cy="${cy - r * 0.7}" r="6.5" fill="#2f5d50"/>
+             <text x="${x + r * 0.65}" y="${cy - r * 0.7 + 3.2}" text-anchor="middle" fill="#fff" font-size="9" font-weight="700" font-family="system-ui">${n}</text>`
+          : "";
+        return `<circle cx="${x}" cy="${cy}" r="${r}" fill="#3d3a34" stroke="#fff" stroke-width="1.5"/>${badge}`;
+      }).join("");
+
+      return `<svg class="strip-svg" viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none">
+        <rect x="${x0 - 4}" y="${trackY}" width="${x1 - x0 + 8}" height="${trackH}" rx="4" fill="#ebe6dc" stroke="#ddd6ca"/>
+        <rect x="${Math.min(xmin, xmax)}" y="${trackY}" width="${Math.max(2, Math.abs(xmax - xmin))}" height="${trackH}" fill="rgba(47,93,80,0.22)"/>
+        <rect x="${Math.min(bl, bh)}" y="${cy - 5}" width="${Math.max(2, Math.abs(bh - bl))}" height="10" rx="3" fill="rgba(212,168,45,0.7)" stroke="#b8860b" stroke-width="0.75"/>
+        <rect x="${mx - 1.5}" y="${trackY + 3}" width="3" height="${trackH - 6}" fill="#2f5d50"/>
+        ${dots}
+        ${ticksSvg(x0, x1, trackY + trackH + 2)}
+      </svg>`;
+    }
+
+    /** D: green range + mean tick + hybrid dots (size 1–5, number if n≥5). */
+    function stripD(s, W) {
+      const H = 56, trackY = 8, trackH = 26;
+      const x0 = 12, x1 = W - 12;
+      const cy = trackY + trackH / 2;
+      const xmin = xAt(s.min, x0, x1);
+      const xmax = xAt(s.max, x0, x1);
+      const mx = xAt(s.mean, x0, x1);
+      const stacks = stack(s.values);
+
+      // Diameter: bar/5 at n=1 → full bar height at n=5 (capped).
+      function diameterForN(n) {
+        const t = (Math.min(Math.max(n, 1), 5) - 1) / 4; // 0..1
+        return trackH * (0.2 + 0.8 * t);
+      }
+
+      const dots = stacks.map(({ v, n }) => {
+        const x = xAt(v, x0, x1);
+        const d = diameterForN(n);
+        const r = d / 2;
+        const label = n >= 5
+          ? `<text x="${x}" y="${cy + 3.8}" text-anchor="middle" fill="#fff" font-size="${n >= 10 ? 9 : 11}" font-weight="700" font-family="system-ui">${n}</text>`
+          : "";
+        return `<circle cx="${x}" cy="${cy}" r="${r}" fill="#3d3a34" stroke="#fff" stroke-width="1.5"/>${label}`;
+      }).join("");
+
+      return `<svg class="strip-svg" viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none">
+        <rect x="${x0 - 4}" y="${trackY}" width="${x1 - x0 + 8}" height="${trackH}" rx="4" fill="#ebe6dc" stroke="#ddd6ca"/>
+        <rect x="${Math.min(xmin, xmax)}" y="${trackY + 2}" width="${Math.max(2, Math.abs(xmax - xmin))}" height="${trackH - 4}" rx="2" fill="rgba(47,93,80,0.32)"/>
+        ${dots}
+        <!-- Mean on top: white halo then teal tick -->
+        <rect x="${mx - 2.5}" y="${trackY + 1}" width="5" height="${trackH - 2}" rx="1" fill="#fffdf8"/>
+        <rect x="${mx - 1.5}" y="${trackY + 2}" width="3" height="${trackH - 4}" fill="#2f5d50"/>
+        ${ticksSvg(x0, x1, trackY + trackH + 2)}
+      </svg>`;
+    }
+
+    function legend(kind) {
+      if (kind === "d") {
+        return `<div class="legend">
+          <span><i class="swatch range"></i> Min → max (green)</span>
+          <span><i class="swatch median"></i> Mean (on top, white halo)</span>
+          <span><i class="dot-demo" style="width:6px;height:6px"></i> n=1 (⌀ = bar/5)</span>
+          <span><i class="dot-demo" style="width:14px;height:14px"></i> n=2…4 grow</span>
+          <span><i class="dot-demo" style="width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font:700 9px system-ui;color:#fff;background:#3d3a34">5</i> n≥5 max + digit</span>
+        </div>`;
+      }
+      if (kind === "a") {
+        return `<div class="legend">
+          <span><i class="swatch range"></i> Min → max (teal)</span>
+          <span><i class="swatch sd"></i> ±1 SD (yellow, nested)</span>
+          <span><i class="swatch median"></i> Mean</span>
+          <span><i class="dot-demo" style="width:9px;height:9px"></i> 1 vote</span>
+          <span><i class="dot-demo" style="width:14px;height:14px"></i> 2+ votes (fatter)</span>
+        </div>`;
+      }
+      if (kind === "b") {
+        return `<div class="legend">
+          <span><i class="swatch range" style="height:3px;width:28px"></i> Min → max rail</span>
+          <span><i class="swatch sd" style="border-radius:8px"></i> ±1 SD capsule</span>
+          <span>◆ Mean</span>
+          <span><i class="dot-demo"></i> Size steps 1 / 2 / 3 / 5 / 10</span>
+        </div>`;
+      }
+      return `<div class="legend">
+        <span><i class="swatch range"></i> Min → max (track tint)</span>
+        <span><i class="swatch sd"></i> ±1 SD bar</span>
+        <span><i class="swatch median"></i> Mean</span>
+        <span>Dot + <strong style="color:var(--ink)">n</strong> badge when stacked</span>
+      </div>`;
+    }
+
+    function renderCard(el, kind, rowList) {
+      const stripFn =
+        kind === "d" ? stripD :
+        kind === "a" ? stripA :
+        kind === "b" ? stripB :
+        stripC;
+      const W = 420;
+      const data = rowList || rows;
+      let body = `<table><thead><tr>
+        <th>Comparison</th><th>Alignment</th><th>Vote range</th>
+      </tr></thead><tbody>`;
+      for (const row of data) {
+        const s = summarize(row.values);
+        body += `<tr>
+          <td class="cmp">
+            <div class="title">${row.title}</div>
+            <div class="votes">${row.votesLabel}</div>
+          </td>
+          <td><span class="chip ${row.band}">${row.align}%</span></td>
+          <td class="strip-cell">
+            <div class="strip-wrap">${stripFn(s, W)}</div>
+            <div class="stats">Mean ${fmtPair(s.mean)} (geometric) · range ${fmtPair(s.min)} – ${fmtPair(s.max)}</div>
+          </td>
+        </tr>`;
+      }
+      body += `</tbody></table>${legend(kind)}`;
+      el.innerHTML = body;
+    }
+
+    const demoStacks = {
+      title: "Demo stacks",
+      votesLabel: "Illustrative: n=1 @1/5, n=2 @1/2, n=3 @1, n=5 @3, n=10 @7",
+      values: [0.2, 0.5, 0.5, 1, 1, 1, 3, 3, 3, 3, 3, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7],
+      align: 12,
+      band: "watch",
+    };
+
+    renderCard(document.getElementById("card-d"), "d", rows.concat([demoStacks]));
+    renderCard(document.getElementById("card-a"), "a");
+    renderCard(document.getElementById("card-b"), "b");
+    renderCard(document.getElementById("card-c"), "c");
+
+    document.querySelectorAll(".tabs button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tabs button").forEach((b) =>
+          b.setAttribute("aria-selected", b === btn ? "true" : "false"));
+        document.querySelectorAll(".panel").forEach((p) =>
+          p.classList.toggle("active", p.id === "panel-" + btn.dataset.tab));
+      });
+    });
+  </script>
+</body>
+</html>
