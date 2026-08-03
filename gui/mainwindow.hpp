@@ -17,6 +17,7 @@ class JudgmentNavPanel;
 class RatingsPanel;
 class JudgmentPrioritiesPanel;
 class SessionPanel;
+class GoogleOAuth;
 class QStackedWidget;
 class QButtonGroup;
 class QWidget;
@@ -51,6 +52,11 @@ private slots:
   void onNetworkPathChosen(int index);
   void onScopeChosen(int index);
   void onManageParticipants();
+  void onSettings();
+  void onCreateGoogleForm();
+  void onImportGoogleFormResults();
+  void onOpenLinkedGoogleForm();
+  void refreshLinkedFormUi();
   void onExportJudgmentTemplates();
   void onImportJudgmentTemplates();
   void onDocumentSelectionChanged(const QString& cluster, const QString& node);
@@ -101,6 +107,9 @@ private:
   RatingsPanel* ratings_ = nullptr;
   JudgmentPrioritiesPanel* judgmentPriorities_ = nullptr;
   SessionPanel* sessionPanel_ = nullptr;
+  GoogleOAuth* googleOAuth_ = nullptr;
+  QAction* openLinkedFormAction_ = nullptr;
+  QAction* importGoogleFormAction_ = nullptr;
   QStackedWidget* judgmentCenter_ = nullptr;
 
   AnalysisPanel* analysis_ = nullptr;

@@ -2,8 +2,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
-
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network)
 find_package(ZLIB REQUIRED)
 
 # OpenXLSX — respondent Excel templates (read/write .xlsx, no Qt dependency)
@@ -18,7 +17,6 @@ FetchContent_Declare(
   GIT_TAG v0.5.1
 )
 FetchContent_MakeAvailable(OpenXLSX)
-
 
 add_executable(anpstudio
   main.cpp
@@ -38,10 +36,14 @@ add_executable(anpstudio
   panels/ratings_panel.cpp
   panels/session_panel.cpp
   panels/participants_roster_dialog.cpp
+  panels/connected_accounts_page.cpp
+  panels/settings_dialog.cpp
   panels/synthesis_summary_panel.cpp
   panels/analysis_panel.cpp
   panels/researcher_panel.cpp
   panels/sensitivity_chart_widget.cpp
+  oauth/google_oauth.cpp
+  oauth/google_forms_client.cpp
   io/judgment_template_io.cpp
   io/judgment_question_text.cpp
   io/xlsx_sheet_reader.cpp
@@ -60,9 +62,52 @@ target_link_libraries(anpstudio
   PRIVATE
     anpcpp::anpcpp
     Qt6::Widgets
+    Qt6::Network
     ZLIB::ZLIB
     OpenXLSX::OpenXLSX
 )
+
+# --- Google OAuth client credentials (optional; for Forms Connect) -----------
+# Prefer gitignored ${CMAKE_SOURCE_DIR}/.env. Also accepts CMake -D or env vars.
+include("${CMAKE_SOURCE_DIR}/cmake/LoadDotEnv.cmake")
+anpstudio_load_dotenv("${CMAKE_SOURCE_DIR}/.env")
+
+# Normalize names: accept GOOGLE_* from .env or ANPSTUDIO_GOOGLE_*.
+if(NOT ANPSTUDIO_GOOGLE_CLIENT_ID AND DEFINED GOOGLE_CLIENT_ID)
+  set(ANPSTUDIO_GOOGLE_CLIENT_ID "${GOOGLE_CLIENT_ID}")
+endif()
+if(NOT ANPSTUDIO_GOOGLE_CLIENT_SECRET AND DEFINED GOOGLE_CLIENT_SECRET)
+  set(ANPSTUDIO_GOOGLE_CLIENT_SECRET "${GOOGLE_CLIENT_SECRET}")
+endif()
+if(NOT ANPSTUDIO_GOOGLE_CLIENT_ID AND DEFINED ENV{ANPSTUDIO_GOOGLE_CLIENT_ID})
+  set(ANPSTUDIO_GOOGLE_CLIENT_ID "$ENV{ANPSTUDIO_GOOGLE_CLIENT_ID}")
+endif()
+if(NOT ANPSTUDIO_GOOGLE_CLIENT_SECRET AND DEFINED ENV{ANPSTUDIO_GOOGLE_CLIENT_SECRET})
+  set(ANPSTUDIO_GOOGLE_CLIENT_SECRET "$ENV{ANPSTUDIO_GOOGLE_CLIENT_SECRET}")
+endif()
+if(NOT ANPSTUDIO_GOOGLE_CLIENT_ID AND DEFINED ENV{GOOGLE_CLIENT_ID})
+  set(ANPSTUDIO_GOOGLE_CLIENT_ID "$ENV{GOOGLE_CLIENT_ID}")
+endif()
+if(NOT ANPSTUDIO_GOOGLE_CLIENT_SECRET AND DEFINED ENV{GOOGLE_CLIENT_SECRET})
+  set(ANPSTUDIO_GOOGLE_CLIENT_SECRET "$ENV{GOOGLE_CLIENT_SECRET}")
+endif()
+
+if(ANPSTUDIO_GOOGLE_CLIENT_ID AND ANPSTUDIO_GOOGLE_CLIENT_SECRET)
+  set(ANPSTUDIO_GOOGLE_OAUTH_CONFIGURED "true")
+  message(STATUS "Google OAuth: client credentials loaded (Connect will be available)")
+else()
+  set(ANPSTUDIO_GOOGLE_CLIENT_ID "")
+  set(ANPSTUDIO_GOOGLE_CLIENT_SECRET "")
+  set(ANPSTUDIO_GOOGLE_OAUTH_CONFIGURED "false")
+  message(STATUS "Google OAuth: not configured (see docs/google-oauth.md; Excel/CSV still work)")
+endif()
+
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/google_oauth_config.hpp.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/google_oauth_config.hpp"
+  @ONLY
+)
+target_include_directories(anpstudio PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 
 set_target_properties(anpstudio PROPERTIES
   MACOSX_BUNDLE TRUE

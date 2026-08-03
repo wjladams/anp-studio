@@ -3,7 +3,6 @@
 #include "canvas/network_canvas.hpp"
 #include "commands/network_commands.hpp"
 #include "document.hpp"
-#include "io/judgment_template_io.hpp"
 #include "panels/analysis_panel.hpp"
 #include "panels/inspector_panel.hpp"
 #include "panels/judgment_nav_panel.hpp"
@@ -13,6 +12,10 @@
 #include "panels/ratings_panel.hpp"
 #include "panels/researcher_panel.hpp"
 #include "panels/session_panel.hpp"
+#include "panels/settings_dialog.hpp"
+#include "oauth/google_oauth.hpp"
+#include "oauth/google_forms_client.hpp"
+#include "io/judgment_template_io.hpp"
 
 #include <QAction>
 #include <QAbstractButton>
@@ -48,6 +51,7 @@ constexpr auto kDocsBaseUrl = "https://bamath.org/anp-studio";
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   doc_ = new Document(this);
+  googleOAuth_ = new GoogleOAuth(this);
 
   auto* central = new QWidget(this);
   auto* rootLay = new QVBoxLayout(central);
@@ -123,6 +127,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   fileMenu->addAction(QStringLiteral("Save &As…"), this, &MainWindow::saveFileAs,
                       QKeySequence::SaveAs);
   fileMenu->addSeparator();
+  fileMenu->addAction(QStringLiteral("Setti&ngs…"), this, &MainWindow::onSettings);
   fileMenu->addSeparator();
   fileMenu->addAction(QStringLiteral("&Quit"), this, &QWidget::close,
                       QKeySequence::Quit);
@@ -155,6 +160,31 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
                               this, &MainWindow::onExportJudgmentTemplates);
   participantsMenu->addAction(QStringLiteral("Import judgment t&emplates…"),
                               this, &MainWindow::onImportJudgmentTemplates);
+  participantsMenu->addSeparator();
+  participantsMenu->addAction(QStringLiteral("Create &Google Form…"), this,
+                              &MainWindow::onCreateGoogleForm);
+  importGoogleFormAction_ = participantsMenu->addAction(
+      QStringLiteral("&Import Google Form results…"), this,
+      &MainWindow::onImportGoogleFormResults);
+  openLinkedFormAction_ = participantsMenu->addAction(
+      QStringLiteral("Open linked Google Form…"), this,
+      &MainWindow::onOpenLinkedGoogleForm);
+  openLinkedFormAction_->setEnabled(false);
+  importGoogleFormAction_->setEnabled(false);
+  connect(doc_, &Document::linkedFormsChanged, this,
+          &MainWindow::refreshLinkedFormUi);
+  connect(doc_, &Document::modelChanged, this,
+          &MainWindow::refreshLinkedFormUi);
+  refreshLinkedFormUi();
+
+  auto* computeMenu = menuBar()->addMenu(QStringLiteral("&Compute"));
+  computeMenu->addAction(QStringLiteral("Show Analysis"), this, [this]() {
+    setStage(Stage::Analysis);
+  }, QKeySequence(Qt::Key_F5));
+  computeMenu->addAction(QStringLiteral("Show Researcher"), this, [this]() {
+    setStage(Stage::Researcher);
+  });
+
   auto* helpMenu = menuBar()->addMenu(QStringLiteral("&Help"));
   helpMenu->addAction(QStringLiteral("User Guide"), this,
                       &MainWindow::openUserGuide);
@@ -466,13 +496,6 @@ void MainWindow::onManageParticipants() {
   showParticipantsRosterDialog(this, doc_);
 }
 
-
-
-
-
-
-
-
 void MainWindow::onExportJudgmentTemplates() {
   if (doc_->root().participants().empty()) {
     QMessageBox::information(
@@ -571,6 +594,254 @@ void MainWindow::onImportJudgmentTemplates() {
     msg += QStringLiteral("\n\n") + result.notes.join(QLatin1Char('\n'));
   }
   QMessageBox::information(this, QStringLiteral("Import complete"), msg);
+}
+
+void MainWindow::onSettings() {
+  SettingsDialog dlg(googleOAuth_, this);
+  dlg.setCurrentPage(SettingsDialog::Page::ConnectedAccounts);
+  dlg.exec();
+}
+
+void MainWindow::refreshLinkedFormUi() {
+  const LinkedGoogleForm* linked = doc_->latestLinkedGoogleForm();
+  const bool hasForm = linked != nullptr && !linked->formId.isEmpty();
+  const bool current =
+      hasForm &&
+      googleFormFingerprintMatches(linked->structureFingerprint, doc_->root());
+
+  if (openLinkedFormAction_ != nullptr) {
+    openLinkedFormAction_->setEnabled(hasForm);
+    openLinkedFormAction_->setText(
+        current ? QStringLiteral("Open linked Google Form…")
+                : (hasForm
+                       ? QStringLiteral(
+                             "Open linked Google Form… (out of date)")
+                       : QStringLiteral("Open linked Google Form…")));
+  }
+  if (importGoogleFormAction_ != nullptr) {
+    importGoogleFormAction_->setEnabled(hasForm);
+    importGoogleFormAction_->setText(
+        current
+            ? QStringLiteral("&Import Google Form results…")
+            : (hasForm
+                   ? QStringLiteral(
+                         "&Import Google Form results… (out of date)")
+                   : QStringLiteral("&Import Google Form results…")));
+  }
+}
+
+void MainWindow::onCreateGoogleForm() {
+  if (googleOAuth_ == nullptr || !googleOAuth_->isConnected()) {
+    QMessageBox::information(
+        this, QStringLiteral("Google Form"),
+        QStringLiteral(
+            "Connect a Google account first:\nFile → Settings… → Connected "
+            "accounts"));
+    return;
+  }
+
+  const LinkedGoogleForm* existing = doc_->latestLinkedGoogleForm();
+  if (existing != nullptr) {
+    const bool current = googleFormFingerprintMatches(
+        existing->structureFingerprint, doc_->root());
+    const auto reply = QMessageBox::question(
+        this, QStringLiteral("Create Google Form"),
+        current
+            ? QStringLiteral(
+                  "A Google Form is already linked to this model and matches "
+                  "the current structure.\n\n"
+                  "Create a new form anyway? The previous link will be kept "
+                  "(archived) on the model.")
+            : QStringLiteral(
+                  "The linked Google Form is out of date with the current "
+                  "model structure.\n\n"
+                  "Create a new form? The previous link will be kept "
+                  "(archived) on the model."),
+        QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+    if (reply != QMessageBox::Yes) return;
+  }
+
+  QString title = QStringLiteral("ANP Studio judgments");
+  if (!doc_->path().isEmpty()) {
+    title = QFileInfo(doc_->path()).completeBaseName() +
+            QStringLiteral(" — judgments");
+  } else if (!doc_->root().name().empty()) {
+    title = QString::fromStdString(doc_->root().name()) +
+            QStringLiteral(" — judgments");
+  }
+
+  statusBar()->showMessage(QStringLiteral("Creating Google Form…"));
+  QApplication::setOverrideCursor(Qt::WaitCursor);
+  const GoogleFormCreateResult result =
+      createGoogleFormForNetwork(*googleOAuth_, doc_->root(), title);
+  QApplication::restoreOverrideCursor();
+  statusBar()->clearMessage();
+
+  if (!result.ok) {
+    QMessageBox::warning(this, QStringLiteral("Create Google Form"),
+                         result.error);
+    return;
+  }
+
+  LinkedGoogleForm linked;
+  linked.formId = result.formId;
+  linked.title = title;
+  linked.responderUrl = result.responderUrl;
+  linked.editUrl = result.editUrl;
+  linked.createdAtIso =
+      QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+  linked.structureFingerprint = result.structureFingerprint;
+  linked.questionTags = result.questionTags;
+  linked.questionIds = result.questionIds;
+  linked.mappedTags = result.mappedTags;
+  doc_->addLinkedGoogleForm(linked);
+
+  QString msg =
+      QStringLiteral("Created form with %1 question(s).\n\n"
+                     "The form id and structure fingerprint are saved with "
+                     "this model (Save the file to keep the link).\n\n")
+          .arg(result.questionCount);
+  if (!result.error.isEmpty()) {
+    msg += result.error + QStringLiteral("\n\n");
+  }
+  msg += QStringLiteral("Responder link:\n%1\n\nEdit link:\n%2")
+             .arg(result.responderUrl, result.editUrl);
+  QMessageBox::information(this, QStringLiteral("Google Form created"), msg);
+
+  if (!result.editUrl.isEmpty()) {
+    QDesktopServices::openUrl(QUrl(result.editUrl));
+  } else if (!result.responderUrl.isEmpty()) {
+    QDesktopServices::openUrl(QUrl(result.responderUrl));
+  }
+}
+
+void MainWindow::onImportGoogleFormResults() {
+  if (googleOAuth_ == nullptr || !googleOAuth_->isConnected()) {
+    QMessageBox::information(
+        this, QStringLiteral("Import Google Form"),
+        QStringLiteral(
+            "Connect a Google account first:\nFile → Settings… → Connected "
+            "accounts"));
+    return;
+  }
+  const LinkedGoogleForm* linked = doc_->latestLinkedGoogleForm();
+  if (linked == nullptr || linked->formId.isEmpty()) {
+    QMessageBox::information(
+        this, QStringLiteral("Import Google Form"),
+        QStringLiteral(
+            "No Google Form is linked to this model.\n"
+            "Create one with Participants → Create Google Form… first."));
+    return;
+  }
+
+  const bool current = googleFormFingerprintMatches(
+      linked->structureFingerprint, doc_->root());
+  bool matchingOnly = false;
+  if (!current) {
+    QMessageBox box(this);
+    box.setIcon(QMessageBox::Warning);
+    box.setWindowTitle(QStringLiteral("Form out of date"));
+    box.setText(QStringLiteral(
+        "The linked Google Form does not match the current model structure."));
+    box.setInformativeText(QStringLiteral(
+        "Nodes, connections, alternatives, or rating scales may have changed "
+        "since the form was created (or this link has no fingerprint).\n\n"
+        "You can import answers that still match, or cancel and create a new "
+        "form with Participants → Create Google Form…"));
+    auto* matchingBtn = box.addButton(QStringLiteral("Import matching only"),
+                                      QMessageBox::AcceptRole);
+    box.addButton(QMessageBox::Cancel);
+    box.exec();
+    if (box.clickedButton() != matchingBtn) return;
+    matchingOnly = true;
+  }
+
+  statusBar()->showMessage(QStringLiteral("Importing Google Form responses…"));
+  QApplication::setOverrideCursor(Qt::WaitCursor);
+  const GoogleFormImportResult result = importGoogleFormResponses(
+      *googleOAuth_, *doc_, linked->formId, matchingOnly);
+  QApplication::restoreOverrideCursor();
+  statusBar()->clearMessage();
+
+  if (!result.ok) {
+    QMessageBox::warning(this, QStringLiteral("Import Google Form"),
+                         result.error);
+    return;
+  }
+
+  QString msg =
+      QStringLiteral(
+          "Processed %1 response(s).\n"
+          "Created %2 participant(s).\n"
+          "Set %3 judgment value(s).\n")
+          .arg(result.responsesProcessed)
+          .arg(result.participantsCreated)
+          .arg(result.judgmentsSet);
+  if (result.judgmentsSkipped > 0) {
+    msg +=
+        QStringLiteral("Skipped %1 judgment(s).\n").arg(result.judgmentsSkipped);
+  }
+  if (matchingOnly) {
+    msg += QStringLiteral(
+        "\n(Matching-only import: outdated questions were skipped.)\n");
+  }
+  if (!result.createdParticipantNames.isEmpty()) {
+    msg += QStringLiteral("\nNew participants:\n- ") +
+           result.createdParticipantNames.join(QStringLiteral("\n- "));
+  }
+  if (!result.skippedNotes.isEmpty()) {
+    msg += QStringLiteral("\n\n") + result.skippedNotes.join(QLatin1Char('\n'));
+  }
+  QMessageBox::information(this, QStringLiteral("Import complete"), msg);
+}
+
+void MainWindow::onOpenLinkedGoogleForm() {
+  const LinkedGoogleForm* f = doc_->latestLinkedGoogleForm();
+  if (f == nullptr) {
+    QMessageBox::information(
+        this, QStringLiteral("Linked Google Form"),
+        QStringLiteral("No Google Form is linked to this model yet.\n"
+                       "Use Participants → Create Google Form…"));
+    return;
+  }
+
+  const bool current =
+      googleFormFingerprintMatches(f->structureFingerprint, doc_->root());
+
+  auto* box = new QMessageBox(this);
+  box->setAttribute(Qt::WA_DeleteOnClose);
+  box->setWindowTitle(QStringLiteral("Linked Google Form"));
+  box->setIcon(current ? QMessageBox::Information : QMessageBox::Warning);
+  box->setText(current ? QStringLiteral("Latest linked form (up to date)")
+                       : QStringLiteral("Latest linked form (out of date)"));
+  QString info =
+      QStringLiteral("%1\n\nForm id: %2\nCreated: %3\n"
+                     "Structure: %4\n\n"
+                     "%5 form(s) linked to this model.")
+          .arg(f->title, f->formId, f->createdAtIso,
+               current ? QStringLiteral("matches current model")
+                       : QStringLiteral(
+                             "does not match — create a new form after "
+                             "structural changes"),
+               QString::number(doc_->linkedGoogleForms().size()));
+  if (!current) {
+    info += QStringLiteral(
+        "\n\nImport can still apply answers for questions that remain; "
+        "or create a new form for the current structure.");
+  }
+  box->setInformativeText(info);
+  auto* editBtn = box->addButton(QStringLiteral("Open editor"),
+                                 QMessageBox::AcceptRole);
+  auto* fillBtn = box->addButton(QStringLiteral("Open fill-out link"),
+                                 QMessageBox::ActionRole);
+  box->addButton(QMessageBox::Cancel);
+  box->exec();
+  const QAbstractButton* clicked = box->clickedButton();
+  if (clicked == editBtn && !f->editUrl.isEmpty()) {
+    QDesktopServices::openUrl(QUrl(f->editUrl));
+  } else if (clicked == fillBtn && !f->responderUrl.isEmpty()) {
+    QDesktopServices::openUrl(QUrl(f->responderUrl));
+  }
 }
 
 void MainWindow::updateTitle() {

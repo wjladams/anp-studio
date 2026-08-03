@@ -1,3 +1,9 @@
+# Local secrets (never commit)
+.env
+.env.*
+!.env.example
+google_oauth.json
+
 # CMake / out-of-source builds
 /build/
 /build-*/
