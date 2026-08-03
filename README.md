@@ -117,7 +117,7 @@ CMake automatically uses `../libanpcpp` when that tree exists. Override with
 ### FetchContent from GitHub
 
 If there is no sibling checkout, CMake fetches `libanpcpp` from GitHub
-(`GIT_TAG v0.3.0`).
+(`GIT_TAG v0.4.0`).
 
 ## GUI features
 

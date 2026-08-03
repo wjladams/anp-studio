@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
   QApplication app(argc, argv);
   QApplication::setApplicationName("ANP Studio");
   QApplication::setOrganizationName("ANP Studio");
-  QApplication::setApplicationVersion("0.3.0");
+  QApplication::setApplicationVersion("0.4.0");
   QApplication::setWindowIcon(loadAppIcon());
   applyAppStyle(app);
 
