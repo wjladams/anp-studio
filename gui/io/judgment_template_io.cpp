@@ -992,6 +992,10 @@ JudgmentTemplateExportResult exportJudgmentTemplates(
   }
 
   for (const auto& p : parts) {
+    if (!options.participantIds.isEmpty() &&
+        !options.participantIds.contains(QString::fromStdString(p.id))) {
+      continue;
+    }
     const QString path =
         QDir(directory).filePath(judgmentTemplateFileName(p));
     QString err;
@@ -1001,6 +1005,11 @@ JudgmentTemplateExportResult exportJudgmentTemplates(
     }
     out.writtenPaths << path;
     ++out.filesWritten;
+  }
+  if (out.filesWritten == 0) {
+    out.error = QStringLiteral(
+        "No matching participants to export for the current selection.");
+    return out;
   }
   out.ok = true;
   return out;

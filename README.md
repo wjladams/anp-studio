@@ -219,7 +219,7 @@ Download artifacts from the workflow run page; nothing is attached to a Release.
 - Multi-user judgments (core): Session panel, roster, shared Network+Scope, samples `18`–`21`
 - Consensus / Variance Analysis (Analysis pane): disagreement alignment + vote range (green min–max, mean tick, hybrid stacked dots), coverage, cohort compare
 - Still open: harden Google token storage (see [docs/google-oauth.md](docs/google-oauth.md))
-- Available: per-participant Excel judgment templates (Participants → Export Excel templates / Import; hidden `_meta` round-trip); legacy CSV still imports; Google Forms create/import with structure fingerprinting
+- Available: Collect judgments hub (Participants → Collect judgments… / Session → Collect…) for Excel templates, Google Forms, and CSV; hidden `_meta` round-trip; structure fingerprinting on Forms
 - Rating/Direct prioritizers, SuperDecisions `.sdmod` import
 - Contribution guidelines
 

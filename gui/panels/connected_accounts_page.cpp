@@ -25,7 +25,8 @@ ConnectedAccountsPage::ConnectedAccountsPage(GoogleOAuth* oauth, QWidget* parent
   auto* intro = new QLabel(
       QStringLiteral(
           "Used only for live Google Forms. Model participants are managed "
-          "under Participants → Manage participants…"),
+          "under Participants → Manage participants…. Collect Excel/Forms "
+          "via Participants → Collect judgments…"),
       this);
   intro->setWordWrap(true);
   layout->addWidget(intro);

@@ -122,16 +122,17 @@ If credentials are missing, configure prints `Google OAuth: not configured` and
 
 With a Google account connected and a model open:
 
-1. **Participants → Create Google Form…** — builds a form from pairwise/ratings
+1. **Collect judgments… → Create form…** — builds a form from pairwise/ratings
    judgments, stores the link on the model (`google_forms`), and opens it in
    the browser. Respondents see plain-English questions (same wording as Excel
    templates), section breaks, and a short Saaty legend — **not** raw
    `[anp:…]` tags. The link stores a **questionId → tag** map for import, plus
    a **structure fingerprint** (hash of judgment questions / scales at create
    time). Legacy forms that still embed tags in titles continue to import.
+   Open via **Participants → Collect judgments…** or Session → **Collect…**.
 2. Collect responses in Google Forms (respondents enter name and optionally
    email).
-3. **Participants → Import Google Form results…** — pulls responses for the
+3. **Collect judgments… → Import results…** — pulls responses for the
    latest linked form. Tags are resolved from the stored questionId map when
    present; otherwise from `[anp:…]` in the question title. Matching is by
    email first, then name (case-insensitive). Missing participants are

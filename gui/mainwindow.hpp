@@ -52,13 +52,14 @@ private slots:
   void onNetworkPathChosen(int index);
   void onScopeChosen(int index);
   void onManageParticipants();
+  void onCollectJudgments();
   void onSettings();
   void onCreateGoogleForm();
   void onImportGoogleFormResults();
   void onOpenLinkedGoogleForm();
   void refreshLinkedFormUi();
-  void onExportJudgmentTemplates();
-  void onImportJudgmentTemplates();
+  void onExportJudgmentTemplates(const QString& participantId = QString());
+  void onImportJudgmentTemplates(bool preferCsv = false);
   void onDocumentSelectionChanged(const QString& cluster, const QString& node);
   void onJudgmentNodeSelected(const QString& parent,
                               const QString& destCluster,

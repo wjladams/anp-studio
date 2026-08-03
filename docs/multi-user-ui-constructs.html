@@ -448,11 +448,16 @@
       grid-template-columns: 1fr 1fr;
       gap: 0.75rem;
     }
+    .hub-grid.primary-pair {
+      grid-template-columns: 1fr 1fr;
+    }
     .hub-card {
       border: 1px solid var(--line);
       border-radius: 4px;
       padding: 0.75rem;
       background: #fff;
+      display: flex;
+      flex-direction: column;
     }
     .hub-card h4 {
       margin: 0 0 0.35rem;
@@ -463,6 +468,7 @@
       color: var(--muted);
       font-size: 11px;
       line-height: 1.4;
+      flex: 1;
     }
     .hub-card.disabled {
       opacity: 0.55;
@@ -474,6 +480,82 @@
       margin-bottom: 0.45rem;
     }
     .hub-card.disabled .status { color: var(--warn); }
+    .hub-card .channel-tag {
+      display: inline-block;
+      font-size: 9px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.08rem 0.4rem;
+      margin-bottom: 0.4rem;
+      width: fit-content;
+    }
+    .hub-card .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: auto;
+    }
+    .hub-card.tertiary {
+      grid-column: 1 / -1;
+      background: var(--readonly);
+      flex-direction: row;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .hub-card.tertiary > div { flex: 1; }
+    .hub-card.tertiary h4 { margin: 0 0 0.2rem; }
+    .hub-card.tertiary p { margin: 0; }
+    .hub-flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin: 0 0 0.85rem;
+      font-size: 11px;
+      color: var(--muted);
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    }
+    .hub-flow .node {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 4px;
+      padding: 0.25rem 0.5rem;
+      color: var(--ink);
+    }
+    .hub-flow .node.dest {
+      background: var(--accent-soft);
+      border-color: var(--select);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .hub-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+      max-width: 1120px;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-size: 11px;
+    }
+    @media (max-width: 860px) {
+      .hub-compare { grid-template-columns: 1fr; }
+    }
+    .hub-compare .cmp {
+      border: 1px dashed var(--line);
+      border-radius: 4px;
+      padding: 0.65rem 0.75rem;
+      background: var(--panel);
+      color: var(--muted);
+    }
+    .hub-compare .cmp strong {
+      display: block;
+      color: var(--ink);
+      margin-bottom: 0.25rem;
+      font-size: 12px;
+    }
     .heat-legend {
       display: flex;
       gap: 0.75rem;
@@ -658,15 +740,16 @@
     <h1>Multi-user UI constructs</h1>
     <p>
       Mocks for anp-studio#11: Participants Roster, Session Context Switcher,
-      Import/Export Hub, Analysis Scope, Consensus/Variance, and Settings →
-      Connected accounts. Open in any browser; click tabs to compare surfaces.
+      Collect judgments hub (Excel ‖ Google Forms), Analysis Scope,
+      Consensus/Variance, and Settings → Connected accounts. Open in any
+      browser; click tabs to compare surfaces.
     </p>
   </header>
 
   <div class="tabs" role="tablist">
     <button type="button" role="tab" aria-selected="true" data-tab="roster">1 · Roster</button>
     <button type="button" role="tab" aria-selected="false" data-tab="session">2 · Session</button>
-    <button type="button" role="tab" aria-selected="false" data-tab="hub">3 · Import / Export</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="hub">3 · Collect judgments</button>
     <button type="button" role="tab" aria-selected="false" data-tab="scope">4 · Network + Scope</button>
     <button type="button" role="tab" aria-selected="false" data-tab="consensus">5 · Consensus</button>
     <button type="button" role="tab" aria-selected="false" data-tab="oauth">Settings · OAuth</button>
@@ -720,8 +803,7 @@
                 <span class="open callout hit" data-callout="1 · Click here">Participants ▾</span>
                 <div class="menu-popup" role="menu">
                   <div class="hit-row callout" data-callout="2 · Then this">Manage participants…</div>
-                  <div class="dim">Import / Export…</div>
-                  <div class="dim">Create survey…</div>
+                  <div class="dim">Collect judgments…</div>
                 </div>
               </span>
               · Help
@@ -732,7 +814,7 @@
               <span class="fake-select">Alice Chen ▾</span>
               <span class="chip on">Editable</span>
               <span class="chip btn">Manage participants…</span>
-              <span class="chip btn">Import / Export…</span>
+              <span class="chip btn">Collect judgments…</span>
             </div>
             <div class="body">
               <div class="col">
@@ -973,64 +1055,183 @@
       <div class="meta">
         <div>
           <div class="pill">Q2 · Bulk multi-user input</div>
-          <h2>3 — Import / Export Hub</h2>
+          <h2>3 — Collect judgments (Import / Export Hub)</h2>
           <p>
-            Actions off Judgments / Session — not a separate stage. Excel always
-            available; live Forms only when that provider is connected in Settings.
-            CSV import works without OAuth.
+            One Judgments-stage dialog — not a new stage. Excel templates and
+            Google Forms are <strong>parallel channels</strong> into the same
+            participant roster. Pick a person (or “all” on import), then choose
+            how to collect. Collapses today’s long Participants menu of Excel +
+            Forms actions into one home.
           </p>
           <ul>
-            <li>Export/import Excel for one participant</li>
-            <li>Create survey → share URL; import responses</li>
-            <li>Disabled cards nudge Connect in Settings</li>
+            <li>Excel always on (no OAuth)</li>
+            <li>Google Forms when connected in Settings</li>
+            <li>Legacy Forms CSV remains as a fallback (no account)</li>
+            <li>Microsoft Forms out of scope</li>
           </ul>
         </div>
         <div>
-          <h2 style="font-size:1rem;margin:0 0 .4rem">On this mock</h2>
+          <h2 style="font-size:1rem;margin:0 0 .4rem">Click path</h2>
           <ul>
-            <li>Target participant: Carol Ng</li>
-            <li>Google connected; Microsoft not</li>
-            <li>CSV path always on</li>
+            <li>Step A: Judgments → Participants → Collect judgments…</li>
+            <li>Alt: Viewing bar chip <em>Collect judgments…</em></li>
+            <li>Step B: hub dialog — pick channel</li>
           </ul>
         </div>
       </div>
+
+      <div class="path" aria-label="Click path">
+        <span class="step on">Judgments stage</span>
+        <span class="arrow">→</span>
+        <span class="step on">Collect judgments…</span>
+        <span class="arrow">→</span>
+        <span class="step on">Hub dialog</span>
+        <span class="arrow">→</span>
+        <span class="step on">Excel <em>or</em> Google Forms</span>
+      </div>
+
+      <div class="hub-flow" aria-label="Data flow">
+        <span class="node">Excel .xlsx</span>
+        <span class="arrow">↘</span>
+        <span class="node dest">Participant judgments</span>
+        <span class="arrow">↙</span>
+        <span class="node">Google Forms</span>
+        <span style="width:100%;height:0"></span>
+        <span style="font-size:10px;color:var(--muted)">
+          Same destination — choose the channel that fits the respondent, not two separate workflows.
+        </span>
+      </div>
+
+      <div class="stack-wires">
+        <div>
+          <p class="step-label">Step A · Entry (replaces long Participants I/O list)</p>
+          <div class="wire">
+            <div class="menubar">
+              File · Edit · View ·
+              <span class="menu-wrap">
+                <span class="open callout hit" data-callout="1 · Open here">Participants ▾</span>
+                <div class="menu-popup" role="menu">
+                  <div>Manage participants…</div>
+                  <div class="hit-row callout" data-callout="2 · Or this">Collect judgments…</div>
+                </div>
+              </span>
+              · Help
+            </div>
+            <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis · Researcher <span class="spacer"></span> hamburger.json ●</div>
+            <div class="scope-bar">
+              <label>Viewing</label>
+              <span class="fake-select">Carol Ng ▾</span>
+              <span class="chip on">Editable</span>
+              <span class="chip btn">Manage participants…</span>
+              <span class="chip btn callout hit" data-callout="Alt path">Collect judgments…</span>
+            </div>
+            <div class="body" style="grid-template-columns:1fr;min-height:72px">
+              <div class="col" style="color:var(--muted);font-size:11px">
+                Pairwise / ratings editor continues underneath — hub is a dialog, not a stage swap.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p class="step-label">Step B · Hub dialog (Google connected)</p>
+          <div class="wire">
+            <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis · Researcher</div>
+            <div class="body dialog-wrap">
+              <div class="dialog wide">
+                <div class="dialog-title">
+                  <span>Collect judgments</span>
+                  <span class="badge ok">Hub</span>
+                </div>
+                <div class="dialog-body">
+                  <p style="margin:0 0 .75rem;font-size:11px;color:var(--muted)">
+                    Choose how to gather pairwise and ratings votes. Channels write into the same model roster.
+                  </p>
+                  <div class="field-row">
+                    <label>Participant</label>
+                    <select>
+                      <option>Carol Ng</option>
+                      <option>Alice Chen</option>
+                      <option>All (import matches / creates)</option>
+                    </select>
+                  </div>
+                  <div class="hub-grid primary-pair">
+                    <div class="hub-card callout hit" data-callout="No OAuth">
+                      <span class="channel-tag">File</span>
+                      <h4>Excel template</h4>
+                      <p>
+                        Export a per-person <code>.xlsx</code> (Your judgments + hidden
+                        <code>_meta</code>). Share offline; import when they return it.
+                        Always available.
+                      </p>
+                      <div class="actions">
+                        <button type="button" class="btn">Export .xlsx…</button>
+                        <button type="button" class="btn">Import .xlsx…</button>
+                      </div>
+                    </div>
+                    <div class="hub-card callout" data-callout="Uses Settings OAuth">
+                      <div class="status">● Google connected · alice@acme.co</div>
+                      <span class="channel-tag">Live survey</span>
+                      <h4>Google Forms</h4>
+                      <p>
+                        Create a form from the current structure; share the URL;
+                        later pull responses into participants (fingerprint /
+                        out-of-date handling).
+                      </p>
+                      <div class="actions">
+                        <button type="button" class="btn primary">Create form…</button>
+                        <button type="button" class="btn">Import results…</button>
+                      </div>
+                    </div>
+                    <div class="hub-card tertiary">
+                      <div>
+                        <span class="channel-tag">Fallback</span>
+                        <h4>Forms CSV</h4>
+                        <p>Manual download from any Forms tool → import. No OAuth. Kept for legacy / offline survey exports.</p>
+                      </div>
+                      <button type="button" class="btn">Import CSV…</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="dialog-foot">
+                  <button type="button" class="btn ghost">Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="step-label" style="margin-top:1.25rem">Same hub · Google not connected</p>
       <div class="wire">
-        <div class="stage-strip">Structure · <strong>Judgments</strong> · Analysis</div>
-        <div class="body dialog-wrap">
+        <div class="body dialog-wrap" style="min-height:auto">
           <div class="dialog wide">
             <div class="dialog-title">
-              <span>Import / Export judgments</span>
-              <span class="badge ok">Hub</span>
+              <span>Collect judgments</span>
+              <span class="badge">Hub</span>
             </div>
             <div class="dialog-body">
               <div class="field-row">
                 <label>Participant</label>
-                <select><option>Carol Ng</option><option>Alice Chen</option><option>All (import creates)</option></select>
+                <select><option>Carol Ng</option></select>
               </div>
-              <div class="hub-grid">
+              <div class="hub-grid primary-pair">
                 <div class="hub-card">
-                  <h4>Excel</h4>
-                  <p>Template with pairwise + ratings sheets for this person. No account needed.</p>
-                  <button type="button" class="btn">Export .xlsx…</button>
-                  <button type="button" class="btn">Import .xlsx…</button>
-                </div>
-                <div class="hub-card">
-                  <h4>Forms CSV</h4>
-                  <p>MVP path: download responses from Google/Microsoft Forms, then import.</p>
-                  <button type="button" class="btn">Import CSV…</button>
-                </div>
-                <div class="hub-card">
-                  <div class="status">● Google connected</div>
-                  <h4>Google Forms</h4>
-                  <p>Create a form from current structure; later pull responses into the roster.</p>
-                  <button type="button" class="btn primary">Create form…</button>
-                  <button type="button" class="btn">Import results…</button>
+                  <span class="channel-tag">File</span>
+                  <h4>Excel template</h4>
+                  <p>Still fully usable — no account needed.</p>
+                  <div class="actions">
+                    <button type="button" class="btn">Export .xlsx…</button>
+                    <button type="button" class="btn">Import .xlsx…</button>
+                  </div>
                 </div>
                 <div class="hub-card disabled">
-                  <div class="status">○ Microsoft not connected</div>
-                  <h4>Microsoft Forms</h4>
-                  <p>Connect in Settings → Connected accounts to enable live create/import.</p>
-                  <button type="button" class="btn">Connect Microsoft…</button>
+                  <div class="status">○ Google not connected</div>
+                  <span class="channel-tag">Live survey</span>
+                  <h4>Google Forms</h4>
+                  <p>Connect once in Settings → Connected accounts, then create / import from here.</p>
+                  <div class="actions">
+                    <button type="button" class="btn primary">Connect Google…</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1040,7 +1241,24 @@
           </div>
         </div>
       </div>
-      <p class="note">OAuth is not required to use Excel or CSV. Live Forms cards appear only (or only fully enabled) after Settings connection.</p>
+
+      <div class="hub-compare">
+        <div class="cmp">
+          <strong>When to use Excel</strong>
+          Offline respondents, email attachments, no Google account for the facilitator, or one-off fills for a single participant.
+        </div>
+        <div class="cmp">
+          <strong>When to use Google Forms</strong>
+          Share one survey URL with many people; pull responses back in bulk. Requires facilitator Connect in Settings.
+        </div>
+      </div>
+
+      <p class="note">
+        Hub buttons call the same actions as today’s Participants menu
+        (Export Excel templates, Import judgment templates, Create Google Form,
+        Import Google Form results). The change is discovery + grouping — not a
+        second implementation. Microsoft Forms stays dropped.
+      </p>
     </article>
 
     <!-- 4 Analysis scope -->
@@ -1294,22 +1512,22 @@
           <div class="pill">Q5 · Forms OAuth</div>
           <h2>Settings — Connected accounts</h2>
           <p>
-            App-level (not per model). Authenticate once; Import/Export Hub only
-            offers live Google/Microsoft create/import when connected. Excel and
-            CSV never need this.
+            App-level (not per model). Authenticate once; the Collect judgments
+            hub only enables live Google Forms when connected. Excel and CSV
+            never need this. Microsoft Forms is out of scope.
           </p>
           <ul>
-            <li>Browser OAuth → tokens in OS keychain</li>
-            <li>If not connected, Hub shows Connect… on that card</li>
-            <li>Connecting at Hub time still lands here (persist, not one-shot)</li>
+            <li>Browser OAuth (tokens today in QSettings; keychain tracked separately)</li>
+            <li>If not connected, Hub shows Connect Google… on that card</li>
+            <li>Connecting from Hub still lands here (persist, not one-shot)</li>
           </ul>
         </div>
         <div>
           <h2 style="font-size:1rem;margin:0 0 .4rem">On this mock</h2>
           <ul>
             <li>Google linked as alice@…</li>
-            <li>Microsoft disconnected</li>
             <li>Separate from Participants Roster</li>
+            <li>Powers Hub’s Google Forms card only</li>
           </ul>
         </div>
       </div>
@@ -1329,8 +1547,9 @@
           <div class="col">
             <h3>Connected accounts</h3>
             <p style="margin:0 0 .75rem;font-size:11px;color:var(--muted);max-width:36rem">
-              Used only for live Google Forms / Microsoft Forms. Model participants
-              are managed under Judgments → Manage participants…
+              Used only for live Google Forms create/import. Model participants
+              are managed under Participants → Manage participants…; Excel
+              templates never require an account.
             </p>
             <div class="settings-row">
               <div>
@@ -1342,20 +1561,10 @@
                 <button type="button" class="btn" style="margin-top:.35rem">Disconnect</button>
               </div>
             </div>
-            <div class="settings-row">
-              <div>
-                <strong>Microsoft</strong>
-                <small>Forms create &amp; import results</small>
-              </div>
-              <div style="text-align:right">
-                <div class="not-connected">Not connected</div>
-                <button type="button" class="btn primary" style="margin-top:.35rem">Connect…</button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
-      <p class="note">Recommended policy: Settings-first connection; Hub falls back to “Connect…” which persists into Settings. MVP can ship Excel + CSV with this pane stubbed.</p>
+      <p class="note">Recommended policy: Settings-first connection; Hub falls back to “Connect Google…” which persists into Settings.</p>
     </article>
   </main>
 

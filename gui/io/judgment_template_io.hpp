@@ -23,6 +23,11 @@ struct JudgmentParticipant;
 struct JudgmentTemplateExportOptions {
   /** When false (default), rating cells are left blank for respondents to fill. */
   bool includeExistingVotes = false;
+  /**
+   * Empty = export every participant. Otherwise only participants whose id
+   * appears in this list (unknown ids are skipped).
+   */
+  QStringList participantIds;
 };
 
 struct JudgmentTemplateExportResult {

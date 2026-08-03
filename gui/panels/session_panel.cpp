@@ -35,6 +35,9 @@ SessionPanel::SessionPanel(Document* doc, QWidget* parent)
   editBtn_ = new QPushButton(QStringLiteral("Edit…"), this);
   editBtn_->setToolTip(QStringLiteral("Manage participants…"));
   headerRow->addWidget(editBtn_);
+  collectBtn_ = new QPushButton(QStringLiteral("Collect…"), this);
+  collectBtn_->setToolTip(QStringLiteral("Collect judgments…"));
+  headerRow->addWidget(collectBtn_);
   layout->addLayout(headerRow);
 
   activePill_ = new QLabel(this);
@@ -59,6 +62,8 @@ SessionPanel::SessionPanel(Document* doc, QWidget* parent)
   layout->addWidget(toolBox_, 1);
 
   connect(editBtn_, &QPushButton::clicked, this, &SessionPanel::onEditClicked);
+  connect(collectBtn_, &QPushButton::clicked, this,
+          &SessionPanel::onCollectClicked);
   connect(individualsList_, &QListWidget::itemClicked, this,
           &SessionPanel::onIndividualClicked);
   connect(aggregatesList_, &QListWidget::itemClicked, this,
@@ -74,6 +79,8 @@ void SessionPanel::onEditClicked() {
   showParticipantsRosterDialog(this, doc_);
   refresh();
 }
+
+void SessionPanel::onCollectClicked() { emit collectJudgmentsRequested(); }
 
 void SessionPanel::onIndividualClicked(QListWidgetItem* item) {
   if (item == nullptr) return;

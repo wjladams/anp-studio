@@ -36,6 +36,7 @@ add_executable(anpstudio
   panels/ratings_panel.cpp
   panels/session_panel.cpp
   panels/participants_roster_dialog.cpp
+  panels/collect_judgments_dialog.cpp
   panels/connected_accounts_page.cpp
   panels/settings_dialog.cpp
   panels/synthesis_summary_panel.cpp

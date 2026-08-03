@@ -9,6 +9,7 @@
 #include "panels/judgment_priorities_panel.hpp"
 #include "panels/pairwise_panel.hpp"
 #include "panels/participants_roster_dialog.hpp"
+#include "panels/collect_judgments_dialog.hpp"
 #include "panels/ratings_panel.hpp"
 #include "panels/researcher_panel.hpp"
 #include "panels/session_panel.hpp"
@@ -155,27 +156,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   auto* participantsMenu = menuBar()->addMenu(QStringLiteral("&Participants"));
   participantsMenu->addAction(QStringLiteral("&Manage participants…"), this,
                               &MainWindow::onManageParticipants);
-  participantsMenu->addSeparator();
-  participantsMenu->addAction(QStringLiteral("Export Excel &templates…"),
-                              this, &MainWindow::onExportJudgmentTemplates);
-  participantsMenu->addAction(QStringLiteral("Import judgment t&emplates…"),
-                              this, &MainWindow::onImportJudgmentTemplates);
-  participantsMenu->addSeparator();
-  participantsMenu->addAction(QStringLiteral("Create &Google Form…"), this,
-                              &MainWindow::onCreateGoogleForm);
-  importGoogleFormAction_ = participantsMenu->addAction(
-      QStringLiteral("&Import Google Form results…"), this,
-      &MainWindow::onImportGoogleFormResults);
-  openLinkedFormAction_ = participantsMenu->addAction(
-      QStringLiteral("Open linked Google Form…"), this,
-      &MainWindow::onOpenLinkedGoogleForm);
-  openLinkedFormAction_->setEnabled(false);
-  importGoogleFormAction_->setEnabled(false);
-  connect(doc_, &Document::linkedFormsChanged, this,
-          &MainWindow::refreshLinkedFormUi);
-  connect(doc_, &Document::modelChanged, this,
-          &MainWindow::refreshLinkedFormUi);
-  refreshLinkedFormUi();
+  participantsMenu->addAction(QStringLiteral("&Collect judgments…"), this,
+                              &MainWindow::onCollectJudgments);
 
   auto* computeMenu = menuBar()->addMenu(QStringLiteral("&Compute"));
   computeMenu->addAction(QStringLiteral("Show Analysis"), this, [this]() {
@@ -282,6 +264,8 @@ void MainWindow::buildStagePages() {
   pairwise_ = new PairwisePanel(doc_, this);
   ratings_ = new RatingsPanel(doc_, this);
   sessionPanel_ = new SessionPanel(doc_, this);
+  connect(sessionPanel_, &SessionPanel::collectJudgmentsRequested, this,
+          &MainWindow::onCollectJudgments);
   judgmentPriorities_ = new JudgmentPrioritiesPanel(doc_, this);
   judgmentCenter_ = new QStackedWidget(this);
   judgmentCenter_->addWidget(pairwise_);
@@ -498,7 +482,28 @@ void MainWindow::onManageParticipants() {
   showParticipantsRosterDialog(this, doc_);
 }
 
-void MainWindow::onExportJudgmentTemplates() {
+void MainWindow::onCollectJudgments() {
+  CollectJudgmentsDialog dlg(doc_, googleOAuth_, this);
+  connect(&dlg, &CollectJudgmentsDialog::exportExcelRequested, this,
+          [this](const QString& participantId) {
+            onExportJudgmentTemplates(participantId);
+          });
+  connect(&dlg, &CollectJudgmentsDialog::importExcelRequested, this,
+          [this]() { onImportJudgmentTemplates(false); });
+  connect(&dlg, &CollectJudgmentsDialog::importCsvRequested, this,
+          [this]() { onImportJudgmentTemplates(true); });
+  connect(&dlg, &CollectJudgmentsDialog::createGoogleFormRequested, this,
+          &MainWindow::onCreateGoogleForm);
+  connect(&dlg, &CollectJudgmentsDialog::importGoogleFormRequested, this,
+          &MainWindow::onImportGoogleFormResults);
+  connect(&dlg, &CollectJudgmentsDialog::openLinkedFormRequested, this,
+          &MainWindow::onOpenLinkedGoogleForm);
+  connect(&dlg, &CollectJudgmentsDialog::connectGoogleRequested, this,
+          &MainWindow::onSettings);
+  dlg.exec();
+}
+
+void MainWindow::onExportJudgmentTemplates(const QString& participantId) {
   if (doc_->root().participants().empty()) {
     QMessageBox::information(
         this, QStringLiteral("Export Excel templates"),
@@ -508,12 +513,28 @@ void MainWindow::onExportJudgmentTemplates() {
   }
 
   JudgmentTemplateExportOptions options;
+  if (!participantId.isEmpty()) {
+    options.participantIds << participantId;
+  }
+
   {
     QMessageBox box(this);
     box.setWindowTitle(QStringLiteral("Export Excel templates"));
     box.setIcon(QMessageBox::Question);
-    box.setText(QStringLiteral(
-        "Export one Excel workbook per participant into a folder."));
+    if (participantId.isEmpty()) {
+      box.setText(QStringLiteral(
+          "Export one Excel workbook per participant into a folder."));
+    } else {
+      QString name = participantId;
+      for (const auto& p : doc_->participants()) {
+        if (QString::fromStdString(p.id) == participantId) {
+          name = QString::fromStdString(p.name);
+          break;
+        }
+      }
+      box.setText(
+          QStringLiteral("Export an Excel workbook for %1.").arg(name));
+    }
     box.setInformativeText(QStringLiteral(
         "Each file is named ANP_judgments_<Name>.xlsx for sharing. "
         "Respondents fill the yellow \"Your rating\" column on the "
@@ -534,6 +555,39 @@ void MainWindow::onExportJudgmentTemplates() {
     }
   }
 
+  if (!participantId.isEmpty()) {
+    const anpcpp::JudgmentParticipant* target = nullptr;
+    for (const auto& p : doc_->participants()) {
+      if (QString::fromStdString(p.id) == participantId) {
+        target = &p;
+        break;
+      }
+    }
+    if (target == nullptr) {
+      QMessageBox::warning(this, QStringLiteral("Export Excel templates"),
+                           QStringLiteral("Selected participant was not found."));
+      return;
+    }
+    const QString path = QFileDialog::getSaveFileName(
+        this, QStringLiteral("Save Excel template"),
+        judgmentTemplateFileName(*target),
+        QStringLiteral("Excel workbook (*.xlsx)"));
+    if (path.isEmpty()) return;
+    QString err;
+    if (!writeJudgmentTemplateXlsx(doc_->root(), *target, path, options,
+                                   &err)) {
+      QMessageBox::warning(this, QStringLiteral("Export Excel templates"), err);
+      return;
+    }
+    QMessageBox::information(
+        this, QStringLiteral("Export complete"),
+        QStringLiteral("Wrote Excel template to:\n%1\n\n"
+                       "When they return it, use Collect judgments… → "
+                       "Import .xlsx…")
+            .arg(path));
+    return;
+  }
+
   const QString dir = QFileDialog::getExistingDirectory(
       this, QStringLiteral("Folder for Excel templates"));
   if (dir.isEmpty()) return;
@@ -550,20 +604,28 @@ void MainWindow::onExportJudgmentTemplates() {
       this, QStringLiteral("Export complete"),
       QStringLiteral("Wrote %1 Excel template(s) to:\n%2\n\n"
                      "Share each file with that person. When they return it, "
-                     "use Participants → Import judgment templates…")
+                     "use Collect judgments… → Import .xlsx…")
           .arg(result.filesWritten)
           .arg(dir));
 }
 
-void MainWindow::onImportJudgmentTemplates() {
-  QFileDialog dlg(this, QStringLiteral("Import judgment templates"));
+void MainWindow::onImportJudgmentTemplates(bool preferCsv) {
+  QFileDialog dlg(this, preferCsv ? QStringLiteral("Import Forms CSV")
+                                  : QStringLiteral("Import judgment templates"));
   dlg.setFileMode(QFileDialog::ExistingFiles);  // multi-select
-  dlg.setNameFilter(
-      QStringLiteral("Excel templates (*.xlsx);;"
-                     "Judgment templates (*.xlsx *.csv);;"
-                     "CSV (legacy) (*.csv);;All files (*)"));
-  dlg.setLabelText(QFileDialog::Accept,
-                   QStringLiteral("Import"));
+  if (preferCsv) {
+    dlg.setNameFilter(
+        QStringLiteral("CSV (*.csv);;"
+                       "Excel templates (*.xlsx);;"
+                       "Judgment templates (*.xlsx *.csv);;"
+                       "All files (*)"));
+  } else {
+    dlg.setNameFilter(
+        QStringLiteral("Excel templates (*.xlsx);;"
+                       "Judgment templates (*.xlsx *.csv);;"
+                       "CSV (legacy) (*.csv);;All files (*)"));
+  }
+  dlg.setLabelText(QFileDialog::Accept, QStringLiteral("Import"));
   if (dlg.exec() != QDialog::Accepted) return;
   const QStringList paths = dlg.selectedFiles();
   if (paths.isEmpty()) return;

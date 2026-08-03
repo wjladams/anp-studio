@@ -2,9 +2,10 @@
 
 Test data for judgment import against sample **18**.
 
-In the app, generate blank respondent workbooks with
-**Participants → Export Excel templates…** (one `ANP_judgments_<Name>.xlsx`
-per person). Import with **Participants → Import judgment templates…**.
+In the app, generate blank respondent workbooks from
+**Participants → Collect judgments… → Export .xlsx…** (one
+`ANP_judgments_<Name>.xlsx` per person, or a single person from the hub
+participant picker). Import with **Collect judgments… → Import .xlsx…**.
 Identity always comes from the hidden `_meta` sheet (or legacy
 `participant_*` CSV cells) — never the filename.
 

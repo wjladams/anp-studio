@@ -2,7 +2,7 @@
 
 Use with `../../18_multiuser_pairwise_ahp.json`.
 
-**Participants → Import judgment templates…** and multi-select these Excel
+**Participants → Collect judgments… → Import .xlsx…** and multi-select these Excel
 workbooks (or import one at a time). Identity comes from the hidden `_meta`
 sheet (`participant_id` / `participant_name` / `participant_email`), not the
 filename.
@@ -36,6 +36,6 @@ cmake --build build --target gen_sample18_xlsx_fixtures
 ## Quick test
 
 1. File → Open Sample… → `18_multiuser_pairwise_ahp.json`
-2. Participants → Import judgment templates…
+2. Participants → Collect judgments… → Import .xlsx…
 3. Select all four `.xlsx` files in this folder
 4. Confirm Alice/Bob/Carol judgments changed; Eve was created
