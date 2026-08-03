@@ -38,6 +38,12 @@ public:
 
   explicit MainWindow(QWidget* parent = nullptr);
 
+  /**
+   * @brief Loads a model from @p path (same as File → Open for a known path).
+   * @return False if load failed (error dialog already shown).
+   */
+  [[nodiscard]] bool openDocument(const QString& path);
+
 public slots:
   void setStage(Stage stage);
 

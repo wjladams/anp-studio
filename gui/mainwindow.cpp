@@ -1079,6 +1079,8 @@ bool MainWindow::openPath(const QString& path) {
   return true;
 }
 
+bool MainWindow::openDocument(const QString& path) { return openPath(path); }
+
 bool MainWindow::openSamplePath(const QString& path) {
   QString err;
   if (!doc_->loadFromFile(path, &err)) {

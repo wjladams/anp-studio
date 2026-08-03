@@ -1,11 +1,18 @@
 #include "mainwindow.hpp"
 
 #include <QApplication>
+#include <QCommandLineOption>
+#include <QCommandLineParser>
 #include <QFile>
 #include <QIcon>
 #include <QPalette>
+#include <QString>
+#include <QStringList>
 #include <QStyle>
 #include <QStyleFactory>
+
+#include <cstdio>
+#include <optional>
 
 namespace {
 
@@ -74,6 +81,16 @@ void applyAppStyle(QApplication& app) {
   }
 }
 
+[[nodiscard]] std::optional<MainWindow::Stage> parseStageName(
+    const QString& raw) {
+  const QString name = raw.trimmed().toLower();
+  if (name == QLatin1String("structure")) return MainWindow::Stage::Structure;
+  if (name == QLatin1String("judgments")) return MainWindow::Stage::Judgments;
+  if (name == QLatin1String("analysis")) return MainWindow::Stage::Analysis;
+  if (name == QLatin1String("researcher")) return MainWindow::Stage::Researcher;
+  return std::nullopt;
+}
+
 }  // namespace
 
 int main(int argc, char* argv[]) {
@@ -84,7 +101,70 @@ int main(int argc, char* argv[]) {
   QApplication::setWindowIcon(loadAppIcon());
   applyAppStyle(app);
 
+  QCommandLineParser parser;
+  parser.setApplicationDescription(
+      QStringLiteral("ANP Studio — Analytic Network Process modeling"));
+  parser.addHelpOption();
+  parser.addVersionOption();
+  parser.addPositionalArgument(
+      QStringLiteral("file"),
+      QStringLiteral(
+          "Model file to open (.anpstudio or .json). Omitting opens a new "
+          "empty model."),
+      QStringLiteral("[file]"));
+
+  const QCommandLineOption newOption(
+      QStringLiteral("new"),
+      QStringLiteral("Start with a new empty model (default without a file)."));
+  parser.addOption(newOption);
+
+  const QCommandLineOption stageOption(
+      QStringList{QStringLiteral("stage")},
+      QStringLiteral(
+          "Open on stage tab: structure, judgments, analysis, or researcher."),
+      QStringLiteral("name"));
+  parser.addOption(stageOption);
+
+  parser.process(app);
+
+  const QStringList positionals = parser.positionalArguments();
+  if (positionals.size() > 1) {
+    std::fprintf(stderr,
+                 "anpstudio: too many file arguments (expected at most one)\n");
+    return 1;
+  }
+
+  const bool wantNew = parser.isSet(newOption);
+  const bool haveFile = !positionals.isEmpty();
+  if (wantNew && haveFile) {
+    std::fprintf(stderr,
+                 "anpstudio: --new cannot be combined with a file argument\n");
+    return 1;
+  }
+
+  std::optional<MainWindow::Stage> stage;
+  if (parser.isSet(stageOption)) {
+    stage = parseStageName(parser.value(stageOption));
+    if (!stage.has_value()) {
+      std::fprintf(stderr,
+                   "anpstudio: invalid --stage '%s'\n"
+                   "Valid values: structure, judgments, analysis, "
+                   "researcher\n",
+                   parser.value(stageOption).toLocal8Bit().constData());
+      return 1;
+    }
+  }
+
   MainWindow window;
   window.show();
+
+  if (haveFile) {
+    (void)window.openDocument(positionals.front());
+  }
+
+  if (stage.has_value()) {
+    window.setStage(*stage);
+  }
+
   return app.exec();
 }

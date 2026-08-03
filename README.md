@@ -96,6 +96,18 @@ cmake --build build --target anpstudio
 ./build/gui/anpstudio
 ```
 
+### Command line
+
+```bash
+./build/gui/anpstudio                          # new empty model
+./build/gui/anpstudio path/to/model.anpstudio  # open a file
+./build/gui/anpstudio --stage judgments model.json
+./build/gui/anpstudio --help
+./build/gui/anpstudio --version
+```
+
+`--stage` accepts `structure`, `judgments`, `analysis`, or `researcher` (case-insensitive). `--new` starts empty and cannot be combined with a file path.
+
 Use **`build/`** as the only default binary directory (see [`AGENTS.md`](AGENTS.md)).
 Avoid parallel trees like `build-anpstudio2` unless you need a separate config.
 
