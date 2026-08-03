@@ -61,11 +61,11 @@ flowchart LR
 
 ## Suggested first session
 
-1. **File → Open Sample…** → `02_ahp_best_car.json`  
+1. **File → Open Sample…** → `02_ahp_best_car.anpstudio`  
 2. Look at clusters and links on **Structure**  
 3. Open **Judgments** and click a node in the left list to see pairwise (or ratings)  
 4. Open **Analysis → Synthesis** and scroll from Scaled Supermatrix through Limit Matrix to Alternative Scores  
 
-When you are ready for feedback networks, open `01_hamburger_marketshare.json`.
+When you are ready for feedback networks, open `01_hamburger_marketshare.anpstudio`.
 
 Next: [Structure]({{ '/guide/structure/' | relative_url }}) · [Glossary]({{ '/guide/glossary/' | relative_url }})

@@ -12,7 +12,7 @@ permalink: /guide/ratings/
 - Natural categories (High / Medium / Low, star ratings, numeric bands)  
 - Faster data entry than a full pairwise matrix  
 
-Open **`05_ratings_price_quality.json`** or **`16_ahp_smartphone_ratings.json`** from **File → Open Sample…**.
+Open **`05_ratings_price_quality.anpstudio`** or **`16_ahp_smartphone_ratings.anpstudio`** from **File → Open Sample…**.
 
 ## Scales and votes
 

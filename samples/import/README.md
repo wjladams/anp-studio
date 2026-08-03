@@ -1,4 +1,4 @@
-# Import fixtures for `18_multiuser_pairwise_ahp.json`
+# Import fixtures for `18_multiuser_pairwise_ahp.anpstudio`
 
 Test data for judgment import against sample **18**.
 
@@ -9,7 +9,7 @@ participant picker). Import with **Collect judgments… → Import .xlsx…**.
 Identity always comes from the hidden `_meta` sheet (or legacy
 `participant_*` CSV cells) — never the filename.
 
-Open `../18_multiuser_pairwise_ahp.json` first. Structure is a single pairwise
+Open `../18_multiuser_pairwise_ahp.anpstudio` first. Structure is a single pairwise
 slot: **Goal → Alternatives** with alternatives **A, B, C**.
 
 | Pair | Alice | Bob | Carol | Diego (new) |

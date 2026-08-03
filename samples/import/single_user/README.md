@@ -1,6 +1,6 @@
 # Single-user import templates (sample 18)
 
-Use with `../../18_multiuser_pairwise_ahp.json`.
+Use with `../../18_multiuser_pairwise_ahp.anpstudio`.
 
 **Participants → Collect judgments… → Import .xlsx…** and multi-select these Excel
 workbooks (or import one at a time). Identity comes from the hidden `_meta`
@@ -29,13 +29,13 @@ Regenerate with the real exporter:
 
 ```bash
 cmake --build build --target gen_sample18_xlsx_fixtures
-./build/gui/gen_sample18_xlsx_fixtures samples/18_multiuser_pairwise_ahp.json \
+./build/gui/gen_sample18_xlsx_fixtures samples/18_multiuser_pairwise_ahp.anpstudio \
   samples/import/single_user
 ```
 
 ## Quick test
 
-1. File → Open Sample… → `18_multiuser_pairwise_ahp.json`
+1. File → Open Sample… → `18_multiuser_pairwise_ahp.anpstudio`
 2. Participants → Collect judgments… → Import .xlsx…
 3. Select all four `.xlsx` files in this folder
 4. Confirm Alice/Bob/Carol judgments changed; Eve was created

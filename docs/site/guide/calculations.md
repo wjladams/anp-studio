@@ -20,7 +20,7 @@ Left nav under **Synthesis** scrolls the HTML report:
 6. **Subnetwork synthesis results** — when nested models exist  
 7. **Alternative Scores** — priorities for alternatives (after synthesis if needed)
 
-Open a sample (e.g. `02_ahp_best_car.json`), enter Analysis, and walk that list top to bottom.
+Open a sample (e.g. `02_ahp_best_car.anpstudio`), enter Analysis, and walk that list top to bottom.
 
 ## Limit matrix settings
 

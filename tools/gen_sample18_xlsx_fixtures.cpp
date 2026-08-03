@@ -3,7 +3,7 @@
  * @brief Regenerates samples/import/single_user Excel templates via the real exporter.
  *
  * Usage:
- *   gen_sample18_xlsx_fixtures <18_multiuser_pairwise_ahp.json> <out_dir>
+ *   gen_sample18_xlsx_fixtures <18_multiuser_pairwise_ahp.anpstudio> <out_dir>
  */
 #include <QCoreApplication>
 #include <QDir>
@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
   QCoreApplication app(argc, argv);
   if (argc != 3) {
     std::fprintf(stderr,
-                 "Usage: %s <18_multiuser_pairwise_ahp.json> <out_dir>\n",
+                 "Usage: %s <18_multiuser_pairwise_ahp.anpstudio> <out_dir>\n",
                  argv[0]);
     return 2;
   }

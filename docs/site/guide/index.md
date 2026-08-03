@@ -28,9 +28,9 @@ This guide explains how to use **ANP Studio** to build and analyze Analytic Netw
 
 Release builds include sample models. In the app use **File → Open Sample…**:
 
-- **`02_ahp_best_car.json`** — simple hierarchy (best first open)  
-- **`01_hamburger_marketshare.json`** — full ANP with feedback  
-- **`05_ratings_price_quality.json`** or **`16_ahp_smartphone_ratings.json`** — ratings  
+- **`02_ahp_best_car.anpstudio`** — simple hierarchy (best first open)  
+- **`01_hamburger_marketshare.anpstudio`** — full ANP with feedback  
+- **`05_ratings_price_quality.anpstudio`** or **`16_ahp_smartphone_ratings.anpstudio`** — ratings  
 
 Opening a sample does not overwrite the installed file; use **Save As** to keep your own copy.
 

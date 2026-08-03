@@ -37,7 +37,8 @@ The computational library (matrices, networks, pairwise judgments, limit
 matrix, synthesis, JSON I/O) lives in a separate repository:
 **[libanpcpp](https://github.com/wjladams/libanpcpp)** (CMake target
 `anpcpp::anpcpp`, C++ namespace `anpcpp`). Model files use JSON format
-`anpcpp` (v1).
+`anpcpp` (v1/v2) with the default extension **`.anpstudio`** (`.json` still
+opens and saves).
 
 This application is inspired by the workflow of
 [SuperDecisions](https://www.superdecisions.com/). Numerical behavior is
@@ -46,9 +47,9 @@ only).
 
 ## Sample models
 
-Ready-to-open JSON models live in [`samples/`](samples/). Release builds ship
+Ready-to-open `.anpstudio` models live in [`samples/`](samples/). Release builds ship
 this directory with the app; use **File → Open Sample…** in ANP Studio (or
-**File → Open** on a `.json` file). See [`samples/README.md`](samples/README.md)
+**File → Open** on a `.anpstudio` / `.json` file). See [`samples/README.md`](samples/README.md)
 for the catalog (Hamburger market share, classic AHP hierarchies, BCR/BOCR
 subnetworks, ratings examples, and more). Regenerate with libanpcpp’s
 `export_sample_models` example.

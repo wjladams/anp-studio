@@ -127,8 +127,12 @@ else()
 endif()
 
 # Ship sample models next to the binary (and inside the macOS app bundle).
+# Remove the destination first so renamed extensions (e.g. .json → .anpstudio)
+# do not leave stale copies behind.
 set(ANPSTUDIO_SAMPLES_SRC "${CMAKE_SOURCE_DIR}/samples")
 add_custom_command(TARGET anpstudio POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E rm -rf
+    "$<TARGET_FILE_DIR:anpstudio>/samples"
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${ANPSTUDIO_SAMPLES_SRC}"
     "$<TARGET_FILE_DIR:anpstudio>/samples"
@@ -138,6 +142,8 @@ if(APPLE)
   add_custom_command(TARGET anpstudio POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory
       "$<TARGET_BUNDLE_CONTENT_DIR:anpstudio>/Resources"
+    COMMAND ${CMAKE_COMMAND} -E rm -rf
+      "$<TARGET_BUNDLE_CONTENT_DIR:anpstudio>/Resources/samples"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
       "${ANPSTUDIO_SAMPLES_SRC}"
       "$<TARGET_BUNDLE_CONTENT_DIR:anpstudio>/Resources/samples"

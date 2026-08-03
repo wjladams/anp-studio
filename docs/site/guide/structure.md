@@ -12,7 +12,7 @@ The **Structure** stage is where you build the model: networks, clusters, nodes,
 - Some nodes can own a **subnetwork** (a nested model). Use the breadcrumb or network path control to move up and down.  
 - **Network → Root Network** returns to the top; **Up Subnetwork** goes one level up.
 
-Try **File → Open Sample… → `02_ahp_best_car.json`** for a small hierarchy with no nesting, or a BCR/BOCR sample for control nodes with subnetworks.
+Try **File → Open Sample… → `02_ahp_best_car.anpstudio`** for a small hierarchy with no nesting, or a BCR/BOCR sample for control nodes with subnetworks.
 
 ## Clusters and nodes
 

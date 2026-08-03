@@ -215,7 +215,7 @@ ResearcherPanel::ResearcherPanel(Document* doc, QWidget* parent)
   promptLabel_->setObjectName(QStringLiteral("researcherPrompt"));
   input_ = new QLineEdit(inputRow);
   input_->setPlaceholderText(QStringLiteral(
-      "e.g. limit   or   load samples/01_hamburger_marketshare.json as h"));
+      "e.g. limit   or   load samples/01_hamburger_marketshare.anpstudio as h"));
   input_->installEventFilter(this);
   auto* runBtn = new QPushButton(QStringLiteral("Run"), inputRow);
   inputLay->addWidget(promptLabel_);

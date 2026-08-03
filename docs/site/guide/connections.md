@@ -10,7 +10,7 @@ permalink: /guide/connections/
 
 If criterion *Price* should affect how alternatives are compared, *Price* connects into the Alternatives cluster (or into the nodes that represent those comparisons). Feedback networks also allow alternatives (or other clusters) to influence criteria.
 
-Open **`01_hamburger_marketshare.json`** to see a classic ANP feedback pattern, or **`02_ahp_best_car.json`** for a one-way hierarchy.
+Open **`01_hamburger_marketshare.anpstudio`** to see a classic ANP feedback pattern, or **`02_ahp_best_car.anpstudio`** for a one-way hierarchy.
 
 ## Connection mode
 

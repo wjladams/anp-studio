@@ -17,7 +17,7 @@ Use pairwise when you have a manageable set of alternatives or criteria and can 
 3. Fill the comparison grid: each entry is a ratio; the reciprocal fills in automatically.  
 4. Review the derived priorities / inconsistency indicators the panel shows (treat high inconsistency as a signal to revisit extreme judgments).
 
-Try **`02_ahp_best_car.json`**: open Judgments, pick a criterion, and inspect the pairwise table for the alternatives.
+Try **`02_ahp_best_car.anpstudio`**: open Judgments, pick a criterion, and inspect the pairwise table for the alternatives.
 
 ## Tips
 
