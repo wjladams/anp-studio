@@ -764,3 +764,119 @@ void SetClusterPositionsCmd::apply(const QHash<QString, QPointF>& positions) {
 void SetClusterPositionsCmd::redo() { apply(newPositions_); }
 
 void SetClusterPositionsCmd::undo() { apply(oldPositions_); }
+
+SetJudgmentSessionCmd::SetJudgmentSessionCmd(Document* doc,
+                                             anpcpp::JudgmentSession neu,
+                                             anpcpp::JudgmentSession old)
+    : QUndoCommand(QStringLiteral("Change judgment session")),
+      doc_(doc),
+      neu_(std::move(neu)),
+      old_(std::move(old)) {}
+
+void SetJudgmentSessionCmd::redo() { doc_->setJudgmentSession(neu_); }
+
+void SetJudgmentSessionCmd::undo() { doc_->setJudgmentSession(old_); }
+
+AddParticipantCmd::AddParticipantCmd(Document* doc,
+                                     QString id,
+                                     QString name,
+                                     QString email)
+    : QUndoCommand(QStringLiteral("Add participant %1").arg(name)),
+      doc_(doc),
+      id_(std::move(id)),
+      name_(std::move(name)),
+      email_(std::move(email)) {}
+
+void AddParticipantCmd::redo() {
+  doc_->addParticipant(id_, name_, email_);
+}
+
+void AddParticipantCmd::undo() { doc_->removeParticipant(id_); }
+
+UpdateParticipantCmd::UpdateParticipantCmd(Document* doc,
+                                           QString id,
+                                           QString name,
+                                           QString email,
+                                           QString oldName,
+                                           QString oldEmail)
+    : QUndoCommand(QStringLiteral("Update participant %1").arg(name)),
+      doc_(doc),
+      id_(std::move(id)),
+      name_(std::move(name)),
+      email_(std::move(email)),
+      oldName_(std::move(oldName)),
+      oldEmail_(std::move(oldEmail)) {}
+
+void UpdateParticipantCmd::redo() {
+  doc_->addParticipant(id_, name_, email_);
+}
+
+void UpdateParticipantCmd::undo() {
+  doc_->addParticipant(id_, oldName_, oldEmail_);
+}
+
+SetJudgmentGroupCmd::SetJudgmentGroupCmd(Document* doc,
+                                         QString id,
+                                         QString name,
+                                         QStringList members,
+                                         bool hadGroup,
+                                         QString oldName,
+                                         QStringList oldMembers)
+    : QUndoCommand(hadGroup ? QStringLiteral("Update group %1").arg(name)
+                            : QStringLiteral("Add group %1").arg(name)),
+      doc_(doc),
+      id_(std::move(id)),
+      name_(std::move(name)),
+      members_(std::move(members)),
+      hadGroup_(hadGroup),
+      oldName_(std::move(oldName)),
+      oldMembers_(std::move(oldMembers)) {}
+
+void SetJudgmentGroupCmd::redo() {
+  doc_->setJudgmentGroup(id_, name_, members_);
+}
+
+void SetJudgmentGroupCmd::undo() {
+  if (!hadGroup_) {
+    doc_->removeJudgmentGroup(id_);
+  } else {
+    doc_->setJudgmentGroup(id_, oldName_, oldMembers_);
+  }
+}
+
+RemoveJudgmentGroupCmd::RemoveJudgmentGroupCmd(
+    Document* doc,
+    QString id,
+    QString name,
+    QStringList members,
+    anpcpp::JudgmentSession oldSession)
+    : QUndoCommand(QStringLiteral("Remove group %1").arg(name)),
+      doc_(doc),
+      id_(std::move(id)),
+      name_(std::move(name)),
+      members_(std::move(members)),
+      oldSession_(std::move(oldSession)) {}
+
+void RemoveJudgmentGroupCmd::redo() { doc_->removeJudgmentGroup(id_); }
+
+void RemoveJudgmentGroupCmd::undo() {
+  doc_->setJudgmentGroup(id_, name_, members_);
+  doc_->setJudgmentSession(oldSession_);
+}
+
+ApplyNetworkSnapshotCmd::ApplyNetworkSnapshotCmd(Document* doc,
+                                                 QByteArray beforeJson,
+                                                 QByteArray afterJson,
+                                                 const QString& text)
+    : QUndoCommand(text),
+      doc_(doc),
+      beforeJson_(std::move(beforeJson)),
+      afterJson_(std::move(afterJson)) {}
+
+void ApplyNetworkSnapshotCmd::redo() {
+  doc_->applyNetworkJson(afterJson_);
+}
+
+void ApplyNetworkSnapshotCmd::undo() {
+  doc_->applyNetworkJson(beforeJson_);
+}

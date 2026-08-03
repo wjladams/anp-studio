@@ -1,5 +1,6 @@
 #include "panels/session_panel.hpp"
 
+#include "commands/network_commands.hpp"
 #include "document.hpp"
 #include "panels/participants_roster_dialog.hpp"
 
@@ -80,7 +81,9 @@ void SessionPanel::onIndividualClicked(QListWidgetItem* item) {
   anpcpp::JudgmentSession s;
   s.kind = anpcpp::JudgmentScopeKind::Participant;
   s.id = id.toStdString();
-  doc_->setJudgmentSession(s);
+  const anpcpp::JudgmentSession old = doc_->judgmentSession();
+  if (old.kind == s.kind && old.id == s.id) return;
+  doc_->undoStack()->push(new SetJudgmentSessionCmd(doc_, s, old));
 }
 
 void SessionPanel::onAggregateClicked(QListWidgetItem* item) {
@@ -93,7 +96,9 @@ void SessionPanel::onAggregateClicked(QListWidgetItem* item) {
   } else {
     s.kind = anpcpp::JudgmentScopeKind::Average;
   }
-  doc_->setJudgmentSession(s);
+  const anpcpp::JudgmentSession old = doc_->judgmentSession();
+  if (old.kind == s.kind && old.id == s.id) return;
+  doc_->undoStack()->push(new SetJudgmentSessionCmd(doc_, s, old));
 }
 
 QString SessionPanel::activeLabel() const {

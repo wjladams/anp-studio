@@ -660,6 +660,24 @@ void Document::removeJudgmentGroup(const QString& id) {
   notifyChanged();
 }
 
+QByteArray Document::snapshotNetworkJson() const {
+  if (root_ == nullptr) return {};
+  return QByteArray::fromStdString(anpcpp::network_to_json(*root_));
+}
+
+void Document::applyNetworkJson(const QByteArray& bytes) {
+  if (root_ == nullptr || bytes.isEmpty()) return;
+  auto net = anpcpp::network_from_json(bytes.toStdString());
+  root_ = std::move(net);
+  stack_.clear();
+  stack_.push_back(Frame{root_.get(), {}});
+  clearSelectionIfInvalid();
+  invalidateResults();
+  setDirty(true);
+  emit sessionChanged();
+  emitViewSwitch();
+}
+
 void Document::rebuildEffectiveJudgments() {
   if (root_ == nullptr) return;
   root_->rebuild_effective_judgments();

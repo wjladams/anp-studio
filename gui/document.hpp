@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <QByteArray>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -199,6 +200,20 @@ public:
                                           const QStringList& memberIds);
   /** @brief Removes a named group. */
   void removeJudgmentGroup(const QString& id);
+
+  /**
+   * @brief Serializes the root ANP network only (no researcher / google_forms).
+   *
+   * Used for undo snapshots of remove-participant and bulk judgment imports.
+   */
+  [[nodiscard]] QByteArray snapshotNetworkJson() const;
+  /**
+   * @brief Replaces the root network from @ref snapshotNetworkJson bytes.
+   *
+   * Preserves the undo stack, file path, Researcher notebooks, and linked
+   * Google Forms. Resets the subnet view stack to root and refreshes UI.
+   */
+  void applyNetworkJson(const QByteArray& bytes);
 
   /**
    * @brief Rebuilds effective judgments from the root network downward.

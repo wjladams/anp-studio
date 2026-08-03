@@ -1,8 +1,10 @@
 #pragma once
 
+#include <QByteArray>
 #include <QHash>
 #include <QPointF>
 #include <QString>
+#include <QStringList>
 #include <QUndoCommand>
 #include <vector>
 
@@ -477,4 +479,120 @@ private:
   Document* doc_;
   QHash<QString, QPointF> oldPositions_;
   QHash<QString, QPointF> newPositions_;
+};
+
+/** @brief Changes the shared judgment session scope (Session / Scope chrome). */
+class SetJudgmentSessionCmd : public QUndoCommand {
+public:
+  SetJudgmentSessionCmd(Document* doc,
+                        anpcpp::JudgmentSession neu,
+                        anpcpp::JudgmentSession old);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  anpcpp::JudgmentSession neu_;
+  anpcpp::JudgmentSession old_;
+};
+
+/** @brief Adds a new participant (undo removes them; empty judgments). */
+class AddParticipantCmd : public QUndoCommand {
+public:
+  AddParticipantCmd(Document* doc, QString id, QString name, QString email);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString id_;
+  QString name_;
+  QString email_;
+};
+
+/** @brief Updates participant display name / email. */
+class UpdateParticipantCmd : public QUndoCommand {
+public:
+  UpdateParticipantCmd(Document* doc,
+                       QString id,
+                       QString name,
+                       QString email,
+                       QString oldName,
+                       QString oldEmail);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString id_;
+  QString name_;
+  QString email_;
+  QString oldName_;
+  QString oldEmail_;
+};
+
+/**
+ * @brief Creates or updates a named judgment group.
+ *
+ * When @p hadGroup is false, undo removes the group. Otherwise undo restores
+ * @p oldName / @p oldMembers.
+ */
+class SetJudgmentGroupCmd : public QUndoCommand {
+public:
+  SetJudgmentGroupCmd(Document* doc,
+                      QString id,
+                      QString name,
+                      QStringList members,
+                      bool hadGroup,
+                      QString oldName,
+                      QStringList oldMembers);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString id_;
+  QString name_;
+  QStringList members_;
+  bool hadGroup_ = false;
+  QString oldName_;
+  QStringList oldMembers_;
+};
+
+/** @brief Removes a judgment group; undo restores group and prior session. */
+class RemoveJudgmentGroupCmd : public QUndoCommand {
+public:
+  RemoveJudgmentGroupCmd(Document* doc,
+                         QString id,
+                         QString name,
+                         QStringList members,
+                         anpcpp::JudgmentSession oldSession);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QString id_;
+  QString name_;
+  QStringList members_;
+  anpcpp::JudgmentSession oldSession_;
+};
+
+/**
+ * @brief Restores a before/after full-network JSON pair (remove participant,
+ *        bulk Excel / Forms imports).
+ */
+class ApplyNetworkSnapshotCmd : public QUndoCommand {
+public:
+  ApplyNetworkSnapshotCmd(Document* doc,
+                          QByteArray beforeJson,
+                          QByteArray afterJson,
+                          const QString& text);
+  void redo() override;
+  void undo() override;
+
+private:
+  Document* doc_;
+  QByteArray beforeJson_;
+  QByteArray afterJson_;
 };

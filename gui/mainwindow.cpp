@@ -489,7 +489,9 @@ void MainWindow::onScopeChosen(int index) {
   } else {
     session.kind = anpcpp::JudgmentScopeKind::Average;
   }
-  doc_->setJudgmentSession(session);
+  const anpcpp::JudgmentSession old = doc_->judgmentSession();
+  if (old.kind == session.kind && old.id == session.id) return;
+  doc_->undoStack()->push(new SetJudgmentSessionCmd(doc_, session, old));
 }
 
 void MainWindow::onManageParticipants() {
@@ -566,12 +568,21 @@ void MainWindow::onImportJudgmentTemplates() {
   const QStringList paths = dlg.selectedFiles();
   if (paths.isEmpty()) return;
 
+  const QByteArray before = doc_->snapshotNetworkJson();
   const JudgmentTemplateImportResult result =
       importJudgmentTemplates(*doc_, paths);
   if (!result.ok) {
+    if (doc_->snapshotNetworkJson() != before) {
+      doc_->applyNetworkJson(before);
+    }
     QMessageBox::warning(this, QStringLiteral("Import judgment templates"),
                          result.error);
     return;
+  }
+  const QByteArray after = doc_->snapshotNetworkJson();
+  if (before != after) {
+    doc_->undoStack()->push(new ApplyNetworkSnapshotCmd(
+        doc_, before, after, QStringLiteral("Import judgment templates")));
   }
 
   QString msg =
@@ -758,15 +769,24 @@ void MainWindow::onImportGoogleFormResults() {
 
   statusBar()->showMessage(QStringLiteral("Importing Google Form responses…"));
   QApplication::setOverrideCursor(Qt::WaitCursor);
+  const QByteArray before = doc_->snapshotNetworkJson();
   const GoogleFormImportResult result = importGoogleFormResponses(
       *googleOAuth_, *doc_, linked->formId, matchingOnly);
   QApplication::restoreOverrideCursor();
   statusBar()->clearMessage();
 
   if (!result.ok) {
+    if (doc_->snapshotNetworkJson() != before) {
+      doc_->applyNetworkJson(before);
+    }
     QMessageBox::warning(this, QStringLiteral("Import Google Form"),
                          result.error);
     return;
+  }
+  const QByteArray after = doc_->snapshotNetworkJson();
+  if (before != after) {
+    doc_->undoStack()->push(new ApplyNetworkSnapshotCmd(
+        doc_, before, after, QStringLiteral("Import Google Form responses")));
   }
 
   QString msg =

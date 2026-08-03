@@ -1,5 +1,6 @@
 #include "panels/participants_roster_dialog.hpp"
 
+#include "commands/network_commands.hpp"
 #include "document.hpp"
 
 #include <QAbstractItemView>
@@ -194,6 +195,11 @@ void showManageGroupsDialog(QWidget* parent, Document* doc) {
           }
         }
         if (g == nullptr) return;
+        QStringList oldMembers;
+        for (const auto& m : g->member_ids) {
+          oldMembers << QString::fromStdString(m);
+        }
+        const QString groupName = QString::fromStdString(g->name);
         QStringList members;
         for (int i = 0; i < memberList->count(); ++i) {
           auto* it = memberList->item(i);
@@ -201,8 +207,9 @@ void showManageGroupsDialog(QWidget* parent, Document* doc) {
             members << it->data(Qt::UserRole).toString();
           }
         }
-        doc->setJudgmentGroup(groupId, QString::fromStdString(g->name),
-                              members);
+        if (members == oldMembers) return;
+        doc->undoStack()->push(new SetJudgmentGroupCmd(
+            doc, groupId, groupName, members, true, groupName, oldMembers));
       });
 
   QObject::connect(addGroupBtn, &QPushButton::clicked, &dlg, [&]() {
@@ -212,7 +219,8 @@ void showManageGroupsDialog(QWidget* parent, Document* doc) {
         QLineEdit::Normal, {}, &ok);
     if (!ok || name.trimmed().isEmpty()) return;
     const QString id = uniqueGroupId(slugify(name.trimmed()), doc);
-    doc->setJudgmentGroup(id, name.trimmed(), {});
+    doc->undoStack()->push(new SetJudgmentGroupCmd(
+        doc, id, name.trimmed(), {}, false, {}, {}));
     refillGroups(id);
     refillMembers(id);
   });
@@ -236,7 +244,10 @@ void showManageGroupsDialog(QWidget* parent, Document* doc) {
     if (!ok || name.trimmed().isEmpty()) return;
     QStringList members;
     for (const auto& m : g->member_ids) members << QString::fromStdString(m);
-    doc->setJudgmentGroup(id, name.trimmed(), members);
+    const QString oldName = QString::fromStdString(g->name);
+    if (name.trimmed() == oldName) return;
+    doc->undoStack()->push(new SetJudgmentGroupCmd(
+        doc, id, name.trimmed(), members, true, oldName, members));
     refillGroups(id);
   });
 
@@ -250,7 +261,19 @@ void showManageGroupsDialog(QWidget* parent, Document* doc) {
         QMessageBox::Yes) {
       return;
     }
-    doc->removeJudgmentGroup(id);
+    const anpcpp::JudgmentGroup* g = nullptr;
+    for (const auto& candidate : doc->judgmentGroups()) {
+      if (QString::fromStdString(candidate.id) == id) {
+        g = &candidate;
+        break;
+      }
+    }
+    if (g == nullptr) return;
+    QStringList members;
+    for (const auto& m : g->member_ids) members << QString::fromStdString(m);
+    const anpcpp::JudgmentSession oldSession = doc->judgmentSession();
+    doc->undoStack()->push(new RemoveJudgmentGroupCmd(
+        doc, id, QString::fromStdString(g->name), members, oldSession));
     refillGroups({});
     refillMembers(groupList->count() > 0
                       ? groupList->item(0)->data(Qt::UserRole).toString()
@@ -331,7 +354,7 @@ void showParticipantsRosterDialog(QWidget* parent, Document* doc) {
       return;
     }
     const QString id = uniqueParticipantId(slugify(name), doc);
-    doc->addParticipant(id, name, email);
+    doc->undoStack()->push(new AddParticipantCmd(doc, id, name, email));
     refill(id);
   });
 
@@ -341,11 +364,15 @@ void showParticipantsRosterDialog(QWidget* parent, Document* doc) {
     const QString id = table->item(row, 0)->text();
     QString name = table->item(row, 1)->text();
     QString email = table->item(row, 2)->text();
+    const QString oldName = name;
+    const QString oldEmail = email;
     if (!promptParticipantFields(&dlg, QStringLiteral("Rename participant"),
                                  &name, &email, id)) {
       return;
     }
-    doc->addParticipant(id, name, email);
+    if (name == oldName && email == oldEmail) return;
+    doc->undoStack()->push(
+        new UpdateParticipantCmd(doc, id, name, email, oldName, oldEmail));
     refill(id);
   });
 
@@ -360,7 +387,12 @@ void showParticipantsRosterDialog(QWidget* parent, Document* doc) {
         QMessageBox::Yes) {
       return;
     }
+    const QByteArray before = doc->snapshotNetworkJson();
     doc->removeParticipant(id);
+    const QByteArray after = doc->snapshotNetworkJson();
+    doc->undoStack()->push(new ApplyNetworkSnapshotCmd(
+        doc, before, after,
+        QStringLiteral("Remove participant %1").arg(name)));
     refill({});
   });
 
