@@ -1,6 +1,6 @@
 /**
  * @file sensitivity_chart_widget.hpp
- * @brief Custom bar/line charts for Sensitivity analysis (Qt Charts optional later).
+ * @brief Custom bar/line charts for Sensitivity analysis (QPainter).
  */
 
 #pragma once

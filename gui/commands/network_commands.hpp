@@ -1,3 +1,8 @@
+/**
+ * @file network_commands.hpp
+ * @brief QUndoCommand wrappers for network structure and judgment edits.
+ */
+
 #pragma once
 
 #include <QByteArray>
@@ -481,7 +486,7 @@ private:
   QHash<QString, QPointF> newPositions_;
 };
 
-/** @brief Changes the shared judgment session scope (Session / Scope chrome). */
+/** @brief Changes the shared JudgmentSession (Scope combo / Scope rail). */
 class SetJudgmentSessionCmd : public QUndoCommand {
 public:
   SetJudgmentSessionCmd(Document* doc,

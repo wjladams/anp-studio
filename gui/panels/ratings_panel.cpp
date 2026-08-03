@@ -701,6 +701,8 @@ void RatingsPanel::commitAdvancedIfNeeded() {
   }
 }
 
+// --- Vote table (per-participant or aggregate Scope) ------------------------
+
 void RatingsPanel::rebuildVotes() {
   auto* rt = activeRatings();
   if (rt == nullptr) return;

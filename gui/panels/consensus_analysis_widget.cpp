@@ -1,5 +1,10 @@
 #include "panels/consensus_analysis_widget.hpp"
 
+/**
+ * @file consensus_analysis_widget.cpp
+ * @brief Consensus / Variance: disagreement alignment, coverage, cohorts.
+ */
+
 #include "document.hpp"
 
 #include "anpcpp/multiuser.hpp"
@@ -37,7 +42,7 @@ constexpr int kModeHeat = 0;
 constexpr int kModeCoverage = 1;
 constexpr int kModeCohorts = 2;
 
-// Option 2 traffic-light chip colors
+// Alignment chip colors: green = aligned, yellow = watch, red = high disagreement
 constexpr const char* kAlignOkBg = "#b7d9b4";
 constexpr const char* kAlignOkFg = "#143018";
 constexpr const char* kAlignWatchBg = "#f0e08a";
@@ -664,6 +669,8 @@ void ConsensusAnalysisWidget::rebuildCohortGroupCombos() {
   cohortLeft_->blockSignals(false);
   cohortRight_->blockSignals(false);
 }
+
+// --- Disagreement / Coverage / Cohort refreshes -----------------------------
 
 void ConsensusAnalysisWidget::refresh() {
   updating_ = true;

@@ -1,6 +1,7 @@
 /**
  * @file analysis_panel.hpp
- * @brief Analysis stage: left-nav tree + Synthesis / Sensitivity / Influence panes.
+ * @brief Analysis stage: left-nav tree + Synthesis / Sensitivity / Influence /
+ *        Consensus panes.
  */
 
 #pragma once

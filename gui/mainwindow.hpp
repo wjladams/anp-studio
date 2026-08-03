@@ -29,7 +29,7 @@ class QComboBox;
 class QActionGroup;
 
 /**
- * @brief Primary window: stages Structure / Judgments / Analysis.
+ * @brief Primary window: stages Structure / Judgments / Analysis / Researcher.
  */
 class MainWindow : public QMainWindow {
   Q_OBJECT

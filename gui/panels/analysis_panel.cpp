@@ -1,5 +1,10 @@
 #include "panels/analysis_panel.hpp"
 
+/**
+ * @file analysis_panel.cpp
+ * @brief Analysis stage nav + Synthesis / Sensitivity / Influence / Consensus.
+ */
+
 #include "document.hpp"
 #include "html_report.hpp"
 #include "panels/consensus_analysis_widget.hpp"
@@ -337,6 +342,8 @@ AnalysisPanel::AnalysisPanel(Document* doc, QWidget* parent)
   refresh();
 }
 
+// --- Left nav tree ----------------------------------------------------------
+
 void AnalysisPanel::buildNavTree() {
   nav_->clear();
 
@@ -452,6 +459,8 @@ void AnalysisPanel::onOverviewAnchorClicked(const QUrl& url) {
     navigateTo(Page::InflTotal);
   }
 }
+
+// --- Pane refresh (Synthesis / Sensitivity / Influence / Consensus) ---------
 
 void AnalysisPanel::refresh() {
   updateSubnetNavVisibility();

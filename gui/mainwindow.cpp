@@ -1,5 +1,10 @@
 #include "mainwindow.hpp"
 
+/**
+ * @file mainwindow.cpp
+ * @brief Stage shell, menus, breadcrumb Scope, and multi-user I/O entry points.
+ */
+
 #include "canvas/network_canvas.hpp"
 #include "commands/network_commands.hpp"
 #include "document.hpp"
@@ -279,6 +284,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
       QStringLiteral("Structure → Judgments → Analysis → Researcher"));
 }
 
+// --- Stage pages (Structure / Judgments / Analysis / Researcher) ------------
+
 void MainWindow::buildStagePages() {
   // Structure: mode strip | canvas | inspector
   canvas_ = new NetworkCanvas(doc_, this);
@@ -345,7 +352,7 @@ void MainWindow::buildStagePages() {
   sLay->addWidget(sSplit, 1);
   stages_->addWidget(structurePage);
 
-  // Judgments: left config dock | pairwise/ratings | session + priorities chart
+  // Judgments: left config dock | pairwise/ratings | Scope rail + priorities chart
   judgmentNav_ = new JudgmentNavPanel(doc_, this);
   pairwise_ = new PairwisePanel(doc_, this);
   ratings_ = new RatingsPanel(doc_, this);
@@ -463,6 +470,8 @@ void MainWindow::onNodeActivated(const QString& name) {
   doc_->pushSubnet(name);
 }
 
+// --- Breadcrumb: Network path + shared Scope combo --------------------------
+
 void MainWindow::updateBreadcrumb() {
   while (QLayoutItem* item = breadcrumbLay_->takeAt(0)) {
     if (QWidget* w = item->widget()) {
@@ -511,8 +520,8 @@ void MainWindow::updateBreadcrumb() {
   }
   breadcrumbLay_->addStretch();
 
-  // Shared Scope combo beside Network on Judgments, Analysis, and Researcher
-  // (Option B). Same JudgmentSession as the Judgments Scope rail.
+  // Shared Scope combo beside Network on Judgments, Analysis, and Researcher.
+  // Same JudgmentSession as the Judgments Scope rail (SessionPanel).
   scopeCombo_ = nullptr;
   if ((stage_ == Stage::Judgments || stage_ == Stage::Analysis ||
        stage_ == Stage::Researcher) &&
@@ -597,6 +606,8 @@ void MainWindow::onScopeChosen(int index) {
   if (old.kind == session.kind && old.id == session.id) return;
   doc_->undoStack()->push(new SetJudgmentSessionCmd(doc_, session, old));
 }
+
+// --- Participants: roster, Collect hub, Excel, Google Forms -----------------
 
 void MainWindow::onManageParticipants() {
   showParticipantsRosterDialog(this, doc_);
@@ -1045,6 +1056,8 @@ void MainWindow::onOpenLinkedGoogleForm() {
     QDesktopServices::openUrl(QUrl(f->responderUrl));
   }
 }
+
+// --- Document file I/O and samples ------------------------------------------
 
 void MainWindow::updateTitle() {
   QString title = QStringLiteral("ANP Studio");

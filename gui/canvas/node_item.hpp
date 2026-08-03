@@ -1,3 +1,8 @@
+/**
+ * @file node_item.hpp
+ * @brief Graphics item for a node row inside a cluster on the Structure canvas.
+ */
+
 #pragma once
 
 #include <QGraphicsRectItem>

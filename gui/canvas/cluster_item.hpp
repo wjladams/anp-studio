@@ -1,3 +1,8 @@
+/**
+ * @file cluster_item.hpp
+ * @brief Graphics item for a cluster window on the Structure canvas.
+ */
+
 #pragma once
 
 #include <QGraphicsRectItem>

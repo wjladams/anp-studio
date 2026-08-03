@@ -1,5 +1,10 @@
 #include "oauth/google_forms_client.hpp"
 
+/**
+ * @file google_forms_client.cpp
+ * @brief Create Google Forms from the model and import response judgments.
+ */
+
 #include "document.hpp"
 #include "io/judgment_question_text.hpp"
 #include "oauth/google_oauth.hpp"
@@ -322,6 +327,8 @@ bool googleFormFingerprintMatches(const QString& fingerprint,
   if (fingerprint.isEmpty()) return false;
   return fingerprint == googleFormStructureFingerprint(net);
 }
+
+// --- Create form from current network structure -----------------------------
 
 GoogleFormCreateResult createGoogleFormForNetwork(
     GoogleOAuth& oauth,
@@ -679,6 +686,8 @@ ResolvedParticipant resolveOrCreateParticipant(Document& doc,
 }
 
 }  // namespace
+
+// --- Import responses into Document participants / judgments ----------------
 
 GoogleFormImportResult importGoogleFormResponses(GoogleOAuth& oauth,
                                                  Document& doc,

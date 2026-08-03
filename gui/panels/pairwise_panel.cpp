@@ -203,6 +203,8 @@ const anpcpp::PairwiseJudgments* PairwisePanel::currentPairwise() const {
   return &net.cluster(parent_.toStdString()).cluster_pairwise();
 }
 
+// --- Matrix / questionnaire views -------------------------------------------
+
 void PairwisePanel::rebuildViews() {
   updating_ = true;
   table_->clear();

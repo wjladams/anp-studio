@@ -1,5 +1,10 @@
 #include "canvas/network_canvas.hpp"
 
+/**
+ * @file network_canvas.cpp
+ * @brief Structure-stage canvas: rebuild, layout, rename, and connect modes.
+ */
+
 #include "canvas/cluster_item.hpp"
 #include "canvas/cluster_layout.hpp"
 #include "canvas/cluster_link_item.hpp"
@@ -362,6 +367,8 @@ void NetworkCanvas::keyPressEvent(QKeyEvent* event) {
   QGraphicsView::keyPressEvent(event);
 }
 
+// --- Scene rebuild and layout -----------------------------------------------
+
 void NetworkCanvas::rebuild() {
   // Preserve connection sources across scene teardown. Item destruction during
   // scene_->clear() can invoke link-update callbacks while nodes_ is empty;
@@ -695,6 +702,8 @@ ClusterItem* NetworkCanvas::clusterItemAt(const QPoint& viewPos) const {
   }
   return nullptr;
 }
+
+// --- Connect mode (batch link / unlink) -------------------------------------
 
 void NetworkCanvas::clearConnectionSources() {
   connectionSources_.clear();

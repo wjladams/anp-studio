@@ -1,3 +1,8 @@
+/**
+ * @file link_item.hpp
+ * @brief Graphics item for a directed node→node link on the Structure canvas.
+ */
+
 #pragma once
 
 #include <QGraphicsPathItem>

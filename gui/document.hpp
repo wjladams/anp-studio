@@ -159,7 +159,7 @@ public:
   void markResultsCurrent();
   void invalidateResults();
 
-  // --- Multi-user judgment session (Phase 1) --------------------------------
+  // --- Multi-user judgment session -----------------------------------------
 
   /** @return True if the model has any judgment participants defined. */
   [[nodiscard]] bool hasParticipants() const {

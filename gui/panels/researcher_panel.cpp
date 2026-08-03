@@ -225,7 +225,7 @@ ResearcherPanel::ResearcherPanel(Document* doc, QWidget* parent)
   centerLay->addWidget(body, 1);
   split->addWidget(center);
 
-  // Right: one scrollable rail — Bindings then Starters (mock Option 1)
+  // Right: one scrollable rail — Bindings then Starters
   auto* right = new QWidget(split);
   right->setObjectName(QStringLiteral("researcherRightRail"));
   auto* rightLay = new QVBoxLayout(right);

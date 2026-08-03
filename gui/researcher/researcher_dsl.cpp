@@ -507,6 +507,8 @@ QStringList ResearcherSession::bindingLines() const {
   return lines;
 }
 
+// --- Eval / completions -----------------------------------------------------
+
 ResearcherEvalResult ResearcherSession::eval(const QString& line) {
   const QString trimmed = line.trimmed();
   if (trimmed.isEmpty()) {
@@ -727,6 +729,8 @@ QStringList ResearcherSession::completions(const QString& line) const {
   }
   return filter(candidates);
 }
+
+// --- Individual DSL commands ------------------------------------------------
 
 ResearcherEvalResult ResearcherSession::cmdHelp() const {
   return {true, helpHtml()};
