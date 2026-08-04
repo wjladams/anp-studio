@@ -13,11 +13,35 @@
 
 namespace {
 
-QPointF sideAnchor(const ClusterItem* cluster, bool preferRight) {
+enum class Side { Left, Right, Top, Bottom };
+
+/** Side of @p fromC that faces @p towardC (dominant axis of the vector). */
+Side facingSide(const QPointF& fromC, const QPointF& towardC) {
+  const qreal dx = towardC.x() - fromC.x();
+  const qreal dy = towardC.y() - fromC.y();
+  if (std::abs(dx) >= std::abs(dy)) {
+    return dx >= 0.0 ? Side::Right : Side::Left;
+  }
+  return dy >= 0.0 ? Side::Bottom : Side::Top;
+}
+
+QPointF sideAnchor(const ClusterItem* cluster, Side side) {
   const QRectF r = cluster->rect();
-  const QPointF local = preferRight
-                            ? QPointF(r.right(), r.center().y())
-                            : QPointF(r.left(), r.center().y());
+  QPointF local;
+  switch (side) {
+    case Side::Left:
+      local = QPointF(r.left(), r.center().y());
+      break;
+    case Side::Right:
+      local = QPointF(r.right(), r.center().y());
+      break;
+    case Side::Top:
+      local = QPointF(r.center().x(), r.top());
+      break;
+    case Side::Bottom:
+      local = QPointF(r.center().x(), r.bottom());
+      break;
+  }
   return cluster->mapToScene(local);
 }
 
@@ -49,10 +73,8 @@ void ClusterLinkItem::updatePath() {
   const QPointF srcC = src_->mapToScene(src_->rect().center());
   const QPointF destC = dest_->mapToScene(dest_->rect().center());
 
-  const bool srcRight = srcC.x() <= destC.x();
-  const bool destRight = destC.x() < srcC.x();
-  const QPointF a = sideAnchor(src_, srcRight);
-  const QPointF b = sideAnchor(dest_, destRight);
+  const QPointF a = sideAnchor(src_, facingSide(srcC, destC));
+  const QPointF b = sideAnchor(dest_, facingSide(destC, srcC));
 
   QPainterPath path(a);
   path.lineTo(b);

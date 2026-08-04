@@ -12,8 +12,9 @@ class ClusterItem;
 /**
  * @brief Visual cluster→cluster link inferred from node connections.
  *
- * Anchors to facing-side midpoints of the source and destination cluster
- * rectangles. Not interactive (does not accept mouse buttons).
+ * Anchors to the side midpoint (top, bottom, left, or right) of each cluster
+ * that faces the other, chosen by the dominant center-to-center axis. Not
+ * interactive (does not accept mouse buttons).
  */
 class ClusterLinkItem : public QGraphicsPathItem {
 public:
