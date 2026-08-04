@@ -37,11 +37,14 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QKeySequence>
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QPainter>
+#include <QPixmap>
 #include <QPushButton>
 #include <QSettings>
 #include <QSizePolicy>
@@ -76,6 +79,26 @@ bool dirHasModelSamples(const QDir& d) {
 QStringList listModelSampleFiles(const QDir& d) {
   return d.entryList({QStringLiteral("*.anpstudio"), QStringLiteral("*.json")},
                      QDir::Files, QDir::Name);
+}
+
+/** Filled circle badge for stage tabs (avoids nested QLabel clip under QSS). */
+QIcon stageTabBadgeIcon(int number, bool checked) {
+  constexpr int kSize = 18;
+  QPixmap pm(kSize, kSize);
+  pm.fill(Qt::transparent);
+  QPainter p(&pm);
+  p.setRenderHint(QPainter::Antialiasing, true);
+  p.setPen(Qt::NoPen);
+  p.setBrush(checked ? QColor(0x1a, 0x73, 0xe8) : QColor(0xe8, 0xea, 0xed));
+  p.drawEllipse(QRectF(0.5, 0.5, kSize - 1.0, kSize - 1.0));
+  p.setPen(checked ? QColor(Qt::white) : QColor(0x5f, 0x63, 0x68));
+  QFont font = p.font();
+  font.setPixelSize(11);
+  font.setBold(true);
+  p.setFont(font);
+  p.drawText(QRect(0, 0, kSize, kSize), Qt::AlignCenter,
+             QString::number(number));
+  return QIcon(pm);
 }
 
 /**
@@ -117,19 +140,25 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   trackLay->setSpacing(2);
   stageButtons_ = new QButtonGroup(this);
   stageButtons_->setExclusive(true);
-  auto addStageBtn = [&](const QString& text, Stage s) {
+  auto addStageBtn = [&](const QString& text, Stage s, int number) {
     auto* b = new QPushButton(text, stageTrack);
     b->setObjectName(QStringLiteral("stageTab"));
     b->setCheckable(true);
     b->setFlat(true);
     b->setCursor(Qt::PointingHandCursor);
+    b->setIcon(stageTabBadgeIcon(number, false));
+    b->setIconSize(QSize(18, 18));
+    // Keep badge in sync with checked state (QSS cannot recolor QIcon).
+    QObject::connect(b, &QAbstractButton::toggled, b, [b, number](bool on) {
+      b->setIcon(stageTabBadgeIcon(number, on));
+    });
     stageButtons_->addButton(b, static_cast<int>(s));
     trackLay->addWidget(b);
   };
-  addStageBtn(QStringLiteral("Structure"), Stage::Structure);
-  addStageBtn(QStringLiteral("Judgments"), Stage::Judgments);
-  addStageBtn(QStringLiteral("Analysis"), Stage::Analysis);
-  addStageBtn(QStringLiteral("Researcher"), Stage::Researcher);
+  addStageBtn(QStringLiteral("Structure"), Stage::Structure, 1);
+  addStageBtn(QStringLiteral("Judgments"), Stage::Judgments, 2);
+  addStageBtn(QStringLiteral("Analysis"), Stage::Analysis, 3);
+  addStageBtn(QStringLiteral("Researcher"), Stage::Researcher, 4);
   stageRow->addWidget(stageTrack, 0, Qt::AlignVCenter);
 
   breadcrumbBar_ = new QWidget(central);

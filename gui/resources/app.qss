@@ -121,7 +121,7 @@ QToolButton:checked {
   color: #1967d2;
 }
 
-/* —— Stage tabs (pill strip) —— */
+/* —— Stage tabs (pill strip with filled number badges) —— */
 QWidget#stageTabTrack {
   background-color: #f1f3f4;
   border: 1px solid #dadce0;

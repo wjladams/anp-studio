@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Numbered stage tabs — ANP Studio</title>
+  <style>
+    :root {
+      --page-bg: #f6f4ef;
+      --page-ink: #1c1b19;
+      --page-muted: #5c574e;
+      --page-line: #d4cfc4;
+      --page-panel: #fffdf8;
+      --page-accent: #2f5d50;
+      --page-accent-soft: #e4efe9;
+      --page-select: #c8ddd4;
+
+      --bg: #ffffff;
+      --canvas: #f8f9fa;
+      --ink: #202124;
+      --muted: #5f6368;
+      --line: #dadce0;
+      --hover: #f1f3f4;
+      --blue: #1a73e8;
+      --blue-soft: #e8f0fe;
+      --blue-deep: #1967d2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.45 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--page-ink);
+      background: var(--page-bg);
+    }
+    header {
+      padding: 1.75rem 2rem 1rem;
+      border-bottom: 1px solid var(--page-line);
+      background: var(--page-panel);
+    }
+    header h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.65rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      margin: 0;
+      max-width: 48rem;
+      color: var(--page-muted);
+    }
+    main {
+      padding: 1.25rem 2rem 3rem;
+      display: grid;
+      gap: 1.35rem;
+      max-width: 1100px;
+    }
+    .opt {
+      border: 1px solid var(--page-line);
+      background: var(--page-panel);
+      border-radius: 8px;
+      padding: 1rem 1.15rem 1.15rem;
+    }
+    .opt-head {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.65rem;
+    }
+    .opt-head h2 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 600;
+    }
+    .tag {
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--page-accent);
+      border: 1px solid var(--page-select);
+      background: var(--page-accent-soft);
+      padding: 0.12rem 0.45rem;
+      border-radius: 999px;
+    }
+    .opt p {
+      margin: 0 0 0.85rem;
+      color: var(--page-muted);
+      max-width: 42rem;
+      font-size: 0.95rem;
+    }
+
+    /* Shared app chrome strip */
+    .wire {
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      font-size: 13px;
+      color: var(--ink);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .chrome {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      margin-left: auto;
+    }
+    .combo {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      padding: 5px 10px;
+      color: var(--ink);
+    }
+    .combo::after { content: " ▾"; color: var(--muted); font-size: 10px; }
+
+    .track {
+      display: inline-flex;
+      gap: 2px;
+      padding: 3px;
+      background: var(--hover);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+    .tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 7px 14px;
+      color: var(--muted);
+      font: 600 13px/1.2 inherit;
+      cursor: default;
+    }
+    .tab.on {
+      background: #fff;
+      color: var(--blue);
+      border-color: #aecbfa;
+    }
+
+    /* —— Option styles —— */
+
+    /* 1. Plain prefix */
+    .o1 .num {
+      font-variant-numeric: tabular-nums;
+      color: inherit;
+      opacity: 0.75;
+      font-weight: 700;
+    }
+    .o1 .tab.on .num { opacity: 1; }
+
+    /* 2. Dotted prefix "1." */
+    .o2 .num {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      color: inherit;
+      opacity: 0.7;
+    }
+    .o2 .tab.on .num { opacity: 1; }
+
+    /* 3. Outlined circle */
+    .o3 .badge {
+      width: 1.35em;
+      height: 1.35em;
+      border-radius: 50%;
+      border: 1.5px solid currentColor;
+      display: inline-grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      flex-shrink: 0;
+      opacity: 0.85;
+    }
+    .o3 .tab.on .badge { opacity: 1; }
+
+    /* 4. Filled circle (active filled blue; inactive soft grey) */
+    .o4 .badge {
+      width: 1.4em;
+      height: 1.4em;
+      border-radius: 50%;
+      display: inline-grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      flex-shrink: 0;
+      background: #e8eaed;
+      color: var(--muted);
+    }
+    .o4 .tab.on .badge {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    /* 5. Soft square step index */
+    .o5 .badge {
+      min-width: 1.35em;
+      height: 1.35em;
+      padding: 0 0.15em;
+      border-radius: 4px;
+      display: inline-grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      flex-shrink: 0;
+      background: transparent;
+      color: inherit;
+      border: 1px solid currentColor;
+      opacity: 0.7;
+    }
+    .o5 .tab.on .badge {
+      opacity: 1;
+      background: var(--blue-soft);
+      border-color: #aecbfa;
+      color: var(--blue-deep);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Numbered stage tabs</h1>
+    <p>
+      Five treatments for numbering Structure → Judgments → Analysis → Researcher
+      on the current pill strip. Active tab is Structure in each mock.
+    </p>
+  </header>
+
+  <main>
+    <section class="opt">
+      <div class="opt-head">
+        <span class="tag">Minimal</span>
+        <h2>1 · Plain digit prefix</h2>
+      </div>
+      <p>Just <code>1 Structure</code> — lightest change; reads as a workflow order without extra chrome.</p>
+      <div class="wire o1">
+        <div class="track">
+          <span class="tab on"><span class="num">1</span> Structure</span>
+          <span class="tab"><span class="num">2</span> Judgments</span>
+          <span class="tab"><span class="num">3</span> Analysis</span>
+          <span class="tab"><span class="num">4</span> Researcher</span>
+        </div>
+        <div class="chrome">
+          <span>Network:</span><span class="combo">Root</span><span style="font-weight:600;color:var(--ink)">Root</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="opt">
+      <div class="opt-head">
+        <span class="tag">List-like</span>
+        <h2>2 · Numbered list style</h2>
+      </div>
+      <p><code>1. Structure</code> — familiar outline/list cue; slightly more “step” than bare digits.</p>
+      <div class="wire o2">
+        <div class="track">
+          <span class="tab on"><span class="num">1.</span> Structure</span>
+          <span class="tab"><span class="num">2.</span> Judgments</span>
+          <span class="tab"><span class="num">3.</span> Analysis</span>
+          <span class="tab"><span class="num">4.</span> Researcher</span>
+        </div>
+        <div class="chrome">
+          <span>Network:</span><span class="combo">Root</span><span style="font-weight:600;color:var(--ink)">Root</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="opt">
+      <div class="opt-head">
+        <span class="tag">Circled</span>
+        <h2>3 · Outlined circle</h2>
+      </div>
+      <p>Hollow circle with the digit — stands out more than plain text without competing with the selected pill’s blue fill.</p>
+      <div class="wire o3">
+        <div class="track">
+          <span class="tab on"><span class="badge">1</span> Structure</span>
+          <span class="tab"><span class="badge">2</span> Judgments</span>
+          <span class="tab"><span class="badge">3</span> Analysis</span>
+          <span class="tab"><span class="badge">4</span> Researcher</span>
+        </div>
+        <div class="chrome">
+          <span>Network:</span><span class="combo">Root</span><span style="font-weight:600;color:var(--ink)">Root</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="opt">
+      <div class="opt-head">
+        <span class="tag">Strong cue</span>
+        <h2>4 · Filled circle badge</h2>
+      </div>
+      <p>Inactive: grey disc; active: solid blue disc with white number. Most “wizard step” and most visually loud.</p>
+      <div class="wire o4">
+        <div class="track">
+          <span class="tab on"><span class="badge">1</span> Structure</span>
+          <span class="tab"><span class="badge">2</span> Judgments</span>
+          <span class="tab"><span class="badge">3</span> Analysis</span>
+          <span class="tab"><span class="badge">4</span> Researcher</span>
+        </div>
+        <div class="chrome">
+          <span>Network:</span><span class="combo">Root</span><span style="font-weight:600;color:var(--ink)">Root</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="opt">
+      <div class="opt-head">
+        <span class="tag">Soft step</span>
+        <h2>5 · Small square index</h2>
+      </div>
+      <p>Compact rounded square — a bit more structured than plain digits, quieter than filled circles. Active square picks up the soft blue wash.</p>
+      <div class="wire o5">
+        <div class="track">
+          <span class="tab on"><span class="badge">1</span> Structure</span>
+          <span class="tab"><span class="badge">2</span> Judgments</span>
+          <span class="tab"><span class="badge">3</span> Analysis</span>
+          <span class="tab"><span class="badge">4</span> Researcher</span>
+        </div>
+        <div class="chrome">
+          <span>Network:</span><span class="combo">Root</span><span style="font-weight:600;color:var(--ink)">Root</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
