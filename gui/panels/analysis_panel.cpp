@@ -35,8 +35,10 @@
 #include <QVBoxLayout>
 
 #include <cmath>
+#include <algorithm>
 #include <map>
 #include <stdexcept>
+#include <vector>
 
 namespace {
 
@@ -110,11 +112,149 @@ QString limitOptionsSummaryHtml(const anpcpp::LimitMatrixOptions& lim) {
   return body;
 }
 
+/** Cell item for analysis tables (numeric key in Qt::UserRole). */
+class AnalysisTableItem : public QTableWidgetItem {
+public:
+  using QTableWidgetItem::QTableWidgetItem;
+};
+
+constexpr int kRowLabelRole = Qt::UserRole + 1;
+constexpr int kOriginalRowRole = Qt::UserRole + 2;
+
+enum class AnalysisSortMode { Original = 0, Asc = 1, Desc = 2 };
+
+void resetAnalysisTableSortState(QTableWidget* table) {
+  table->setProperty("anpSortColumn", -1);
+  table->setProperty("anpSortMode", static_cast<int>(AnalysisSortMode::Original));
+  table->horizontalHeader()->setSortIndicatorShown(false);
+}
+
+void stampRowLabel(QTableWidget* table, int row, const QString& name) {
+  table->setVerticalHeaderItem(row, new QTableWidgetItem(name));
+  for (int c = 0; c < table->columnCount(); ++c) {
+    if (QTableWidgetItem* item = table->item(row, c)) {
+      item->setData(kRowLabelRole, name);
+      item->setData(kOriginalRowRole, row);
+    }
+  }
+}
+
+/** Reorder whole rows (cells + vertical header) by column key or original index. */
+void applyAnalysisTableSort(QTableWidget* table, int column,
+                            AnalysisSortMode mode) {
+  const int rows = table->rowCount();
+  const int cols = table->columnCount();
+  if (rows <= 0 || cols <= 0) return;
+
+  struct RowPack {
+    QString label;
+    int original = 0;
+    double key = 0.0;
+    bool keyOk = false;
+    std::vector<QTableWidgetItem*> cells;
+  };
+
+  std::vector<RowPack> packs;
+  packs.reserve(static_cast<std::size_t>(rows));
+  for (int r = 0; r < rows; ++r) {
+    RowPack pack;
+    if (const QTableWidgetItem* header = table->verticalHeaderItem(r)) {
+      pack.label = header->text();
+    }
+    pack.cells.reserve(static_cast<std::size_t>(cols));
+    for (int c = 0; c < cols; ++c) {
+      QTableWidgetItem* item = table->takeItem(r, c);
+      pack.cells.push_back(item);
+      if (item != nullptr && c == 0) {
+        if (pack.label.isEmpty()) {
+          pack.label = item->data(kRowLabelRole).toString();
+        }
+        pack.original = item->data(kOriginalRowRole).toInt();
+      }
+    }
+    if (mode != AnalysisSortMode::Original && column >= 0 && column < cols) {
+      if (QTableWidgetItem* item = pack.cells[static_cast<std::size_t>(column)]) {
+        const QVariant v = item->data(Qt::UserRole);
+        if (v.isValid() && v.canConvert<double>()) {
+          pack.key = v.toDouble();
+          pack.keyOk = true;
+        }
+      }
+    }
+    packs.push_back(std::move(pack));
+  }
+
+  if (mode == AnalysisSortMode::Original) {
+    std::stable_sort(packs.begin(), packs.end(),
+                     [](const RowPack& a, const RowPack& b) {
+                       return a.original < b.original;
+                     });
+  } else {
+    const bool ascending = (mode == AnalysisSortMode::Asc);
+    std::stable_sort(
+        packs.begin(), packs.end(),
+        [ascending](const RowPack& a, const RowPack& b) {
+          if (a.keyOk && b.keyOk && a.key != b.key) {
+            return ascending ? (a.key < b.key) : (a.key > b.key);
+          }
+          if (a.keyOk != b.keyOk) return a.keyOk;
+          return a.original < b.original;
+        });
+  }
+
+  for (int r = 0; r < rows; ++r) {
+    RowPack& pack = packs[static_cast<std::size_t>(r)];
+    for (int c = 0; c < cols; ++c) {
+      table->setItem(r, c, pack.cells[static_cast<std::size_t>(c)]);
+    }
+    table->setVerticalHeaderItem(r, new QTableWidgetItem(pack.label));
+  }
+
+  QHeaderView* header = table->horizontalHeader();
+  if (mode == AnalysisSortMode::Original) {
+    header->setSortIndicatorShown(false);
+  } else {
+    header->setSortIndicatorShown(true);
+    header->setSortIndicator(
+        column, mode == AnalysisSortMode::Asc ? Qt::AscendingOrder
+                                              : Qt::DescendingOrder);
+  }
+}
+
+void cycleAnalysisTableSort(QTableWidget* table, int section) {
+  if (section < 0 || section >= table->columnCount()) return;
+
+  const int prevCol = table->property("anpSortColumn").toInt();
+  const auto prevMode =
+      static_cast<AnalysisSortMode>(table->property("anpSortMode").toInt());
+
+  AnalysisSortMode mode;
+  int col = section;
+  if (prevMode == AnalysisSortMode::Original || prevCol != section) {
+    mode = AnalysisSortMode::Asc;
+  } else if (prevMode == AnalysisSortMode::Asc) {
+    mode = AnalysisSortMode::Desc;
+  } else {
+    mode = AnalysisSortMode::Original;
+    col = -1;
+  }
+
+  table->setProperty("anpSortColumn", col);
+  table->setProperty("anpSortMode", static_cast<int>(mode));
+  applyAnalysisTableSort(table, section, mode);
+}
+
 QTableWidget* makeInfluenceTable(QWidget* parent) {
   auto* table = new QTableWidget(parent);
-  table->setSortingEnabled(true);
+  // Manual 3-state sort (asc → desc → original); built-in sorting leaves
+  // vertical headers behind and only supports two directions.
+  table->setSortingEnabled(false);
   table->setEditTriggers(QAbstractItemView::NoEditTriggers);
   table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+  table->horizontalHeader()->setSectionsClickable(true);
+  resetAnalysisTableSortState(table);
+  QObject::connect(table->horizontalHeader(), &QHeaderView::sectionClicked, table,
+                   [table](int section) { cycleAnalysisTableSort(table, section); });
   return table;
 }
 
@@ -719,6 +859,7 @@ void AnalysisPanel::refreshInfluence() {
     table->clear();
     table->setRowCount(0);
     table->setColumnCount(0);
+    resetAnalysisTableSortState(table);
   };
 
   clearTable(inflTableRaw_);
@@ -741,88 +882,89 @@ void AnalysisPanel::refreshInfluence() {
       inflTableRaw_->setRowCount(static_cast<int>(rows.size()));
       for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
         const auto& r = rows[static_cast<std::size_t>(i)];
-        inflTableRaw_->setVerticalHeaderItem(
-            i, new QTableWidgetItem(QString::fromStdString(r.name)));
-        auto* o = new QTableWidgetItem(HtmlReport::formatNumber(r.original, decimals));
+        const QString name = QString::fromStdString(r.name);
+        auto* o = new AnalysisTableItem(
+            HtmlReport::formatNumber(r.original, decimals));
         o->setData(Qt::UserRole, r.original);
         inflTableRaw_->setItem(i, 0, o);
         const QString upTxt =
             HtmlReport::formatNumber(r.up_score, decimals) + QStringLiteral(" [") +
             HtmlReport::formatNumber(r.up_diff, decimals) + QStringLiteral("]");
-        auto* u = new QTableWidgetItem(upTxt);
+        auto* u = new AnalysisTableItem(upTxt);
         u->setData(Qt::UserRole, r.up_score);
         inflTableRaw_->setItem(i, 1, u);
         const QString downTxt =
             HtmlReport::formatNumber(r.down_score, decimals) + QStringLiteral(" [") +
             HtmlReport::formatNumber(r.down_diff, decimals) + QStringLiteral("]");
-        auto* d = new QTableWidgetItem(downTxt);
+        auto* d = new AnalysisTableItem(downTxt);
         d->setData(Qt::UserRole, r.down_score);
         inflTableRaw_->setItem(i, 2, d);
+        stampRowLabel(inflTableRaw_, i, name);
       }
     }
 
     {
       const auto rows = net.influence_rank(1e-5, 5, lim);
-      inflTableRank_->setSortingEnabled(false);
       inflTableRank_->setColumnCount(2);
       inflTableRank_->setHorizontalHeaderLabels(
           {QStringLiteral("Original Score"), QStringLiteral("Rank Influence")});
       inflTableRank_->setRowCount(static_cast<int>(rows.size()));
       for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
         const auto& r = rows[static_cast<std::size_t>(i)];
-        inflTableRank_->setVerticalHeaderItem(
-            i, new QTableWidgetItem(QString::fromStdString(r.name)));
-        auto* o = new QTableWidgetItem(HtmlReport::formatNumber(r.original, decimals));
+        const QString name = QString::fromStdString(r.name);
+        auto* o = new AnalysisTableItem(
+            HtmlReport::formatNumber(r.original, decimals));
         o->setData(Qt::UserRole, r.original);
         inflTableRank_->setItem(i, 0, o);
-        auto* s = new QTableWidgetItem(HtmlReport::formatNumber(r.rank_influence, decimals));
+        auto* s = new AnalysisTableItem(
+            HtmlReport::formatNumber(r.rank_influence, decimals));
         s->setData(Qt::UserRole, r.rank_influence);
         inflTableRank_->setItem(i, 1, s);
+        stampRowLabel(inflTableRank_, i, name);
       }
-      inflTableRank_->setSortingEnabled(true);
     }
 
     {
       const auto rows = net.influence_marginal_smart(1e-6, lim);
-      inflTableMarginal_->setSortingEnabled(false);
       inflTableMarginal_->setColumnCount(2);
       inflTableMarginal_->setHorizontalHeaderLabels(
           {QStringLiteral("Marginal"), QStringLiteral("Smart p₀")});
       inflTableMarginal_->setRowCount(static_cast<int>(rows.size()));
       for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
         const auto& r = rows[static_cast<std::size_t>(i)];
-        inflTableMarginal_->setVerticalHeaderItem(
-            i, new QTableWidgetItem(QString::fromStdString(r.name)));
-        auto* m = new QTableWidgetItem(HtmlReport::formatNumber(r.marginal, decimals));
+        const QString name = QString::fromStdString(r.name);
+        auto* m = new AnalysisTableItem(
+            HtmlReport::formatNumber(r.marginal, decimals));
         m->setData(Qt::UserRole, r.marginal);
         inflTableMarginal_->setItem(i, 0, m);
-        auto* p0 = new QTableWidgetItem(HtmlReport::formatNumber(r.smart_p0, decimals));
+        auto* p0 = new AnalysisTableItem(
+            HtmlReport::formatNumber(r.smart_p0, decimals));
         p0->setData(Qt::UserRole, r.smart_p0);
         inflTableMarginal_->setItem(i, 1, p0);
+        stampRowLabel(inflTableMarginal_, i, name);
       }
-      inflTableMarginal_->setSortingEnabled(true);
     }
 
     {
       const auto rows =
           net.influence_total(inflDeltaTotal_->value(), lim);
-      inflTableTotal_->setSortingEnabled(false);
       inflTableTotal_->setColumnCount(2);
       inflTableTotal_->setHorizontalHeaderLabels(
           {QStringLiteral("Total Influence"), QStringLiteral("Max Alt Change")});
       inflTableTotal_->setRowCount(static_cast<int>(rows.size()));
       for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
         const auto& r = rows[static_cast<std::size_t>(i)];
-        inflTableTotal_->setVerticalHeaderItem(
-            i, new QTableWidgetItem(QString::fromStdString(r.name)));
-        auto* t = new QTableWidgetItem(HtmlReport::formatNumber(r.total_influence, decimals));
+        const QString name = QString::fromStdString(r.name);
+        auto* t = new AnalysisTableItem(
+            HtmlReport::formatNumber(r.total_influence, decimals));
         t->setData(Qt::UserRole, r.total_influence);
         inflTableTotal_->setItem(i, 0, t);
-        auto* m = new QTableWidgetItem(HtmlReport::formatNumber(r.max_alt_change, decimals));
+        auto* m = new AnalysisTableItem(
+            HtmlReport::formatNumber(r.max_alt_change, decimals));
         m->setData(Qt::UserRole, r.max_alt_change);
         inflTableTotal_->setItem(i, 1, m);
+        stampRowLabel(inflTableTotal_, i, name);
       }
-      inflTableTotal_->setSortingEnabled(true);
     }
   } catch (...) {
   }
@@ -832,6 +974,7 @@ void AnalysisPanel::refreshPerspective() {
   perspTable_->clear();
   perspTable_->setRowCount(0);
   perspTable_->setColumnCount(0);
+  resetAnalysisTableSortState(perspTable_);
 
   try {
     auto& net = doc_->network();
@@ -844,7 +987,6 @@ void AnalysisPanel::refreshPerspective() {
         net.perspective_matrix(anpcpp::P0Mode::Direct(0.5), lim);
     const int decimals = perspDecimals_->value();
 
-    perspTable_->setSortingEnabled(false);
     perspTable_->setRowCount(static_cast<int>(alts.size()));
     perspTable_->setColumnCount(static_cast<int>(nodes.size()));
 
@@ -855,20 +997,19 @@ void AnalysisPanel::refreshPerspective() {
     perspTable_->setHorizontalHeaderLabels(colHeaders);
 
     for (int i = 0; i < static_cast<int>(alts.size()); ++i) {
-      perspTable_->setVerticalHeaderItem(
-          i, new QTableWidgetItem(
-                 QString::fromStdString(alts[static_cast<std::size_t>(i)])));
+      const QString name =
+          QString::fromStdString(alts[static_cast<std::size_t>(i)]);
       for (int j = 0; j < static_cast<int>(nodes.size()); ++j) {
         const double v = P(static_cast<std::size_t>(i),
                            static_cast<std::size_t>(j));
         auto* item =
-            new QTableWidgetItem(HtmlReport::formatNumber(v, decimals));
+            new AnalysisTableItem(HtmlReport::formatNumber(v, decimals));
         item->setData(Qt::UserRole, v);
         item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         perspTable_->setItem(i, j, item);
       }
+      stampRowLabel(perspTable_, i, name);
     }
-    perspTable_->setSortingEnabled(true);
   } catch (...) {
   }
 }
