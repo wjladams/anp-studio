@@ -861,16 +861,20 @@ void AnalysisPanel::refreshInfluence() {
     table->setColumnCount(0);
     resetAnalysisTableSortState(table);
   };
+  auto cellText = [decimals](double v) {
+    if (!std::isfinite(v)) return QStringLiteral("n/a");
+    return HtmlReport::formatNumber(v, decimals);
+  };
 
   clearTable(inflTableRaw_);
   clearTable(inflTableRank_);
   clearTable(inflTableMarginal_);
   clearTable(inflTableTotal_);
 
-  try {
-    auto& net = doc_->network();
-    const auto& lim = net.limit_matrix_options();
+  auto& net = doc_->network();
+  const auto& lim = net.limit_matrix_options();
 
+  try {
     if (!inflWrtRaw_->currentText().isEmpty()) {
       const auto rows = net.influence_raw(
           inflWrtRaw_->currentText().toStdString(), inflDeltaUp_->value(),
@@ -883,88 +887,81 @@ void AnalysisPanel::refreshInfluence() {
       for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
         const auto& r = rows[static_cast<std::size_t>(i)];
         const QString name = QString::fromStdString(r.name);
-        auto* o = new AnalysisTableItem(
-            HtmlReport::formatNumber(r.original, decimals));
+        auto* o = new AnalysisTableItem(cellText(r.original));
         o->setData(Qt::UserRole, r.original);
         inflTableRaw_->setItem(i, 0, o);
-        const QString upTxt =
-            HtmlReport::formatNumber(r.up_score, decimals) + QStringLiteral(" [") +
-            HtmlReport::formatNumber(r.up_diff, decimals) + QStringLiteral("]");
+        const QString upTxt = cellText(r.up_score) + QStringLiteral(" [") +
+                              cellText(r.up_diff) + QStringLiteral("]");
         auto* u = new AnalysisTableItem(upTxt);
         u->setData(Qt::UserRole, r.up_score);
         inflTableRaw_->setItem(i, 1, u);
-        const QString downTxt =
-            HtmlReport::formatNumber(r.down_score, decimals) + QStringLiteral(" [") +
-            HtmlReport::formatNumber(r.down_diff, decimals) + QStringLiteral("]");
+        const QString downTxt = cellText(r.down_score) + QStringLiteral(" [") +
+                                cellText(r.down_diff) + QStringLiteral("]");
         auto* d = new AnalysisTableItem(downTxt);
         d->setData(Qt::UserRole, r.down_score);
         inflTableRaw_->setItem(i, 2, d);
         stampRowLabel(inflTableRaw_, i, name);
       }
     }
+  } catch (...) {
+  }
 
-    {
-      const auto rows = net.influence_rank(1e-5, 5, lim);
-      inflTableRank_->setColumnCount(2);
-      inflTableRank_->setHorizontalHeaderLabels(
-          {QStringLiteral("Original Score"), QStringLiteral("Rank Influence")});
-      inflTableRank_->setRowCount(static_cast<int>(rows.size()));
-      for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
-        const auto& r = rows[static_cast<std::size_t>(i)];
-        const QString name = QString::fromStdString(r.name);
-        auto* o = new AnalysisTableItem(
-            HtmlReport::formatNumber(r.original, decimals));
-        o->setData(Qt::UserRole, r.original);
-        inflTableRank_->setItem(i, 0, o);
-        auto* s = new AnalysisTableItem(
-            HtmlReport::formatNumber(r.rank_influence, decimals));
-        s->setData(Qt::UserRole, r.rank_influence);
-        inflTableRank_->setItem(i, 1, s);
-        stampRowLabel(inflTableRank_, i, name);
-      }
+  try {
+    const auto rows = net.influence_rank(1e-5, 5, lim);
+    inflTableRank_->setColumnCount(2);
+    inflTableRank_->setHorizontalHeaderLabels(
+        {QStringLiteral("Original Score"), QStringLiteral("Rank Influence")});
+    inflTableRank_->setRowCount(static_cast<int>(rows.size()));
+    for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
+      const auto& r = rows[static_cast<std::size_t>(i)];
+      const QString name = QString::fromStdString(r.name);
+      auto* o = new AnalysisTableItem(cellText(r.original));
+      o->setData(Qt::UserRole, r.original);
+      inflTableRank_->setItem(i, 0, o);
+      auto* s = new AnalysisTableItem(cellText(r.rank_influence));
+      s->setData(Qt::UserRole, r.rank_influence);
+      inflTableRank_->setItem(i, 1, s);
+      stampRowLabel(inflTableRank_, i, name);
     }
+  } catch (...) {
+  }
 
-    {
-      const auto rows = net.influence_marginal_smart(1e-6, lim);
-      inflTableMarginal_->setColumnCount(2);
-      inflTableMarginal_->setHorizontalHeaderLabels(
-          {QStringLiteral("Marginal"), QStringLiteral("Smart p₀")});
-      inflTableMarginal_->setRowCount(static_cast<int>(rows.size()));
-      for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
-        const auto& r = rows[static_cast<std::size_t>(i)];
-        const QString name = QString::fromStdString(r.name);
-        auto* m = new AnalysisTableItem(
-            HtmlReport::formatNumber(r.marginal, decimals));
-        m->setData(Qt::UserRole, r.marginal);
-        inflTableMarginal_->setItem(i, 0, m);
-        auto* p0 = new AnalysisTableItem(
-            HtmlReport::formatNumber(r.smart_p0, decimals));
-        p0->setData(Qt::UserRole, r.smart_p0);
-        inflTableMarginal_->setItem(i, 1, p0);
-        stampRowLabel(inflTableMarginal_, i, name);
-      }
+  try {
+    const auto rows = net.influence_marginal_smart(1e-6, lim);
+    inflTableMarginal_->setColumnCount(2);
+    inflTableMarginal_->setHorizontalHeaderLabels(
+        {QStringLiteral("Marginal"), QStringLiteral("Smart p₀")});
+    inflTableMarginal_->setRowCount(static_cast<int>(rows.size()));
+    for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
+      const auto& r = rows[static_cast<std::size_t>(i)];
+      const QString name = QString::fromStdString(r.name);
+      auto* m = new AnalysisTableItem(cellText(r.marginal));
+      m->setData(Qt::UserRole, r.marginal);
+      inflTableMarginal_->setItem(i, 0, m);
+      auto* p0 = new AnalysisTableItem(cellText(r.smart_p0));
+      p0->setData(Qt::UserRole, r.smart_p0);
+      inflTableMarginal_->setItem(i, 1, p0);
+      stampRowLabel(inflTableMarginal_, i, name);
     }
+  } catch (...) {
+  }
 
-    {
-      const auto rows =
-          net.influence_total(inflDeltaTotal_->value(), lim);
-      inflTableTotal_->setColumnCount(2);
-      inflTableTotal_->setHorizontalHeaderLabels(
-          {QStringLiteral("Total Influence"), QStringLiteral("Max Alt Change")});
-      inflTableTotal_->setRowCount(static_cast<int>(rows.size()));
-      for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
-        const auto& r = rows[static_cast<std::size_t>(i)];
-        const QString name = QString::fromStdString(r.name);
-        auto* t = new AnalysisTableItem(
-            HtmlReport::formatNumber(r.total_influence, decimals));
-        t->setData(Qt::UserRole, r.total_influence);
-        inflTableTotal_->setItem(i, 0, t);
-        auto* m = new AnalysisTableItem(
-            HtmlReport::formatNumber(r.max_alt_change, decimals));
-        m->setData(Qt::UserRole, r.max_alt_change);
-        inflTableTotal_->setItem(i, 1, m);
-        stampRowLabel(inflTableTotal_, i, name);
-      }
+  try {
+    const auto rows = net.influence_total(inflDeltaTotal_->value(), lim);
+    inflTableTotal_->setColumnCount(2);
+    inflTableTotal_->setHorizontalHeaderLabels(
+        {QStringLiteral("Total Influence"), QStringLiteral("Max Alt Change")});
+    inflTableTotal_->setRowCount(static_cast<int>(rows.size()));
+    for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
+      const auto& r = rows[static_cast<std::size_t>(i)];
+      const QString name = QString::fromStdString(r.name);
+      auto* t = new AnalysisTableItem(cellText(r.total_influence));
+      t->setData(Qt::UserRole, r.total_influence);
+      inflTableTotal_->setItem(i, 0, t);
+      auto* m = new AnalysisTableItem(cellText(r.max_alt_change));
+      m->setData(Qt::UserRole, r.max_alt_change);
+      inflTableTotal_->setItem(i, 1, m);
+      stampRowLabel(inflTableTotal_, i, name);
     }
   } catch (...) {
   }

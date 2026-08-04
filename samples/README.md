@@ -50,6 +50,7 @@ cmake --build ../libanpcpp/build --target export_sample_models
 | `19_multiuser_ratings.anpstudio` | Multi-user ratings | Numeric ratings; arithmetic mean of scores |
 | `20_multiuser_mixed.anpstudio` | Multi-user mixed | Pairwise + ratings; Executives group |
 | `21_multiuser_partial.anpstudio` | Multi-user sparse | Missing judgments skipped in aggregation |
+| `22_multiuser_hamburger.anpstudio` | Multi-user ANP | Hamburger network; 5 full-vote users (Standard, brand fans, Chaos) |
 
 ### Import fixtures (`import/`)
 
