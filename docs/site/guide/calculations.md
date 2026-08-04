@@ -43,6 +43,10 @@ Under **Sensitivity**:
 
 Under **Influence analysis**, tables summarize how adjusting rows moves alternative scores (raw, rank, marginal, total). Use these after the base synthesis looks sensible.
 
+## Perspective
+
+Under **Perspective analysis**, each column is the alternative-score vector obtained by taking ANP row sensitivity toward the limit *p* → 1 for that node (evaluated near 1, never at exactly 1). Rows are alternatives; columns are nodes.
+
 ## Researcher (optional)
 
 **Compute → Show Researcher** opens a notebook-style command panel for inspection (`limit`, `globals`, matrices, loads of other models, and more). Type `help` there for commands. Prefer Analysis for everyday reading of results.

@@ -38,6 +38,10 @@ A measure of how much pairwise judgments disagree with themselves; high values s
 
 Analysis of how changing a row’s priorities moves alternative scores. See [Calculations]({{ '/guide/calculations/' | relative_url }}).
 
+### Perspective {#perspective}
+
+Alternative scores when a factor’s row-sensitivity parameter *p* approaches 1 (evaluated near 1, not at exactly 1); shown as a matrix with one column per node. See [Calculations]({{ '/guide/calculations/' | relative_url }}).
+
 ### Invert {#invert}
 
 Treating a priority or score so that higher raw values mean lower preference (common for costs). Used in synthesis contexts; see network Formula and subnetwork settings in [Structure]({{ '/guide/structure/' | relative_url }}).

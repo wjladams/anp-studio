@@ -1,7 +1,7 @@
 /**
  * @file analysis_panel.hpp
  * @brief Analysis stage: left-nav tree + Synthesis / Sensitivity / Influence /
- *        Consensus panes.
+ *        Perspective / Consensus panes.
  */
 
 #pragma once
@@ -39,6 +39,7 @@ public:
     InflRank,
     InflMarginal,
     InflTotal,
+    Perspective,
     Consensus,
   };
 
@@ -55,6 +56,7 @@ private slots:
   void onNavCurrentChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous);
   void onOverviewAnchorClicked(const QUrl& url);
   void onInfluenceParamsChanged();
+  void onPerspectiveParamsChanged();
 
 private:
   void buildNavTree();
@@ -66,6 +68,7 @@ private:
   void refreshSynthesisHtml();
   void refreshSensitivity();
   void refreshInfluence();
+  void refreshPerspective();
   void fillWrtCombo(QComboBox* combo, const QString& prefer);
 
   [[nodiscard]] std::vector<std::pair<QString, double>> altScoresAtP(
@@ -104,6 +107,9 @@ private:
 
   QDoubleSpinBox* inflDeltaTotal_ = nullptr;
   QTableWidget* inflTableTotal_ = nullptr;
+
+  QSpinBox* perspDecimals_ = nullptr;
+  QTableWidget* perspTable_ = nullptr;
 
   ConsensusAnalysisWidget* consensus_ = nullptr;
 

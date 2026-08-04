@@ -2,7 +2,8 @@
 
 /**
  * @file analysis_panel.cpp
- * @brief Analysis stage nav + Synthesis / Sensitivity / Influence / Consensus.
+ * @brief Analysis stage nav + Synthesis / Sensitivity / Influence /
+ *        Perspective / Consensus.
  */
 
 #include "document.hpp"
@@ -290,6 +291,31 @@ AnalysisPanel::AnalysisPanel(Document* doc, QWidget* parent)
   inflTotalLay->addWidget(inflTableTotal_, 1);
   stack_->addWidget(inflTotalPage);
 
+  // --- Perspective analysis ---
+  auto* perspPage = new QWidget(stack_);
+  auto* perspLay = new QVBoxLayout(perspPage);
+  auto* perspIntro = new QLabel(
+      QStringLiteral(
+          "Perspective analysis is the limit of ANP row sensitivity as "
+          "<i>p</i> → 1 for each node (evaluated near 1, never at exactly 1). "
+          "Columns are perspectives (one per node); "
+          "rows are alternative scores."),
+      perspPage);
+  perspIntro->setWordWrap(true);
+  perspIntro->setTextFormat(Qt::RichText);
+  perspLay->addWidget(perspIntro);
+  auto* perspForm = new QHBoxLayout;
+  perspForm->addWidget(new QLabel(QStringLiteral("Decimals:"), perspPage));
+  perspDecimals_ = new QSpinBox(perspPage);
+  perspDecimals_->setRange(2, 8);
+  perspDecimals_->setValue(4);
+  perspForm->addWidget(perspDecimals_);
+  perspForm->addStretch();
+  perspLay->addLayout(perspForm);
+  perspTable_ = makeInfluenceTable(perspPage);
+  perspLay->addWidget(perspTable_, 1);
+  stack_->addWidget(perspPage);
+
   // --- Consensus / Variance ---
   consensus_ = new ConsensusAnalysisWidget(doc_, stack_);
   stack_->addWidget(consensus_);
@@ -337,6 +363,8 @@ AnalysisPanel::AnalysisPanel(Document* doc, QWidget* parent)
           this, &AnalysisPanel::onInfluenceParamsChanged);
   connect(inflDecimals_, QOverload<int>::of(&QSpinBox::valueChanged), this,
           &AnalysisPanel::onInfluenceParamsChanged);
+  connect(perspDecimals_, QOverload<int>::of(&QSpinBox::valueChanged), this,
+          &AnalysisPanel::onPerspectiveParamsChanged);
 
   navigateTo(Page::Synthesis);
   refresh();
@@ -377,6 +405,10 @@ void AnalysisPanel::buildNavTree() {
   makeNavItem(inflItem, QStringLiteral("Rank"), Page::InflRank);
   makeNavItem(inflItem, QStringLiteral("Marginal"), Page::InflMarginal);
   makeNavItem(inflItem, QStringLiteral("Total"), Page::InflTotal);
+
+  nav_->addTopLevelItem(
+      makeNavItem(nullptr, QStringLiteral("Perspective analysis"),
+                  Page::Perspective));
 
   nav_->addTopLevelItem(
       makeNavItem(nullptr, QStringLiteral("Consensus / Variance"),
@@ -460,14 +492,16 @@ void AnalysisPanel::onOverviewAnchorClicked(const QUrl& url) {
   }
 }
 
-// --- Pane refresh (Synthesis / Sensitivity / Influence / Consensus) ---------
+// --- Pane refresh (Synthesis / Sensitivity / Influence / Perspective /
+// Consensus) ---
 
 void AnalysisPanel::refresh() {
   updateSubnetNavVisibility();
   rebuildSensWrtNodes();
   rebuildInfluenceWrtNodes();
-  // Supermatrix / sensitivity / influence are expensive; skip while this stage
-  // is hidden (e.g. Structure connection edits) and rebuild on show.
+  // Supermatrix / sensitivity / influence / perspective are expensive; skip
+  // while this stage is hidden (e.g. Structure connection edits) and rebuild
+  // on show.
   if (!isVisible()) {
     heavyStale_ = true;
     return;
@@ -476,6 +510,7 @@ void AnalysisPanel::refresh() {
   refreshSynthesisHtml();
   refreshSensitivity();
   refreshInfluence();
+  refreshPerspective();
   if (consensus_) consensus_->refresh();
   if (stack_->currentIndex() == static_cast<int>(Page::Synthesis) &&
       !synthAnchor_.isEmpty()) {
@@ -514,6 +549,10 @@ void AnalysisPanel::rebuildInfluenceWrtNodes() {
 
 void AnalysisPanel::onInfluenceParamsChanged() {
   refreshInfluence();
+}
+
+void AnalysisPanel::onPerspectiveParamsChanged() {
+  refreshPerspective();
 }
 
 std::vector<std::pair<QString, double>> AnalysisPanel::altScoresAtP(
@@ -785,6 +824,51 @@ void AnalysisPanel::refreshInfluence() {
       }
       inflTableTotal_->setSortingEnabled(true);
     }
+  } catch (...) {
+  }
+}
+
+void AnalysisPanel::refreshPerspective() {
+  perspTable_->clear();
+  perspTable_->setRowCount(0);
+  perspTable_->setColumnCount(0);
+
+  try {
+    auto& net = doc_->network();
+    const auto& lim = net.limit_matrix_options();
+    const auto alts = net.alt_names();
+    const auto nodes = net.node_names();
+    if (alts.empty() || nodes.empty()) return;
+
+    const anpcpp::Matrix P =
+        net.perspective_matrix(anpcpp::P0Mode::Direct(0.5), lim);
+    const int decimals = perspDecimals_->value();
+
+    perspTable_->setSortingEnabled(false);
+    perspTable_->setRowCount(static_cast<int>(alts.size()));
+    perspTable_->setColumnCount(static_cast<int>(nodes.size()));
+
+    QStringList colHeaders;
+    for (const auto& n : nodes) {
+      colHeaders << QString::fromStdString(n);
+    }
+    perspTable_->setHorizontalHeaderLabels(colHeaders);
+
+    for (int i = 0; i < static_cast<int>(alts.size()); ++i) {
+      perspTable_->setVerticalHeaderItem(
+          i, new QTableWidgetItem(
+                 QString::fromStdString(alts[static_cast<std::size_t>(i)])));
+      for (int j = 0; j < static_cast<int>(nodes.size()); ++j) {
+        const double v = P(static_cast<std::size_t>(i),
+                           static_cast<std::size_t>(j));
+        auto* item =
+            new QTableWidgetItem(HtmlReport::formatNumber(v, decimals));
+        item->setData(Qt::UserRole, v);
+        item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        perspTable_->setItem(i, j, item);
+      }
+    }
+    perspTable_->setSortingEnabled(true);
   } catch (...) {
   }
 }

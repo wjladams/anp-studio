@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stage chrome same-line — ANP Studio</title>
+  <style>
+    :root {
+      --page-bg: #f6f4ef;
+      --page-ink: #1c1b19;
+      --page-muted: #5c574e;
+      --page-line: #d4cfc4;
+      --page-panel: #fffdf8;
+      --page-accent: #2f5d50;
+      --page-accent-soft: #e4efe9;
+      --page-select: #c8ddd4;
+
+      --bg: #ffffff;
+      --canvas: #f8f9fa;
+      --ink: #202124;
+      --muted: #5f6368;
+      --line: #dadce0;
+      --hover: #f1f3f4;
+      --blue: #1a73e8;
+      --blue-soft: #e8f0fe;
+      --blue-deep: #1967d2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.45 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--page-ink);
+      background: var(--page-bg);
+    }
+    header {
+      padding: 1.75rem 2rem 1rem;
+      border-bottom: 1px solid var(--page-line);
+      background: var(--page-panel);
+    }
+    header h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.65rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      margin: 0;
+      max-width: 48rem;
+      color: var(--page-muted);
+    }
+    .chooser {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      padding: 1rem 2rem 0;
+    }
+    .chooser button {
+      font: inherit;
+      border: 1px solid var(--page-line);
+      background: var(--page-panel);
+      color: var(--page-ink);
+      padding: 0.45rem 0.85rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .chooser button[aria-selected="true"] {
+      background: var(--page-accent);
+      border-color: var(--page-accent);
+      color: #fff;
+    }
+    main { padding: 1rem 2rem 3rem; }
+    article { display: none; max-width: 1140px; }
+    article.active { display: block; }
+    .meta {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    @media (max-width: 860px) {
+      .meta { grid-template-columns: 1fr; }
+    }
+    .meta h2 { margin: 0 0 0.4rem; font-size: 1.25rem; }
+    .meta p, .meta li { color: var(--page-muted); }
+    .meta ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+    .pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--page-accent);
+      border: 1px solid var(--page-select);
+      background: var(--page-accent-soft);
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      margin-bottom: 0.5rem;
+    }
+    .stack { display: grid; gap: 1.25rem; }
+
+    /* —— App wireframe —— */
+    .wire {
+      border: 1px solid var(--page-line);
+      background: var(--bg);
+      border-radius: 8px;
+      overflow: hidden;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      font-size: 13px;
+      color: var(--ink);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .titlebar {
+      background: #f8f9fa;
+      border-bottom: 1px solid var(--line);
+      padding: 6px 12px;
+      display: flex;
+      gap: 14px;
+      font-size: 12px;
+    }
+    .body {
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      min-height: 260px;
+    }
+    .main { display: flex; flex-direction: column; min-width: 0; }
+    .workspace {
+      flex: 1;
+      background: var(--canvas);
+      min-height: 180px;
+      position: relative;
+    }
+    .workspace .label {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .inspector {
+      border-left: 1px solid var(--line);
+      padding: 12px;
+    }
+    .inspector h3 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .cap { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .box {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 7px 10px;
+      margin-bottom: 10px;
+    }
+
+    /* Stage pill strip */
+    .stage-track {
+      display: inline-flex;
+      gap: 2px;
+      padding: 3px;
+      background: var(--hover);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+    .stage-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 7px 14px;
+      color: var(--muted);
+      font: 600 13px/1.2 inherit;
+      cursor: pointer;
+    }
+    .stage-btn[aria-selected="true"] {
+      background: #fff;
+      color: var(--blue);
+      border-color: #aecbfa;
+    }
+
+    /* Breadcrumb / scope chrome */
+    .chrome {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      flex-wrap: wrap;
+    }
+    .chrome .caption { color: var(--muted); }
+    .chrome .current { color: var(--ink); font-weight: 600; }
+    .chrome .sep { color: var(--muted); }
+    .combo {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      padding: 5px 10px;
+      color: var(--ink);
+      font-size: 12px;
+      min-width: 7rem;
+    }
+    .combo::after {
+      content: "▾";
+      color: var(--muted);
+      font-size: 10px;
+    }
+    .chip-edit {
+      color: #174ea6;
+      background: var(--blue-soft);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .chip-ro {
+      color: var(--muted);
+      background: var(--hover);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* Layout A: two rows (today) */
+    .layout-a .chrome-row {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .layout-a .stage-row {
+      padding: 8px 12px 0;
+    }
+
+    /* Layout B: same line, scope right */
+    .layout-b .top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line);
+      flex-wrap: wrap;
+    }
+    .layout-b .chrome {
+      justify-content: flex-end;
+      margin-left: auto;
+    }
+
+    /* Layout C: same idea, tighter when narrow / deep path */
+    .layout-b.nested .combo.wide { min-width: 10rem; }
+
+    .wire-label {
+      font: 600 12px/1.2 "Segoe UI", sans-serif;
+      color: var(--page-muted);
+      margin: 0 0 0.4rem;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    .note {
+      margin-top: 0.85rem;
+      font-size: 0.9rem;
+      color: var(--page-muted);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Stage chrome on one line</h1>
+    <p>
+      Mock: keep the pill-strip stages on the left; put Network (and Scope when
+      present) on the same row, right-justified. Scope still omitted on Structure,
+      matching today’s rules.
+    </p>
+  </header>
+
+  <nav class="chooser" role="tablist">
+    <button type="button" data-opt="compare" aria-selected="true">Side-by-side</button>
+    <button type="button" data-opt="structure" aria-selected="false">Structure</button>
+    <button type="button" data-opt="judgments" aria-selected="false">Judgments + Scope</button>
+    <button type="button" data-opt="nested" aria-selected="false">Nested network</button>
+  </nav>
+
+  <main>
+    <!-- Side-by-side: current vs proposed -->
+    <article id="opt-compare" class="active" data-opt="compare">
+      <div class="meta">
+        <div>
+          <span class="pill">Compare</span>
+          <h2>Two rows vs one row</h2>
+          <p>
+            Today the pill strip and the Network/Scope bar stack. Proposed:
+            one shared chrome row — stages left, context right.
+          </p>
+        </div>
+        <div>
+          <h2>Trade-offs</h2>
+          <ul>
+            <li>Saves a vertical band under the menu</li>
+            <li>Right side can get tight with deep paths + Scope</li>
+            <li>Structure still shows Network only (no Scope)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="stack">
+        <div>
+          <div class="wire-label">A · Current (two rows)</div>
+          <div class="wire layout-a">
+            <div class="titlebar">
+              <span>File</span><span>Edit</span><span>View</span><span>Network</span>
+              <span>Participants</span><span>Compute</span><span>Help</span>
+            </div>
+            <div class="stage-row">
+              <div class="stage-track">
+                <button type="button" class="stage-btn" aria-selected="false">Structure</button>
+                <button type="button" class="stage-btn" aria-selected="true">Judgments</button>
+                <button type="button" class="stage-btn" aria-selected="false">Analysis</button>
+                <button type="button" class="stage-btn" aria-selected="false">Researcher</button>
+              </div>
+            </div>
+            <div class="chrome-row">
+              <div class="chrome">
+                <span class="caption">Network:</span>
+                <span class="combo">Root</span>
+                <span class="current">Root</span>
+                <span class="sep">·</span>
+                <span class="caption">Scope:</span>
+                <span class="combo">Group average</span>
+                <span class="chip-ro">Read-only</span>
+              </div>
+            </div>
+            <div class="body">
+              <div class="main"><div class="workspace"><div class="label">Judgments workspace</div></div></div>
+              <aside class="inspector"><h3>Inspector</h3><div class="cap">Name</div><div class="box">—</div></aside>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="wire-label">B · Proposed (same line, right-justified)</div>
+          <div class="wire layout-b">
+            <div class="titlebar">
+              <span>File</span><span>Edit</span><span>View</span><span>Network</span>
+              <span>Participants</span><span>Compute</span><span>Help</span>
+            </div>
+            <div class="top-row">
+              <div class="stage-track">
+                <button type="button" class="stage-btn" aria-selected="false">Structure</button>
+                <button type="button" class="stage-btn" aria-selected="true">Judgments</button>
+                <button type="button" class="stage-btn" aria-selected="false">Analysis</button>
+                <button type="button" class="stage-btn" aria-selected="false">Researcher</button>
+              </div>
+              <div class="chrome">
+                <span class="caption">Network:</span>
+                <span class="combo">Root</span>
+                <span class="current">Root</span>
+                <span class="sep">·</span>
+                <span class="caption">Scope:</span>
+                <span class="combo">Group average</span>
+                <span class="chip-ro">Read-only</span>
+              </div>
+            </div>
+            <div class="body">
+              <div class="main"><div class="workspace"><div class="label">Judgments workspace</div></div></div>
+              <aside class="inspector"><h3>Inspector</h3><div class="cap">Name</div><div class="box">—</div></aside>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Structure: Network only -->
+    <article id="opt-structure" data-opt="structure">
+      <div class="meta">
+        <div>
+          <span class="pill">Structure</span>
+          <h2>Network only (no Scope)</h2>
+          <p>
+            Same as today: Structure has Network path chrome but not Scope.
+            On one line that just means a quieter right side.
+          </p>
+        </div>
+        <div>
+          <h2>Notes</h2>
+          <ul>
+            <li>Pills + Network share one band</li>
+            <li>Normal / Connection stay in the structure page below</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire layout-b">
+        <div class="titlebar">
+          <span>File</span><span>Edit</span><span>View</span><span>Network</span>
+          <span>Participants</span><span>Compute</span><span>Help</span>
+        </div>
+        <div class="top-row">
+          <div class="stage-track">
+            <button type="button" class="stage-btn" aria-selected="true">Structure</button>
+            <button type="button" class="stage-btn" aria-selected="false">Judgments</button>
+            <button type="button" class="stage-btn" aria-selected="false">Analysis</button>
+            <button type="button" class="stage-btn" aria-selected="false">Researcher</button>
+          </div>
+          <div class="chrome">
+            <span class="caption">Network:</span>
+            <span class="combo">Root</span>
+            <span class="current">Root</span>
+          </div>
+        </div>
+        <div class="body">
+          <div class="main"><div class="workspace"><div class="label">Structure canvas · Normal | Connection below</div></div></div>
+          <aside class="inspector"><h3>Inspector</h3><div class="cap">Name</div><div class="box">Alternatives</div></aside>
+        </div>
+      </div>
+    </article>
+
+    <!-- Judgments with Scope -->
+    <article id="opt-judgments" data-opt="judgments">
+      <div class="meta">
+        <div>
+          <span class="pill">Judgments</span>
+          <h2>Network + Scope + mode chip</h2>
+          <p>
+            Full chrome on the right: Network combo, path label, Scope combo,
+            and Editable / Read-only chip (Judgments only).
+          </p>
+        </div>
+        <div>
+          <h2>Notes</h2>
+          <ul>
+            <li>Analysis / Researcher would look the same minus the chip</li>
+            <li>If the window is narrow, wrap the chrome under the pills</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire layout-b">
+        <div class="titlebar">
+          <span>File</span><span>Edit</span><span>View</span><span>Network</span>
+          <span>Participants</span><span>Compute</span><span>Help</span>
+        </div>
+        <div class="top-row">
+          <div class="stage-track">
+            <button type="button" class="stage-btn" aria-selected="false">Structure</button>
+            <button type="button" class="stage-btn" aria-selected="true">Judgments</button>
+            <button type="button" class="stage-btn" aria-selected="false">Analysis</button>
+            <button type="button" class="stage-btn" aria-selected="false">Researcher</button>
+          </div>
+          <div class="chrome">
+            <span class="caption">Network:</span>
+            <span class="combo">Root</span>
+            <span class="current">Root</span>
+            <span class="sep">·</span>
+            <span class="caption">Scope:</span>
+            <span class="combo">Alice</span>
+            <span class="chip-edit">Editable</span>
+          </div>
+        </div>
+        <div class="body">
+          <div class="main"><div class="workspace"><div class="label">Pairwise / ratings</div></div></div>
+          <aside class="inspector"><h3>Inspector</h3><div class="cap">Name</div><div class="box">—</div></aside>
+        </div>
+      </div>
+      <p class="note">Narrow window: flex-wrap lets the right chrome drop under the pill strip instead of colliding.</p>
+    </article>
+
+    <!-- Nested path pressure -->
+    <article id="opt-nested" data-opt="nested">
+      <div class="meta">
+        <div>
+          <span class="pill">Stress case</span>
+          <h2>Nested network path</h2>
+          <p>
+            Deeper breadcrumbs + Scope make the right side denser. Still one row
+            at desktop width; wrapping is the escape hatch.
+          </p>
+        </div>
+        <div>
+          <h2>Notes</h2>
+          <ul>
+            <li>Could later compact path links or hide the trailing label</li>
+            <li>Combo already carries the full path selection</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire layout-b nested">
+        <div class="titlebar">
+          <span>File</span><span>Edit</span><span>View</span><span>Network</span>
+          <span>Participants</span><span>Compute</span><span>Help</span>
+        </div>
+        <div class="top-row">
+          <div class="stage-track">
+            <button type="button" class="stage-btn" aria-selected="false">Structure</button>
+            <button type="button" class="stage-btn" aria-selected="false">Judgments</button>
+            <button type="button" class="stage-btn" aria-selected="true">Analysis</button>
+            <button type="button" class="stage-btn" aria-selected="false">Researcher</button>
+          </div>
+          <div class="chrome">
+            <span class="caption">Network:</span>
+            <span class="combo wide">Root / Benefits / Economic</span>
+            <span class="sep">/</span>
+            <button type="button" class="stage-btn" style="padding:4px 8px;font-weight:600;color:var(--blue);border:none;background:transparent;">Root</button>
+            <span class="sep">/</span>
+            <button type="button" class="stage-btn" style="padding:4px 8px;font-weight:600;color:var(--blue);border:none;background:transparent;">Benefits</button>
+            <span class="sep">/</span>
+            <span class="current">Economic</span>
+            <span class="sep">·</span>
+            <span class="caption">Scope:</span>
+            <span class="combo">Group average</span>
+          </div>
+        </div>
+        <div class="body">
+          <div class="main"><div class="workspace"><div class="label">Analysis</div></div></div>
+          <aside class="inspector"><h3>Inspector</h3><div class="cap">Name</div><div class="box">—</div></aside>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <script>
+    const chooser = document.querySelectorAll(".chooser button");
+    const articles = document.querySelectorAll("main article");
+    chooser.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.opt;
+        chooser.forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
+        articles.forEach((a) => a.classList.toggle("active", a.dataset.opt === id));
+      });
+    });
+  </script>
+</body>
+</html>

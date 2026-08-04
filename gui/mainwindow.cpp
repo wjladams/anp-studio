@@ -44,6 +44,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSettings>
+#include <QSizePolicy>
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QStatusBar>
@@ -107,30 +108,39 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
   rootLay->setSpacing(8);
 
   auto* stageRow = new QHBoxLayout;
+  stageRow->setContentsMargins(0, 0, 0, 0);
+  stageRow->setSpacing(0);
+  auto* stageTrack = new QWidget(central);
+  stageTrack->setObjectName(QStringLiteral("stageTabTrack"));
+  auto* trackLay = new QHBoxLayout(stageTrack);
+  trackLay->setContentsMargins(3, 3, 3, 3);
+  trackLay->setSpacing(2);
   stageButtons_ = new QButtonGroup(this);
   stageButtons_->setExclusive(true);
   auto addStageBtn = [&](const QString& text, Stage s) {
-    auto* b = new QPushButton(text, central);
+    auto* b = new QPushButton(text, stageTrack);
     b->setObjectName(QStringLiteral("stageTab"));
     b->setCheckable(true);
     b->setFlat(true);
     b->setCursor(Qt::PointingHandCursor);
     stageButtons_->addButton(b, static_cast<int>(s));
-    stageRow->addWidget(b);
+    trackLay->addWidget(b);
   };
   addStageBtn(QStringLiteral("Structure"), Stage::Structure);
   addStageBtn(QStringLiteral("Judgments"), Stage::Judgments);
   addStageBtn(QStringLiteral("Analysis"), Stage::Analysis);
   addStageBtn(QStringLiteral("Researcher"), Stage::Researcher);
-  stageRow->addStretch();
-  rootLay->addLayout(stageRow);
+  stageRow->addWidget(stageTrack, 0, Qt::AlignVCenter);
 
   breadcrumbBar_ = new QWidget(central);
   breadcrumbBar_->setObjectName(QStringLiteral("breadcrumbBar"));
+  breadcrumbBar_->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
   breadcrumbLay_ = new QHBoxLayout(breadcrumbBar_);
   breadcrumbLay_->setContentsMargins(0, 0, 0, 0);
   breadcrumbLay_->setSpacing(4);
-  rootLay->addWidget(breadcrumbBar_);
+  stageRow->addStretch(1);
+  stageRow->addWidget(breadcrumbBar_, 0, Qt::AlignVCenter);
+  rootLay->addLayout(stageRow);
 
   stages_ = new QStackedWidget(central);
   rootLay->addWidget(stages_, 1);
@@ -518,7 +528,6 @@ void MainWindow::updateBreadcrumb() {
       breadcrumbLay_->addWidget(link);
     }
   }
-  breadcrumbLay_->addStretch();
 
   // Shared Scope combo beside Network on Judgments, Analysis, and Researcher.
   // Same JudgmentSession as the Judgments Scope rail (SessionPanel).
@@ -578,8 +587,6 @@ void MainWindow::updateBreadcrumb() {
       }
       breadcrumbLay_->addWidget(modeChip);
     }
-
-    breadcrumbLay_->addStretch();
   }
 }
 

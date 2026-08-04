@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stage tabs options — ANP Studio</title>
+  <style>
+    :root {
+      --page-bg: #f6f4ef;
+      --page-ink: #1c1b19;
+      --page-muted: #5c574e;
+      --page-line: #d4cfc4;
+      --page-panel: #fffdf8;
+      --page-accent: #2f5d50;
+      --page-accent-soft: #e4efe9;
+      --page-select: #c8ddd4;
+
+      /* App chrome (matches gui/resources/app.qss) */
+      --bg: #ffffff;
+      --canvas: #f8f9fa;
+      --ink: #202124;
+      --muted: #5f6368;
+      --line: #dadce0;
+      --hover: #f1f3f4;
+      --blue: #1a73e8;
+      --blue-soft: #e8f0fe;
+      --blue-deep: #1967d2;
+      --menu: #f8f9fa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.45 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--page-ink);
+      background: var(--page-bg);
+    }
+    header {
+      padding: 1.75rem 2rem 1rem;
+      border-bottom: 1px solid var(--page-line);
+      background: var(--page-panel);
+    }
+    header h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.65rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      margin: 0;
+      max-width: 46rem;
+      color: var(--page-muted);
+    }
+    .chooser {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      padding: 1rem 2rem 0;
+    }
+    .chooser button {
+      font: inherit;
+      border: 1px solid var(--page-line);
+      background: var(--page-panel);
+      color: var(--page-ink);
+      padding: 0.45rem 0.85rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .chooser button[aria-selected="true"] {
+      background: var(--page-accent);
+      border-color: var(--page-accent);
+      color: #fff;
+    }
+    main { padding: 1rem 2rem 3rem; }
+    article { display: none; max-width: 1120px; }
+    article.active { display: block; }
+    .meta {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    @media (max-width: 860px) {
+      .meta { grid-template-columns: 1fr; }
+    }
+    .meta h2 { margin: 0 0 0.4rem; font-size: 1.25rem; }
+    .meta p, .meta li { color: var(--page-muted); }
+    .meta ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+    .pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--page-accent);
+      border: 1px solid var(--page-select);
+      background: var(--page-accent-soft);
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      margin-bottom: 0.5rem;
+    }
+
+    /* —— App wireframe shell —— */
+    .wire {
+      border: 1px solid var(--page-line);
+      background: var(--bg);
+      border-radius: 8px;
+      overflow: hidden;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      font-size: 13px;
+      color: var(--ink);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .titlebar {
+      background: var(--menu);
+      border-bottom: 1px solid var(--line);
+      padding: 6px 12px;
+      display: flex;
+      gap: 14px;
+      color: var(--ink);
+      font-size: 12px;
+    }
+    .titlebar span { cursor: default; }
+    .body {
+      display: grid;
+      grid-template-columns: 1fr 240px;
+      min-height: 320px;
+    }
+    .main {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: var(--bg);
+    }
+    .stage-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      padding: 8px 12px 0;
+      flex-shrink: 0;
+    }
+    .crumb {
+      padding: 8px 12px;
+      color: var(--muted);
+      font-size: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .crumb strong { color: var(--ink); font-weight: 600; }
+    .workspace {
+      flex: 1;
+      background: var(--canvas);
+      position: relative;
+      min-height: 220px;
+    }
+    .mode-strip {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .mode-strip .on {
+      border: 1px solid var(--blue);
+      border-radius: 5px;
+      margin: -1px;
+      padding: 5px 14px;
+      color: var(--blue);
+      background: #fff;
+    }
+    .mode-strip .off {
+      padding: 5px 14px;
+      color: var(--ink);
+      background: var(--hover);
+    }
+    .node {
+      position: absolute;
+      left: 50%;
+      top: 48%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px 28px;
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .fab {
+      position: absolute;
+      right: 16px;
+      bottom: 16px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--blue);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      line-height: 1;
+      box-shadow: 0 2px 6px rgba(26,115,232,0.35);
+    }
+    .inspector {
+      border-left: 1px solid var(--line);
+      padding: 12px;
+      background: #fff;
+    }
+    .inspector h3 {
+      margin: 0 0 12px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .field { margin-bottom: 10px; }
+    .field label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .field .box {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 7px 10px;
+      background: #fff;
+      color: var(--ink);
+    }
+    .hint {
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+      color: var(--page-muted);
+    }
+
+    /* —— Option 0: Current underline —— */
+    .opt0 .stage-btn {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      padding: 8px 14px;
+      margin: 0 2px;
+      color: var(--muted);
+      font: 600 13px/1.2 inherit;
+      cursor: pointer;
+    }
+    .opt0 .stage-btn:hover {
+      color: var(--ink);
+      background: var(--hover);
+      border-bottom-color: var(--line);
+    }
+    .opt0 .stage-btn[aria-selected="true"] {
+      color: var(--blue);
+      background: transparent;
+      border-bottom-color: var(--blue);
+    }
+    .opt0 .stage-row { padding-bottom: 0; border-bottom: none; }
+    .opt0 .crumb { border-top: none; }
+
+    /* —— Option 1: Classic folder tabs —— */
+    .opt1 .stage-row {
+      padding: 10px 12px 0;
+      background: var(--hover);
+      border-bottom: 1px solid var(--line);
+      gap: 3px;
+    }
+    .opt1 .stage-btn {
+      background: #e8eaed;
+      border: 1px solid var(--line);
+      border-bottom: none;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+      padding: 8px 16px;
+      color: var(--muted);
+      font: 600 13px/1.2 inherit;
+      cursor: pointer;
+      margin-bottom: -1px;
+      position: relative;
+    }
+    .opt1 .stage-btn:hover:not([aria-selected="true"]) {
+      background: #dde1e5;
+      color: var(--ink);
+    }
+    .opt1 .stage-btn[aria-selected="true"] {
+      background: #fff;
+      color: var(--ink);
+      padding-bottom: 9px;
+      z-index: 1;
+    }
+    .opt1 .crumb {
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+
+    /* —— Option 2: Raised + rail —— */
+    .opt2 .stage-row {
+      padding: 4px 8px 0;
+      border-bottom: 1px solid var(--line);
+      gap: 0;
+    }
+    .opt2 .stage-btn {
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      border-radius: 8px 8px 0 0;
+      padding: 10px 16px 8px;
+      margin: 0 1px;
+      color: var(--muted);
+      font: 600 13px/1.2 inherit;
+      cursor: pointer;
+    }
+    .opt2 .stage-btn:hover:not([aria-selected="true"]) {
+      color: var(--ink);
+      background: var(--hover);
+      border-bottom-color: #c0c4c8;
+    }
+    .opt2 .stage-btn[aria-selected="true"] {
+      color: var(--blue-deep);
+      background: var(--blue-soft);
+      border-bottom-color: var(--blue);
+    }
+
+    /* —— Option 3: Soft pill strip —— */
+    .opt3 .stage-row {
+      padding: 10px 12px 8px;
+      border-bottom: 1px solid var(--line);
+    }
+    .opt3 .stage-track {
+      display: inline-flex;
+      gap: 2px;
+      padding: 3px;
+      background: var(--hover);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+    .opt3 .stage-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 7px 14px;
+      color: var(--muted);
+      font: 600 13px/1.2 inherit;
+      cursor: pointer;
+    }
+    .opt3 .stage-btn:hover:not([aria-selected="true"]) {
+      color: var(--ink);
+      background: rgba(255,255,255,0.55);
+    }
+    .opt3 .stage-btn[aria-selected="true"] {
+      background: #fff;
+      color: var(--blue);
+      border-color: #aecbfa;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Stage tabs options</h1>
+    <p>
+      Visual mocks for Structure / Judgments / Analysis / Researcher.
+      Click tabs inside each wireframe to compare active/inactive states.
+      Colors match <code>gui/resources/app.qss</code>.
+    </p>
+  </header>
+
+  <nav class="chooser" role="tablist" aria-label="Option chooser">
+    <button type="button" data-opt="0" aria-selected="true">0 · Current</button>
+    <button type="button" data-opt="1" aria-selected="false">1 · Folder tabs</button>
+    <button type="button" data-opt="2" aria-selected="false">2 · Raised + rail</button>
+    <button type="button" data-opt="3" aria-selected="false">3 · Pill strip</button>
+  </nav>
+
+  <main>
+    <article id="opt-0" class="active" data-opt="0">
+      <div class="meta">
+        <div>
+          <span class="pill">Baseline</span>
+          <h2>0 · Current (Material underline)</h2>
+          <p>
+            Flat text with a blue underline on the selected stage. Reads like
+            page links more than a tabstrip — especially next to the boxed
+            Normal / Connection control.
+          </p>
+        </div>
+        <div>
+          <h2>Notes</h2>
+          <ul>
+            <li>Matches today’s <code>QPushButton#stageTab</code> QSS</li>
+            <li>Minimal chrome; weak “these are tabs” cue</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire opt0" data-wire>
+        <div class="titlebar">
+          <span>File</span><span>Edit</span><span>View</span><span>Network</span>
+          <span>Participants</span><span>Compute</span><span>Help</span>
+        </div>
+        <div class="body">
+          <div class="main">
+            <div class="stage-row" role="tablist">
+              <button type="button" class="stage-btn" aria-selected="true">Structure</button>
+              <button type="button" class="stage-btn" aria-selected="false">Judgments</button>
+              <button type="button" class="stage-btn" aria-selected="false">Analysis</button>
+              <button type="button" class="stage-btn" aria-selected="false">Researcher</button>
+            </div>
+            <div class="crumb">Network: <strong>Root</strong> = Root</div>
+            <div class="workspace">
+              <div class="mode-strip"><span class="on">Normal</span><span class="off">Connection</span></div>
+              <div class="node">Alternatives</div>
+              <div class="fab">+</div>
+            </div>
+          </div>
+          <aside class="inspector">
+            <h3>Inspector</h3>
+            <div class="field"><label>Name</label><div class="box">Alternatives</div></div>
+            <div class="field"><label>Type</label><div class="box">Cluster ▾</div></div>
+            <div class="field"><label>Formula</label><div class="box">IDENTITY ▾</div></div>
+          </aside>
+        </div>
+      </div>
+    </article>
+
+    <article id="opt-1" data-opt="1">
+      <div class="meta">
+        <div>
+          <span class="pill">Recommended</span>
+          <h2>1 · Classic folder tabs</h2>
+          <p>
+            Browser-style tabs with top radius, grey inactive fill, and a white
+            selected tab that merges into the content pane. Same metaphor as the
+            Researcher notebook <code>researcherTabBar</code>.
+          </p>
+        </div>
+        <div>
+          <h2>Notes</h2>
+          <ul>
+            <li>Strongest “these are tabs” affordance</li>
+            <li>Consistent with existing notebook chrome</li>
+            <li>Slightly more vertical height</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire opt1" data-wire>
+        <div class="titlebar">
+          <span>File</span><span>Edit</span><span>View</span><span>Network</span>
+          <span>Participants</span><span>Compute</span><span>Help</span>
+        </div>
+        <div class="body">
+          <div class="main">
+            <div class="stage-row" role="tablist">
+              <button type="button" class="stage-btn" aria-selected="true">Structure</button>
+              <button type="button" class="stage-btn" aria-selected="false">Judgments</button>
+              <button type="button" class="stage-btn" aria-selected="false">Analysis</button>
+              <button type="button" class="stage-btn" aria-selected="false">Researcher</button>
+            </div>
+            <div class="crumb">Network: <strong>Root</strong> = Root</div>
+            <div class="workspace">
+              <div class="mode-strip"><span class="on">Normal</span><span class="off">Connection</span></div>
+              <div class="node">Alternatives</div>
+              <div class="fab">+</div>
+            </div>
+          </div>
+          <aside class="inspector">
+            <h3>Inspector</h3>
+            <div class="field"><label>Name</label><div class="box">Alternatives</div></div>
+            <div class="field"><label>Type</label><div class="box">Cluster ▾</div></div>
+            <div class="field"><label>Formula</label><div class="box">IDENTITY ▾</div></div>
+          </aside>
+        </div>
+      </div>
+      <p class="hint">Selected tab shares the pane border so it visually “opens” into the workspace.</p>
+    </article>
+
+    <article id="opt-2" data-opt="2">
+      <div class="meta">
+        <div>
+          <span class="pill">Light lift</span>
+          <h2>2 · Raised selected + rail</h2>
+          <p>
+            Keeps the underline idea, but adds a continuous bottom rail and a soft
+            blue wash on the active stage. Still flat/HTML-like, clearer as a
+            control strip.
+          </p>
+        </div>
+        <div>
+          <h2>Notes</h2>
+          <ul>
+            <li>Smallest change from current look</li>
+            <li>Rail + wash make the row read as one widget</li>
+            <li>Less “folder” than option 1</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire opt2" data-wire>
+        <div class="titlebar">
+          <span>File</span><span>Edit</span><span>View</span><span>Network</span>
+          <span>Participants</span><span>Compute</span><span>Help</span>
+        </div>
+        <div class="body">
+          <div class="main">
+            <div class="stage-row" role="tablist">
+              <button type="button" class="stage-btn" aria-selected="true">Structure</button>
+              <button type="button" class="stage-btn" aria-selected="false">Judgments</button>
+              <button type="button" class="stage-btn" aria-selected="false">Analysis</button>
+              <button type="button" class="stage-btn" aria-selected="false">Researcher</button>
+            </div>
+            <div class="crumb">Network: <strong>Root</strong> = Root</div>
+            <div class="workspace">
+              <div class="mode-strip"><span class="on">Normal</span><span class="off">Connection</span></div>
+              <div class="node">Alternatives</div>
+              <div class="fab">+</div>
+            </div>
+          </div>
+          <aside class="inspector">
+            <h3>Inspector</h3>
+            <div class="field"><label>Name</label><div class="box">Alternatives</div></div>
+            <div class="field"><label>Type</label><div class="box">Cluster ▾</div></div>
+            <div class="field"><label>Formula</label><div class="box">IDENTITY ▾</div></div>
+          </aside>
+        </div>
+      </div>
+    </article>
+
+    <article id="opt-3" data-opt="3">
+      <div class="meta">
+        <div>
+          <span class="pill">Mode control</span>
+          <h2>3 · Soft pill strip</h2>
+          <p>
+            Stages sit in a shared grey track; the active one is a white pill with
+            a light blue border — kin to Normal / Connection, but for the whole
+            workflow.
+          </p>
+        </div>
+        <div>
+          <h2>Notes</h2>
+          <ul>
+            <li>Very clear as a clickable control</li>
+            <li>Reads more as “modes” than document tabs</li>
+            <li>May compete visually with Normal / Connection</li>
+          </ul>
+        </div>
+      </div>
+      <div class="wire opt3" data-wire>
+        <div class="titlebar">
+          <span>File</span><span>Edit</span><span>View</span><span>Network</span>
+          <span>Participants</span><span>Compute</span><span>Help</span>
+        </div>
+        <div class="body">
+          <div class="main">
+            <div class="stage-row">
+              <div class="stage-track" role="tablist">
+                <button type="button" class="stage-btn" aria-selected="true">Structure</button>
+                <button type="button" class="stage-btn" aria-selected="false">Judgments</button>
+                <button type="button" class="stage-btn" aria-selected="false">Analysis</button>
+                <button type="button" class="stage-btn" aria-selected="false">Researcher</button>
+              </div>
+            </div>
+            <div class="crumb">Network: <strong>Root</strong> = Root</div>
+            <div class="workspace">
+              <div class="mode-strip"><span class="on">Normal</span><span class="off">Connection</span></div>
+              <div class="node">Alternatives</div>
+              <div class="fab">+</div>
+            </div>
+          </div>
+          <aside class="inspector">
+            <h3>Inspector</h3>
+            <div class="field"><label>Name</label><div class="box">Alternatives</div></div>
+            <div class="field"><label>Type</label><div class="box">Cluster ▾</div></div>
+            <div class="field"><label>Formula</label><div class="box">IDENTITY ▾</div></div>
+          </aside>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <script>
+    const chooser = document.querySelectorAll(".chooser button");
+    const articles = document.querySelectorAll("main article");
+    chooser.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.opt;
+        chooser.forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
+        articles.forEach((a) => a.classList.toggle("active", a.dataset.opt === id));
+      });
+    });
+    document.querySelectorAll("[data-wire]").forEach((wire) => {
+      wire.addEventListener("click", (e) => {
+        const btn = e.target.closest(".stage-btn");
+        if (!btn || !wire.contains(btn)) return;
+        const list = btn.closest("[role='tablist']");
+        list.querySelectorAll(".stage-btn").forEach((b) => {
+          b.setAttribute("aria-selected", String(b === btn));
+        });
+      });
+    });
+  </script>
+</body>
+</html>
